@@ -30,23 +30,59 @@
   <button id="endNext">BEGIN A NEW CYCLE</button>
   <button id="endStay">KEEP WANDERING</button>
 </div></div>
-<div id="menu"><div class="board">
-  <h1 id="menuTitle">The Grid</h1>
-  <p class="sub" id="menuSub">DO NOT STOP WALKING</p>
-  <button id="resume">Enter</button>
-  <label for="sens">LOOK SPEED</label>
-  <input type="range" id="sens" min="0.4" max="2.5" step="0.1" value="1">
-  <label for="fov">FIELD OF VIEW</label><input type="range" id="fov" min="60" max="100" step="1" value="72">
-  <label for="vol">VOLUME</label><input type="range" id="vol" min="0" max="1" step="0.05" value="1">
-  <label class="chk"><input type="checkbox" id="invY"> INVERT LOOK</label>
-  <label class="chk"><input type="checkbox" id="bobT" checked> HEAD BOB</label>
-  <label class="chk"><input type="checkbox" id="grainT" checked> FILM GRAIN</label>
-  <div id="settingsBox"></div>
-  <div id="warp"></div>
-  <button id="fs">Fullscreen</button>
-  <button id="reset">Return to start</button>
-  <p>P PAUSE · M MUTE · Q SWAP · 1-3 WEAPONS</p>
-</div></div>
+<div id="menu">
+  <div class="titleScreen">
+    <div class="brand">
+      <h1 id="menuTitle" data-text="THE GRID" class="logo">THE GRID</h1>
+      <p id="menuSub" class="tagline">DO NOT STOP WALKING</p>
+    </div>
+    <nav class="nav">
+      <button id="resume" class="navBtn primary">ENTER THE GRID</button>
+      <button id="navWorlds" class="navBtn">Worlds</button>
+      <button id="navSettings" class="navBtn">Settings</button>
+      <button id="navCredits" class="navBtn">Credits</button>
+    </nav>
+    <div class="meta"><span id="saveMeta">NO SAVE</span><span class="dot">·</span><span>V0.3</span></div>
+    <p class="keys">WASD move · Shift run · Space jump · E use · Click shoot · Q swap · P pause</p>
+  </div>
+
+  <section class="panel" id="panelWorlds">
+    <header><h2>Worlds</h2><button class="panelClose" aria-label="Close">✕</button></header>
+    <div class="panelBody">
+      <div id="warp"></div>
+      <p class="note">Each world unlocks when you reach it.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="panelSettings">
+    <header><h2>Settings</h2><button class="panelClose" aria-label="Close">✕</button></header>
+    <div class="panelBody">
+      <label for="sens">Look speed</label><input type="range" id="sens" min="0.4" max="2.5" step="0.1" value="1">
+      <label for="fov">Field of view</label><input type="range" id="fov" min="60" max="100" step="1" value="72">
+      <label for="vol">Volume</label><input type="range" id="vol" min="0" max="1" step="0.05" value="1">
+      <label class="chk"><input type="checkbox" id="invY"> Invert look</label>
+      <label class="chk"><input type="checkbox" id="bobT" checked> Head bob</label>
+      <label class="chk"><input type="checkbox" id="grainT" checked> Film grain</label>
+      <div id="settingsBox"></div>
+      <button id="fs">Fullscreen</button>
+      <button id="reset">Return to start</button>
+    </div>
+  </section>
+
+  <section class="panel" id="panelCredits">
+    <header><h2>Credits</h2><button class="panelClose" aria-label="Close">✕</button></header>
+    <div class="panelBody">
+      <p class="note">A first-person horror walk in four worlds. Everything you see and hear is generated at runtime — there is not a single image or sound file in the game.</p>
+      <dl class="credits">
+        <dt>Original game</dt><dd>turboestel-design</dd>
+        <dt>Built with</dt><dd>Claude</dd>
+        <dt>Extended in</dt><dd>Arena Agent Mode</dd>
+        <dt>Engine</dt><dd>Three.js r128</dd>
+        <dt>Audio</dt><dd>Procedural WebAudio</dd>
+      </dl>
+    </div>
+  </section>
+</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="js/00-core.js"></script>
 <script src="js/10-forest.js"></script>

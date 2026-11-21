@@ -7,6 +7,16 @@ import { boot } from './harness.mjs';
 const { run: exec, errors } = boot(process.argv[2] || 'index.html');
 const run = (label, expr) => exec(expr, label);
 
+// 0. title screen and menu panels
+run('menu:title', '[document.getElementById("menuTitle").textContent, document.getElementById("resume").textContent, paused]');
+run('menu:enter', 'document.getElementById("resume").click(); [started, paused]');
+run('menu:pause', 'setPaused(true); [document.getElementById("menuTitle").textContent, document.getElementById("resume").textContent]');
+run('menu:panels', 'document.getElementById("navSettings").click(); ["panelSettings","panelWorlds","panelCredits"].map(i => document.getElementById(i).classList.contains("open"))');
+run('menu:panelSwitch', 'document.getElementById("navWorlds").click(); ["panelSettings","panelWorlds"].map(i => document.getElementById(i).classList.contains("open"))');
+run('menu:escape', 'document.dispatchEvent(new window.KeyboardEvent("keydown",{code:"Escape"})); document.getElementById("panelWorlds").classList.contains("open")');
+run('menu:meta', 'shards = 12; refreshMenu(); document.getElementById("saveMeta").textContent');
+run('menu:backIn', 'document.getElementById("resume").click(); paused');
+
 // 1. probe
 run('probe', 'typeof realm === "number" && typeof setRealm === "function"');
 

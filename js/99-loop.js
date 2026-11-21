@@ -3,6 +3,16 @@
    index.html. Splitting this file cannot change behaviour. */
 // ---- Loop ----
 const EYE = 1.65;
+// Slow drift past the cabin while the title screen is up. Resumes at the real
+// spawn point the first time the player enters.
+let titleT = 0;
+function titleCam(dt){
+  titleT += dt;
+  const t = titleT * 0.11;
+  camera.position.set(Math.sin(t) * 4.2, EYE + 0.06 + Math.sin(t * 1.7) * 0.03, 6.4 + Math.cos(t) * 1.5);
+  camera.lookAt(0, 1.52, -12);
+  camera.rotation.z = Math.sin(t * 0.8) * 0.004;
+}
 const clock = new THREE.Clock();
 let bobT = 0, lastStep = 0, time = 0, dip = 0, jumpH = 0, vy = 0, landDip = 0;
 camera.position.set(0, EYE, 5);
@@ -70,7 +80,7 @@ function loop(){
   if (dip > 0) dip -= dt; else if (Math.random() < dt * 0.25) dip = 0.05 + Math.random()*0.25;
   torch.intensity = (heaven || realm > 1) ? 0 : (dip > 0 && settings.flicker) ? 0.3 + Math.random()*1.2 : 2.3 + Math.sin(time*7)*0.08;
   torch.intensity *= settings.torch;
-  if (paused) { renderer.render(scene, camera); return; }
+  if (paused) { if (!started) titleCam(dt); renderer.render(scene, camera); return; }
   shootCd = Math.max(0, shootCd - dt); recoil = Math.max(0, recoil - dt*6); hurtFlash = Math.max(0, hurtFlash - dt*1.5);
   hurtEl.style.opacity = Math.max(hurtFlash, (health < 30 && !heaven) ? 0.25 + Math.sin(time*6)*0.1 : 0);
   updateMan(dt); updateHeaven(dt); updateBars(dt); updateBeast(dt); updateRealm2(dt); updatePortals(dt);
@@ -149,4 +159,5 @@ addEventListener('resize', () => {
 initSettings();
 restoreProgress();
 initActTwo();
+refreshMenu();
 loop();

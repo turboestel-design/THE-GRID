@@ -54,7 +54,7 @@ js/
   80-settings.js        settings schema, settings UI, applying settings
   85-input.js           keyboard, mouse, touch look, joystick
   90-audio.js           procedural audio engine (no sound files)
-  95-pause.js           pause menu
+  95-pause.js           title screen, pause menu and its panels
   99-loop.js            movement, jump, head bob, the frame loop, boot
 tools/
   harness.mjs           boots the game headless (jsdom + real Three.js)
