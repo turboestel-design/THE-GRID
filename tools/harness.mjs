@@ -10,9 +10,16 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 
 export function boot(file = 'index.html', { quiet = true } = {}) {
   const html = fs.readFileSync(path.join(ROOT, file), 'utf8');
-  const scriptMatch = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
-  if (!scriptMatch.length) throw new Error('no inline script found');
-  const code = scriptMatch[scriptMatch.length - 1][1];
+  // Concatenate every local script in document order. Classic scripts share one
+  // global scope, so this is exactly what the browser executes.
+  const code = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>|<script[^>]*src="([^"]+)"[^>]*><\/script>/g)]
+    .map(m => {
+      if (m[1] !== undefined) return m[1];
+      const src = m[2];
+      if (/^https?:/.test(src)) return '';               // three.js comes from node_modules
+      return fs.readFileSync(path.join(ROOT, src), 'utf8');
+    }).join('\n');
+  if (!code.trim()) throw new Error('no game script found');
 
   const errors = [];
   const dom = new JSDOM(html.replace(/<script>[\s\S]*?<\/script>/g, ''), {

@@ -1,0 +1,233 @@
+/* THE GRID — Act II enemies: husks, spitters and wisps, plus the mid-boss wave.
+   Classic script: every file shares one global scope, loaded in the order used by
+   index.html. Splitting this file cannot change behaviour. */
+// ============================================================================
+//  ACT II — inhabitants, shards, the forge and the history of the Grid
+//  Everything below is additive: the four realms keep working even if none of
+//  this exists, but with it they stop being empty boss arenas.
+// ============================================================================
+
+const mobLayer = new THREE.Group(), shardLayer = new THREE.Group();
+const loreLayer = new THREE.Group(), forgeLayer = new THREE.Group();
+scene.add(mobLayer, shardLayer, loreLayer, forgeLayer);
+
+const REALM_X = {1: 0, 2: RX, 3: AX, 4: BX};
+const REALM_NAME = {1: 'THE DEAD FOREST', 2: 'THE HOLLOW GLOW', 3: 'THE ASHEN WASTE', 4: 'THE ECLIPSE'};
+
+// ---- Enemies -----------------------------------------------------------------
+function cyc(){ return 1 + (progress.cycle || 0) * 0.35; }
+const MOB_DEF = {
+  husk:    {hp: 3, spd: 2.15, dmg: 10, r: 0.45, shards: 1, style: 'melee',  name: 'HUSK'},
+  spitter: {hp: 2, spd: 1.45, dmg: 10, r: 0.50, shards: 1, style: 'range',  name: 'SPITTER'},
+  wisp:    {hp: 2, spd: 3.60, dmg: 9,  r: 0.40, shards: 2, style: 'dash',   name: 'WISP'}
+};
+// [kind, local x, local z] per realm
+const SPAWNS = {
+  1: [['husk', -18, -6], ['husk', 16, -14], ['husk', -22, 18], ['husk', 24, 22], ['husk', -8, 30], ['husk', 6, -32]],
+  2: [['spitter', 14, -6], ['spitter', -16, 4], ['husk', 22, 18], ['husk', -20, -18], ['spitter', 4, -26], ['husk', -4, 30]],
+  3: [['husk', 18, -10], ['husk', -18, 12], ['spitter', 26, 6], ['husk', -24, -14]],
+  4: [['wisp', 10, 8], ['wisp', -10, 8], ['wisp', 0, -10], ['wisp', 12, -8]]
+};
+const mobs = [];
+const waveDone = {1: false, 2: false, 3: false, 4: false};
+
+function buildHusk() {
+  const g = new THREE.Group();
+  const flesh = new THREE.MeshStandardMaterial({color: 0x6b6455, roughness: 1, emissive: 0x120f0a});
+  const rag = new THREE.MeshStandardMaterial({color: 0x241f19, roughness: 1});
+  const eye = new THREE.MeshBasicMaterial({color: 0xffb060});
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.78, 0.28), rag); torso.position.y = 1.16; g.add(torso);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.31, 0.27), flesh); head.position.y = 1.69; head.userData.head = true; g.add(head);
+  [-0.06, 0.06].forEach(x => { const e = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.03), eye); e.position.set(x, 1.71, 0.14); g.add(e); });
+  const legs = [], arms = [];
+  [-0.13, 0.13].forEach(x => { const p = new THREE.Group(); p.position.set(x, 0.8, 0); const l = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.8, 0.14), rag); l.position.y = -0.4; p.add(l); g.add(p); legs.push(p); });
+  [-0.33, 0.33].forEach(x => { const p = new THREE.Group(); p.position.set(x, 1.45, 0); const a = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.7, 0.1), flesh); a.position.y = -0.35; p.add(a); g.add(p); arms.push(p); });
+  g.userData.legs = legs; g.userData.arms = arms;
+  g.userData.flash = flesh; g.userData.baseEm = 0x120f0a;
+  return g;
+}
+function buildSpitter() {
+  const g = new THREE.Group();
+  const sacMat = new THREE.MeshStandardMaterial({color: 0x3a1450, emissive: 0x50186a, roughness: 0.7});
+  const sac = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 10), sacMat);
+  sac.position.y = 1.3; g.add(sac);
+  g.userData.flash = sacMat; g.userData.baseEm = 0x50186a;
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.64, 14, 8, 0, 6.283, 0, 1.5708), new THREE.MeshBasicMaterial({color: 0xc45cff, side: THREE.DoubleSide}));
+  cap.position.y = 1.36; cap.scale.y = 0.72; g.add(cap);
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), new THREE.MeshBasicMaterial({color: 0xf2efc4}));
+  eye.position.set(0, 1.32, 0.46); eye.userData.head = true; g.add(eye);
+  const tent = new THREE.MeshStandardMaterial({color: 0x6a3a8a, roughness: 1});
+  for (let i = 0; i < 4; i++) {
+    const a = i / 4 * 6.283;
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.012, 0.85, 5), tent);
+    t.position.set(Math.cos(a) * 0.3, 0.78, Math.sin(a) * 0.3);
+    t.rotation.z = -Math.cos(a) * 0.35; t.rotation.x = Math.sin(a) * 0.35; g.add(t);
+  }
+  return g;
+}
+function buildWisp() {
+  const g = new THREE.Group();
+  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.33), new THREE.MeshBasicMaterial({color: 0xa88cff}));
+  core.position.y = 1.45; core.userData.head = true; g.add(core);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.035, 6, 24), new THREE.MeshBasicMaterial({color: 0xd8c8ff}));
+  ring.position.y = 1.45; ring.rotation.x = 1.15; g.add(ring);
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.9, 10, 8), new THREE.MeshBasicMaterial({color: 0x6a50c0, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false, fog: false}));
+  halo.position.y = 1.45; g.add(halo);
+  g.userData.core = core; g.userData.ring = ring;
+  return g;
+}
+function makeMob(kind, x, z, r) {
+  const D = MOB_DEF[kind];
+  const g = kind === 'husk' ? buildHusk() : kind === 'spitter' ? buildSpitter() : buildWisp();
+  g.position.set(x, 0, z);
+  const scale = 1 + (progress.cycle || 0) * 0.28;
+  const mob = {
+    kind, realm: r, g, hp: D.hp * scale, max: D.hp * scale, alive: true,
+    atk: 1 + Math.random(), hit: 0, fall: 0, ph: Math.random() * 6,
+    spd: D.spd, r: D.r, t: 1.5 + Math.random() * 2, ox: 0, oz: 0, ang: Math.random() * 6.283
+  };
+  g.traverse(o => { if (o.isMesh) o.userData.mob = mob; });
+  mobLayer.add(g); mobs.push(mob);
+  return mob;
+}
+function spawnMobs(n) {
+  for (let i = mobs.length - 1; i >= 0; i--) if (mobs[i].realm === n) { mobLayer.remove(mobs[i].g); mobs.splice(i, 1); }
+  for (const [kind, lx, lz] of SPAWNS[n]) makeMob(kind, REALM_X[n] + lx, lz, n);
+  waveDone[n] = false;
+  for (const s of mobShots) { s.life = 0; s.m.visible = false; }
+}
+function clampToRealm(x, z, n) {
+  if (n === 1) return [Math.max(-68, Math.min(68, x)), Math.max(-68, Math.min(68, z))];
+  if (n === 2) return [Math.max(RX - 72, Math.min(RX + 72, x)), Math.max(-72, Math.min(72, z))];
+  if (n === 3) return [Math.max(AX - 78, Math.min(AX + 78, x)), Math.max(-78, Math.min(78, z))];
+  const dx = x - BX, d = Math.hypot(dx, z) || 0.001, lim = 25.5;
+  return d > lim ? [BX + dx / d * lim, z / d * lim] : [x, z];
+}
+function mobMove(mob, dx, dz) {
+  const g = mob.g;
+  let nx = g.position.x + dx, nz = g.position.z + dz;
+  for (const t of colliders()) {
+    const ox = nx - t[0], oz = nz - t[1], r = t[2] + mob.r, d2 = ox * ox + oz * oz;
+    if (d2 < r * r) { const d = Math.sqrt(d2) || 0.001; nx = t[0] + ox / d * r; nz = t[1] + oz / d * r; }
+  }
+  const c = clampToRealm(nx, nz, mob.realm);
+  nx = c[0]; nz = c[1];
+  if (mob.realm === 1 && Math.abs(nx) < 3.7 && nz < -8.8 && nz > -15.2) nz = nz > -12 ? -8.8 : -15.2;
+  g.position.x = nx; g.position.z = nz;
+}
+function hurtMob(mob, d) {
+  if (!mob.alive) return;
+  mob.hp -= d; mob.hit = 0.14;
+  if (mob.hp > 0) return;
+  mob.alive = false; mob.fall = 0; kills++;
+  spawnShards(mob.g.position.x, 1.1, mob.g.position.z, MOB_DEF[mob.kind].shards);
+  sweepTone(mob.kind === 'wisp' ? 900 : 380, 110, 0.3, 0.45, 'triangle');
+}
+const mobShots = [];
+const shotGeo = new THREE.SphereGeometry(0.17, 8, 6);
+for (let i = 0; i < 26; i++) {
+  const m = new THREE.Mesh(shotGeo, new THREE.MeshBasicMaterial({color: 0xff70c0}));
+  m.visible = false; scene.add(m);
+  mobShots.push({m, vx: 0, vy: 0, vz: 0, life: 0});
+}
+function fireMobShot(from, dmg) {
+  const s = mobShots.find(o => o.life <= 0); if (!s) return;
+  const tx = camera.position.x - from.x, ty = (camera.position.y - 0.3) - from.y, tz = camera.position.z - from.z;
+  const d = Math.hypot(tx, ty, tz) || 1, sp = 13;
+  s.m.position.copy(from); s.m.visible = true;
+  s.vx = tx / d * sp; s.vy = ty / d * sp; s.vz = tz / d * sp;
+  s.life = 4; s.dmg = dmg * (1 + (progress.cycle || 0) * 0.2);
+  sweepTone(320, 180, 0.18, 0.35, 'square');
+}
+function updateMobShots(dt) {
+  for (const s of mobShots) {
+    if (s.life <= 0) continue;
+    s.life -= dt;
+    s.m.position.x += s.vx * dt; s.m.position.y += s.vy * dt; s.m.position.z += s.vz * dt;
+    if (s.m.position.y < 0.1 || s.life <= 0) { s.life = 0; s.m.visible = false; continue; }
+    if (!dead && !heaven && Math.hypot(s.m.position.x - camera.position.x, s.m.position.z - camera.position.z) < 0.55
+      && Math.abs(s.m.position.y - (camera.position.y - 0.4)) < 1.1) {
+      s.life = 0; s.m.visible = false; hurt(s.dmg); hitFlash();
+    }
+  }
+}
+function updateMobs(dt) {
+  if (heaven || teleporting || dead) return;
+  const pxReal = camera.position.x, pzReal = camera.position.z;
+  for (const mob of mobs) {
+    const g = mob.g;
+    if (mob.realm !== realm) { g.visible = false; continue; }
+    if (!mob.alive) {
+      if (mob.fall < 1) {
+        mob.fall = Math.min(1, mob.fall + dt * 2.2);
+        g.rotation.x = -mob.fall * 1.45; g.position.y = -mob.fall * 0.3;
+        if (mob.fall >= 0.7) g.scale.setScalar(Math.max(0.02, 1 - (mob.fall - 0.7) / 0.3));
+        if (mob.fall >= 1) g.visible = false;
+      } else g.visible = false;
+      continue;
+    }
+    g.visible = true;
+    mob.hit = Math.max(0, mob.hit - dt); mob.atk = Math.max(0, mob.atk - dt);
+    const dx = pxReal - g.position.x, dz = pzReal - g.position.z, dist = Math.hypot(dx, dz) || 0.001;
+    const D = MOB_DEF[mob.kind];
+    g.rotation.y = Math.atan2(dx, dz);
+    let moving = 0;
+    if (D.style === 'melee') {
+      if (dist < 38 && dist > 1.25) { mobMove(mob, dx / dist * mob.spd * dt, dz / dist * mob.spd * dt); moving = 1; }
+      if (dist < 1.5 && mob.atk <= 0 && !dead) { mob.atk = 1.25; hurt(D.dmg); }
+    } else if (D.style === 'range') {
+      if (dist < 8) mobMove(mob, -dx / dist * mob.spd * dt, -dz / dist * mob.spd * dt);
+      else if (dist > 15 && dist < 45) mobMove(mob, dx / dist * mob.spd * dt, dz / dist * mob.spd * dt);
+      if (mob.atk <= 0 && dist < 26 && !dead) {
+        mob.atk = 2.4 + Math.random();
+        const from = new THREE.Vector3(g.position.x, 1.35, g.position.z);
+        fireMobShot(from, D.dmg);
+      }
+      moving = 1;
+    } else {
+      mob.ang += dt * 1.5;
+      if (mob.t > 0) {
+        mob.t -= dt;
+        const tx = pxReal + Math.cos(mob.ang) * 6.5, tz = pzReal + Math.sin(mob.ang) * 6.5;
+        const ddx = tx - g.position.x, ddz = tz - g.position.z, dd = Math.hypot(ddx, ddz) || 0.001;
+        mobMove(mob, ddx / dd * mob.spd * dt, ddz / dd * mob.spd * dt);
+      } else if (dist > 1.3) {
+        mobMove(mob, dx / dist * mob.spd * 2.2 * dt, dz / dist * mob.spd * 2.2 * dt);
+        if (dist < 1.8 && mob.atk <= 0) { mob.atk = 1.4; hurt(D.dmg); mob.t = 2 + Math.random() * 2; }
+      } else mob.t = 2 + Math.random() * 2;
+    }
+    // animation
+    if (g.userData.flash) g.userData.flash.emissive.setHex(mob.hit > 0 ? 0x772200 : g.userData.baseEm);
+    if (mob.kind === 'husk') {
+      mob.ph += dt * (moving ? 7 : 1);
+      const sw = Math.sin(mob.ph) * (moving ? 0.55 : 0.05);
+      g.userData.legs[0].rotation.x = sw; g.userData.legs[1].rotation.x = -sw;
+      g.userData.arms[0].rotation.x = -sw * 0.7 - 0.3; g.userData.arms[1].rotation.x = sw * 0.7 - 0.3;
+    } else if (mob.kind === 'spitter') {
+      g.position.y = Math.sin(time * 1.8 + mob.ph) * 0.12;
+      g.rotation.z = Math.sin(time * 0.9 + mob.ph) * 0.06;
+    } else {
+      g.position.y = 0.25 + Math.sin(time * 2.2 + mob.ph) * 0.18;
+      g.userData.ring.rotation.z += dt * 3.2;
+      g.userData.ring.rotation.y += dt * 1.7;
+    }
+  }
+}
+function spawnWave(n) {
+  const kinds = n === 4 ? ['wisp', 'wisp'] : n === 2 ? ['spitter', 'husk', 'husk'] : n === 3 ? ['husk', 'husk', 'spitter'] : ['husk', 'husk', 'husk'];
+  kinds.forEach((k, i) => {
+    const a = Math.random() * 6.283, r = 12 + Math.random() * 5;
+    const mob = makeMob(k, camera.position.x + Math.sin(a) * r, camera.position.z + Math.cos(a) * r, n);
+    spawnShards(mob.g.position.x, 1.4, mob.g.position.z, 1);
+  });
+  say('MORE OF THEM. THEY COME WHEN IT BLEEDS.', 3000);
+}
+function updateWaves() {
+  if (heaven || dead || teleporting || !WEAPONS) return;
+  if (waveDone[realm]) return;
+  const b = bossInfo();
+  if (!b.alive || b.hp > b.max * 0.5) return;
+  waveDone[realm] = true;
+  spawnWave(realm);
+}
+

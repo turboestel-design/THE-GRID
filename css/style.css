@@ -1,0 +1,103 @@
+:root{--blood:#8a1c14;--bone:#b8ad98;--ink:#0a0807;box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:#000;font-family:"Courier New",Courier,monospace}
+canvas{display:block;touch-action:none}
+#vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 35%,rgba(0,0,0,.85) 100%)}
+#grain{position:fixed;inset:-50%;pointer-events:none;opacity:.14;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");animation:g .6s steps(6) infinite}
+@keyframes g{0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-4%)}60%{transform:translate(-4%,-1%)}80%{transform:translate(3%,3%)}100%{transform:translate(0,0)}}
+#hint{position:fixed;left:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);color:var(--bone);opacity:.4;font-size:12px;letter-spacing:1px;pointer-events:none}
+#joy{position:fixed;left:24px;bottom:calc(env(safe-area-inset-bottom,0px) + 40px);width:110px;height:110px;border-radius:50%;border:2px solid #3a2a25;background:rgba(0,0,0,.35);display:none;touch-action:none}
+#knob{position:absolute;left:35px;top:35px;width:40px;height:40px;border-radius:50%;background:#3a1512}
+#pauseBtn{position:fixed;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);width:44px;height:44px;border:2px solid #3a2a25;background:#120e0c;color:var(--bone);font:16px "Courier New",monospace;display:none}
+#jumpBtn{position:fixed;right:24px;bottom:calc(env(safe-area-inset-bottom,0px) + 40px);width:72px;height:72px;border:2px solid #3a2a25;background:rgba(18,14,12,.7);color:var(--bone);font:12px "Courier New",monospace;letter-spacing:2px;display:none;touch-action:none}
+@media (pointer:coarse){#joy,#pauseBtn,#jumpBtn{display:block}}
+#menu{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82)}
+#menu.hidden{display:none}
+.board{position:relative;width:min(340px,86vw);box-sizing:border-box;padding:28px 26px 24px;text-align:left;color:var(--bone);transform:rotate(-.8deg);border:3px solid #050302;
+  background:
+   linear-gradient(90deg,transparent 0 31%,rgba(0,0,0,.55) 31% 31.6%,transparent 31.6% 68%,rgba(0,0,0,.5) 68% 68.5%,transparent 68.5%),
+   repeating-linear-gradient(0deg,#2b1d14 0 61px,#080504 61px 64px,#33231a 64px 118px,#080504 118px 121px,#271a12 121px 190px,#080504 190px 193px);
+  box-shadow:inset 0 0 40px rgba(0,0,0,.8),0 0 0 1px #1a120d}
+.board:before,.board:after{content:"";position:absolute;top:10px;width:6px;height:6px;background:#0c0908;box-shadow:0 0 0 1px #4a3a2e}
+.board:before{left:10px}.board:after{right:10px}
+.board h1{margin:6px 0 4px;font-size:34px;letter-spacing:6px;font-weight:700;color:var(--blood);text-shadow:2px 2px 0 #000;text-transform:uppercase}
+.board .sub{margin:0 0 20px;font-size:12px;letter-spacing:2px;opacity:.55}
+.board button{display:block;width:100%;margin:8px 0;padding:11px 12px;text-align:left;font:inherit;font-size:16px;letter-spacing:3px;text-transform:uppercase;color:var(--bone);background:#0d0907;border:2px solid #000;border-left:6px solid #3a1512;cursor:pointer;border-radius:0}
+.board button:hover,.board button:focus-visible{color:#d8c9b0;border-left-color:var(--blood);outline:none;background:#150d0a}
+.board label{display:block;margin:18px 0 6px;font-size:12px;letter-spacing:2px;opacity:.7}
+.board input[type=range]{width:100%;accent-color:#8a1c14}
+.board p{margin:16px 0 0;font-size:11px;letter-spacing:1px;opacity:.45}
+#prompt{position:fixed;left:50%;bottom:22%;transform:translateX(-50%);display:none;z-index:5;padding:10px 16px;background:rgba(0,0,0,.65);color:var(--bone);border:2px solid #3a2a25;border-left:6px solid var(--blood);font:14px "Courier New",monospace;letter-spacing:3px;border-radius:0;cursor:pointer}
+#hurt{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:6;background:radial-gradient(ellipse at center,rgba(120,0,0,0) 30%,rgba(140,10,5,.85) 100%)}
+#fade{position:fixed;inset:0;z-index:8;pointer-events:none;opacity:0;display:flex;align-items:center;justify-content:center;font:700 34px "Courier New",monospace;letter-spacing:8px}
+#stats{position:fixed;left:14px;top:calc(env(safe-area-inset-top,0px) + 12px);color:var(--bone);opacity:.8;font-size:14px;letter-spacing:2px;pointer-events:none;text-shadow:0 1px 4px #000}
+#msg{position:fixed;left:50%;top:18%;transform:translateX(-50%);width:90%;color:var(--bone);font-size:16px;letter-spacing:3px;text-align:center;pointer-events:none;opacity:0;transition:opacity .6s;text-shadow:0 2px 6px #000;z-index:5}
+#cross{position:fixed;left:50%;top:50%;width:5px;height:5px;margin:-2.5px;background:rgba(220,210,190,.55);pointer-events:none;display:none}
+#fireBtn{position:fixed;right:108px;bottom:calc(env(safe-area-inset-bottom,0px) + 40px);width:72px;height:72px;border:2px solid #3a2a25;background:rgba(60,12,10,.7);color:var(--bone);font:12px "Courier New",monospace;letter-spacing:2px;display:none;touch-action:none}
+#hint{text-shadow:0 1px 4px #000}
+#ammoBox{position:fixed;right:18px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);display:none;padding:8px 12px 10px;background:rgba(0,0,0,.6);border:2px solid #3a2a25;border-left:6px solid var(--blood);color:var(--bone);pointer-events:none;text-shadow:0 1px 3px #000;z-index:4}
+@media (pointer:coarse){#ammoBox{bottom:calc(env(safe-area-inset-bottom,0px) + 128px)}}
+#ammoLabel{font-size:10px;letter-spacing:3px;opacity:.6}
+#ammoNum{font-size:36px;font-weight:700;letter-spacing:2px;line-height:1.1}
+#ammoNum.low{color:#c4281c}
+#ammoRow{display:flex;gap:3px;margin-top:6px;max-width:122px;flex-wrap:wrap}
+#ammoRow span{display:block;width:5px;height:14px;background:#c9a24a;box-shadow:inset -1px 0 0 rgba(0,0,0,.35)}
+#ammoRow span.spent{background:#2a2420;opacity:.55}
+#bossBar{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);transform:translateX(-50%);width:min(340px,60vw);display:none;pointer-events:none;z-index:4}
+#bossName{text-align:center;color:var(--bone);font-size:12px;letter-spacing:5px;margin-bottom:4px;text-shadow:0 1px 4px #000}
+#bossTrack{position:relative;height:12px;background:rgba(0,0,0,.7);border:2px solid #3a2a25}
+#bossGhost,#bossFill,#bossSeg{position:absolute;left:0;top:0;bottom:0}
+#bossGhost{background:#d8c9b0;width:100%}
+#bossFill{background:#8a1c14;width:100%}
+#bossSeg{right:0;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(12.5% - 2px),#000 calc(12.5% - 2px),#000 12.5%)}
+#swapBtn{position:fixed;right:192px;bottom:calc(env(safe-area-inset-bottom,0px) + 40px);width:72px;height:72px;border:2px solid #3a2a25;background:rgba(18,14,12,.7);color:var(--bone);font:12px "Courier New",monospace;letter-spacing:2px;display:none;touch-action:none}
+#ammoRow{max-width:150px}
+#obj{position:fixed;left:14px;top:calc(env(safe-area-inset-top,0px) + 38px);display:none;align-items:center;gap:8px;color:var(--bone);font-size:12px;letter-spacing:2px;opacity:.85;pointer-events:none;text-shadow:0 1px 4px #000;z-index:4}
+#objArrow{display:inline-block;font-size:18px;color:#c9a24a}
+#cross.hit{width:14px;height:14px;margin:-7px;background:transparent;border:2px solid #e84a3a}
+#cross.hit.head{border-color:#ffd36b}
+body.nograin #grain{display:none !important}
+.board{max-height:92vh;overflow-y:auto}
+.board label.chk{display:flex;align-items:center;gap:8px;margin:10px 0 0;opacity:.85}
+.board input[type=checkbox]{accent-color:#8a1c14;width:16px;height:16px;margin:0}
+#warp button{margin:6px 0}
+:root{--hud:1;--touch:1;--xh:5px;--xhc:#ddd5c4}
+#stats,#obj,#msg,#ammoBox,#hint,#prompt,#bossBar,#cap{zoom:var(--hud)}
+#joy,#fireBtn,#jumpBtn,#swapBtn,#pauseBtn{zoom:var(--touch)}
+#cross{width:var(--xh);height:var(--xh);margin:calc(var(--xh)/-2);background:var(--xhc)}
+body.xh-plus #cross{background:linear-gradient(var(--xhc),var(--xhc)) center/100% 2px no-repeat,linear-gradient(var(--xhc),var(--xhc)) center/2px 100% no-repeat}
+body.xh-ring #cross{background:transparent;border:2px solid var(--xhc);border-radius:50%;box-sizing:border-box}
+#cap{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 70px);transform:translateX(-50%);padding:4px 12px;background:rgba(0,0,0,.7);color:var(--bone);font-size:13px;letter-spacing:2px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:7}
+#fps{position:fixed;right:12px;top:calc(env(safe-area-inset-top,0px) + 62px);display:none;color:var(--bone);font-size:12px;letter-spacing:2px;text-shadow:0 1px 3px #000;pointer-events:none}
+body.hide-msg #msg,body.hide-hint #hint,body.hide-obj #obj,body.hide-stats #stats,body.hide-stats #ammoBox,body.hide-boss #bossBar,body.hide-prompt #prompt,body.hide-fade #fade,body.novig #vig,body.noxh #cross,body.notext #msg,body.notext #hint,body.notext #obj,body.notext #prompt,body.notext #cap,body.notext #bossName,body.notext #ammoLabel,body.notext #stats{display:none !important}
+body.notext #fade{color:transparent !important}
+body.lefty #joy{left:auto;right:24px}
+body.lefty #jumpBtn{right:auto;left:24px}
+body.lefty #fireBtn{right:auto;left:108px}
+body.lefty #swapBtn{right:auto;left:192px}
+.board details{margin:10px 0 0;border-top:1px solid rgba(0,0,0,.5)}
+.board summary{cursor:pointer;font-size:12px;letter-spacing:3px;padding:8px 0;opacity:.9;text-transform:uppercase}
+.board select{width:100%;background:#0d0907;color:var(--bone);border:2px solid #000;border-left:6px solid #3a2a25;padding:6px;font:inherit;font-size:13px;border-radius:0}
+
+/* ---- Act II UI: forge, lore cards, ending ---- */
+#forge{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:12;display:none;width:min(380px,92vw);max-height:88vh;overflow:auto;padding:22px;background:#0b0806;border:3px solid #050302;border-left:6px solid var(--blood);color:var(--bone);font:13px "Courier New",monospace;letter-spacing:1px;box-shadow:0 0 0 1px #2a1c14,0 0 70px #000}
+#forge h2{margin:0 0 4px;font-size:20px;letter-spacing:6px;color:var(--blood)}
+#forge .sh{margin:0 0 14px;font-size:12px;opacity:.85;letter-spacing:2px;color:#c9a24a}
+#forge .row{display:flex;align-items:center;gap:8px;margin:8px 0}
+#forge button{flex:1;padding:9px 10px;background:#120d0a;color:var(--bone);border:2px solid #000;border-left:4px solid #3a1512;font:inherit;letter-spacing:1px;cursor:pointer;text-align:left;line-height:1.4}
+#forge button:hover:not(:disabled){border-left-color:var(--blood);background:#1a1210}
+#forge button:disabled{opacity:.38;cursor:not-allowed}
+#forge .lvl{color:#c9a24a;letter-spacing:2px}
+#forge .desc{display:block;opacity:.5;font-size:11px;letter-spacing:1px}
+#forge .cost{min-width:46px;text-align:right;color:#c9a24a;font-size:12px}
+#forge .close{width:100%;text-align:center;margin-top:12px;border-left-color:#3a2a25;flex:none}
+#loreCard{position:fixed;left:50%;bottom:13%;transform:translateX(-50%);z-index:11;display:none;width:min(540px,88vw);padding:16px 20px;background:rgba(8,6,4,.95);border:2px solid #3a2a25;border-left:6px solid #c9a24a;color:var(--bone);font:13px "Courier New",monospace;letter-spacing:1px;line-height:1.6;text-shadow:0 1px 3px #000}
+#loreCard h3{margin:0 0 6px;font-size:11px;letter-spacing:4px;color:#c9a24a}
+#loreCard p{margin:0;opacity:.9}
+#endWrap{position:fixed;inset:0;z-index:14;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.92)}
+#endWrap .card{width:min(430px,92vw);padding:30px;color:var(--bone);font:13px "Courier New",monospace;border:3px solid #000;border-left:6px solid var(--blood);background:#0b0806;box-shadow:0 0 80px #000}
+#endWrap h1{margin:0;font-size:28px;letter-spacing:7px;color:var(--blood)}
+#endWrap .sub{margin:6px 0 18px;opacity:.55;letter-spacing:3px;font-size:11px}
+#endWrap .st{display:flex;justify-content:space-between;margin:5px 0;letter-spacing:2px;border-bottom:1px dotted #241a14;padding-bottom:4px}
+#endWrap .st b{color:#c9a24a;font-weight:400}
+#endWrap button{display:block;width:100%;margin-top:10px;padding:11px;background:#120d0a;color:var(--bone);border:2px solid #000;border-left:4px solid #3a1512;font:inherit;letter-spacing:3px;cursor:pointer;text-transform:uppercase}
+#endWrap button:hover{border-left-color:var(--blood);background:#1a1210}

@@ -1,11 +1,12 @@
 {
   "name": "the-grid",
   "version": "0.2.0",
-  "description": "THE GRID — a single-file browser FPS. Four worlds, a forge, and a tall man.",
+  "description": "THE GRID \u2014 a single-file browser FPS. Four worlds, a forge, and a tall man.",
   "private": true,
   "scripts": {
     "start": "python3 -m http.server 8000",
-    "test": "node tools/smoke.mjs"
+    "test": "node tools/smoke.mjs",
+    "build": "node tools/build.mjs"
   },
   "license": "ISC",
   "devDependencies": {
