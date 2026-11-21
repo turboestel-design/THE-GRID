@@ -14,9 +14,13 @@ export function boot(file = 'index.html', { quiet = true } = {}) {
   // global scope, so this is exactly what the browser executes.
   const code = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>|<script[^>]*src="([^"]+)"[^>]*><\/script>/g)]
     .map(m => {
-      if (m[1] !== undefined) return m[1];
+      if (m[1] !== undefined) {
+        // the bundled build inlines three.js; the harness supplies THREE itself
+        return /Three\.js Authors/.test(m[1]) ? '' : m[1];
+      }
       const src = m[2];
-      if (/^https?:/.test(src)) return '';               // three.js comes from node_modules
+      if (/^https?:/.test(src)) return '';               // external: never fetched
+      if (/three(\.min)?\.js$/.test(src)) return '';      // THREE is supplied by the harness
       return fs.readFileSync(path.join(ROOT, src), 'utf8');
     }).join('\n');
   if (!code.trim()) throw new Error('no game script found');

@@ -1,7 +1,8 @@
 # THE GRID
 
-A first-person horror shooter that runs from a single HTML file. No assets, no build step — every
-texture, sound and enemy is generated at runtime.
+A first-person horror shooter that runs from a single HTML file. No image or audio assets, no build
+step — every texture, sound and enemy is generated at runtime, and Three.js is vendored so it works
+completely offline.
 
 **Play:** open `index.html`, or `npm start` and open <http://localhost:8000>.
 
@@ -30,7 +31,8 @@ Dying costs you time, not progress. Beating the King starts a new cycle with eve
 ## Project layout
 
 ```
-index.html              markup + the script load order (75 lines)
+index.html              markup + the script load order
+vendor/three.min.js     Three.js r128, vendored so the game needs no network
 css/style.css           all styling, including the menus and HUD
 js/
   00-core.js            renderer, scene, camera, lights, ground, trees
