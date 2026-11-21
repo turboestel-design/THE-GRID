@@ -84,6 +84,30 @@ body.lefty #swapBtn{right:auto;left:192px}
 .board details{margin:10px 0 0;border-top:1px solid rgba(0,0,0,.5)}
 .board summary{cursor:pointer;font-size:12px;letter-spacing:3px;padding:8px 0;opacity:.9;text-transform:uppercase}
 .board select{width:100%;background:#0d0907;color:var(--bone);border:2px solid #000;border-left:6px solid #3a2a25;padding:6px;font:inherit;font-size:13px;border-radius:0}
+
+/* ---- Act II UI: forge, lore cards, ending ---- */
+#forge{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:12;display:none;width:min(380px,92vw);max-height:88vh;overflow:auto;padding:22px;background:#0b0806;border:3px solid #050302;border-left:6px solid var(--blood);color:var(--bone);font:13px "Courier New",monospace;letter-spacing:1px;box-shadow:0 0 0 1px #2a1c14,0 0 70px #000}
+#forge h2{margin:0 0 4px;font-size:20px;letter-spacing:6px;color:var(--blood)}
+#forge .sh{margin:0 0 14px;font-size:12px;opacity:.85;letter-spacing:2px;color:#c9a24a}
+#forge .row{display:flex;align-items:center;gap:8px;margin:8px 0}
+#forge button{flex:1;padding:9px 10px;background:#120d0a;color:var(--bone);border:2px solid #000;border-left:4px solid #3a1512;font:inherit;letter-spacing:1px;cursor:pointer;text-align:left;line-height:1.4}
+#forge button:hover:not(:disabled){border-left-color:var(--blood);background:#1a1210}
+#forge button:disabled{opacity:.38;cursor:not-allowed}
+#forge .lvl{color:#c9a24a;letter-spacing:2px}
+#forge .desc{display:block;opacity:.5;font-size:11px;letter-spacing:1px}
+#forge .cost{min-width:46px;text-align:right;color:#c9a24a;font-size:12px}
+#forge .close{width:100%;text-align:center;margin-top:12px;border-left-color:#3a2a25;flex:none}
+#loreCard{position:fixed;left:50%;bottom:13%;transform:translateX(-50%);z-index:11;display:none;width:min(540px,88vw);padding:16px 20px;background:rgba(8,6,4,.95);border:2px solid #3a2a25;border-left:6px solid #c9a24a;color:var(--bone);font:13px "Courier New",monospace;letter-spacing:1px;line-height:1.6;text-shadow:0 1px 3px #000}
+#loreCard h3{margin:0 0 6px;font-size:11px;letter-spacing:4px;color:#c9a24a}
+#loreCard p{margin:0;opacity:.9}
+#endWrap{position:fixed;inset:0;z-index:14;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.92)}
+#endWrap .card{width:min(430px,92vw);padding:30px;color:var(--bone);font:13px "Courier New",monospace;border:3px solid #000;border-left:6px solid var(--blood);background:#0b0806;box-shadow:0 0 80px #000}
+#endWrap h1{margin:0;font-size:28px;letter-spacing:7px;color:var(--blood)}
+#endWrap .sub{margin:6px 0 18px;opacity:.55;letter-spacing:3px;font-size:11px}
+#endWrap .st{display:flex;justify-content:space-between;margin:5px 0;letter-spacing:2px;border-bottom:1px dotted #241a14;padding-bottom:4px}
+#endWrap .st b{color:#c9a24a;font-weight:400}
+#endWrap button{display:block;width:100%;margin-top:10px;padding:11px;background:#120d0a;color:var(--bone);border:2px solid #000;border-left:4px solid #3a1512;font:inherit;letter-spacing:3px;cursor:pointer;text-transform:uppercase}
+#endWrap button:hover{border-left-color:var(--blood);background:#1a1210}
 </style>
 </head>
 <body>
@@ -100,6 +124,16 @@ body.lefty #swapBtn{right:auto;left:192px}
 <button id="fireBtn" aria-label="Fire">FIRE</button>
 <button id="swapBtn" aria-label="Switch weapon">SWAP</button>
 <button id="prompt"></button>
+
+<div id="loreCard"><h3></h3><p></p></div>
+<div id="forge"><h2>THE FORGE</h2><div class="sh"></div><div id="forgeRows"></div><button class="close" id="forgeClose">CLOSE</button></div>
+<div id="endWrap"><div class="card">
+  <h1>YOU ESCAPED</h1>
+  <div class="sub" id="endSub">THE GRID LETS GO. IT DOES NOT LET GO FOR LONG.</div>
+  <div id="endStats"></div>
+  <button id="endNext">BEGIN A NEW CYCLE</button>
+  <button id="endStay">KEEP WANDERING</button>
+</div></div>
 <div id="menu"><div class="board">
   <h1 id="menuTitle">The Grid</h1>
   <p class="sub" id="menuSub">DO NOT STOP WALKING</p>
@@ -255,47 +289,42 @@ function updateDoor(dt){
   const gunNear = !hasGun && Math.hypot(camera.position.x - TX, camera.position.z - TZ) < 1.8;
   const doorNear = Math.hypot(camera.position.x, camera.position.z - Z0) < 2.4;
   const gateNear = Math.hypot(camera.position.x - HX, camera.position.z + 25) < 3.2;
-  action = (paused || dead) ? null : heaven ? (gateNear ? 'gate' : null) : gunNear ? 'gun' : doorNear ? 'door' : null;
+  if (!paused && !dead && !heaven) scanInteractors(); else { nearLore = -1; nearForge = null; }
+  action = (paused || dead) ? null : heaven ? (gateNear ? 'gate' : null) : gunNear ? 'gun' : doorNear ? 'door' : nearLore >= 0 ? 'lore' : nearForge ? 'forge' : null;
   nearDoor = action === 'door';
   prompt.style.display = action ? 'block' : 'none';
-  if (action) prompt.textContent = (isTouch ? 'TAP' : 'E') + ' · ' + (action === 'gun' ? 'TAKE GUN' : action === 'gate' ? 'GO BACK' : (doorOpen ? 'CLOSE' : 'OPEN') + ' DOOR');
+  if (action) {
+    const key = (isTouch ? 'TAP' : 'E') + ' · ';
+    prompt.textContent = key + (
+      action === 'gun' ? 'TAKE GUN' :
+      action === 'gate' ? 'GO BACK' :
+      action === 'lore' ? 'READ' :
+      action === 'forge' ? 'THE FORGE' :
+      (doorOpen ? 'CLOSE' : 'OPEN') + ' DOOR');
+  }
 }
 
 // ---- HUD elements ----
 const statsEl = document.getElementById('stats'), msgEl = document.getElementById('msg'), hurtEl = document.getElementById('hurt');
 const fadeEl = document.getElementById('fade'), crossEl = document.getElementById('cross'), fireBtn = document.getElementById('fireBtn');
 let hasGun = false, ammo = 0, health = 100, dead = false, won = false, heaven = false;
+// Meta-progression. Shards and upgrades survive death and are saved.
+let maxHp = 100, shards = 0, kills = 0, deathRealm = 1, runT = 0, loreFound = 0;
+const up = {damage: 0, vitality: 0, swift: 0};
+// Declared early because the Tall Man is spawned before the campaign block loads.
+let progress = {max: 1, owned: {pistol: false, shotgun: false, rifle: false}, cycle: 0, lore: {}};
 let shootCd = 0, recoil = 0, flashT = 0, hurtFlash = 0, camGround = 0, droneGain = null, padGain = null;
 function say(t, ms){ msgEl.textContent = t; msgEl.style.opacity = 1; clearTimeout(say.t); say.t = setTimeout(() => { msgEl.style.opacity = 0; }, ms || 2500); }
 const ammoBox = document.getElementById('ammoBox'), ammoNum = document.getElementById('ammoNum'), ammoRow = document.getElementById('ammoRow');
 const bullets = [];
 for (let i = 0; i < 30; i++) { const b = document.createElement('span'); ammoRow.appendChild(b); bullets.push(b); }
-function updateStats(){
-  statsEl.textContent = 'HP ' + Math.max(0, health);
-  ammoBox.style.display = (hasGun && !heaven) ? 'block' : 'none';
-  ammoNum.textContent = ammo;
-  ammoNum.classList.toggle('low', ammo <= 3);
-  bullets.forEach((b, i) => b.classList.toggle('spent', i >= ammo));
-}
+
 // Tall man health bar
 const bossBar = document.getElementById('bossBar'), bossFill = document.getElementById('bossFill'), bossGhost = document.getElementById('bossGhost');
 let ghostHp = 8, bossHide = 0;
 const bossName = document.getElementById('bossName'), bossSeg = document.getElementById('bossSeg');
 let barMax = 8;
-function updateBars(dt){
-  const b2 = realm === 2, alive = b2 ? beastAlive : manAlive, hpNow = Math.max(0, b2 ? beastHp : manHp), max = b2 ? 10 : 8, pos = b2 ? beast.position : man.position;
-  if (barMax !== max) {
-    barMax = max; ghostHp = hpNow; bossName.textContent = b2 ? 'THE BLOOM' : 'THE TALL MAN';
-    const w = 100/max; bossSeg.style.background = `repeating-linear-gradient(90deg,transparent 0,transparent calc(${w}% - 2px),#000 calc(${w}% - 2px),#000 ${w}%)`;
-  }
-  const d = Math.hypot(camera.position.x - pos.x, camera.position.z - pos.z);
-  bossHide = alive ? 0 : bossHide + dt;
-  const show = !heaven && (alive ? (d < 45 || hpNow < max) : bossHide < 2.5);
-  bossBar.style.display = show ? 'block' : 'none';
-  bossFill.style.width = (hpNow/max*100) + '%';
-  ghostHp += (hpNow - ghostHp) * Math.min(1, dt*2.5);
-  bossGhost.style.width = (ghostHp/max*100) + '%';
-}
+
 
 // ---- Cloud stairs (the place you go when you die) ----
 const HX = 1000;
@@ -341,13 +370,9 @@ function updateHeaven(dt){
     p.rotation.y = Math.atan2(camera.position.x - (HX + p.position.x), camera.position.z - p.position.z);
   }
 }
-function setHeavenAudio(){
-  if (padGain) padGain.gain.setTargetAtTime(heaven ? 0.07 : 0, ac.currentTime, 0.8);
-  if (r2Gain) r2Gain.gain.setTargetAtTime(realm === 2 && !heaven ? 0.12 : 0, ac.currentTime, 0.6);
-  if (droneGain) droneGain.gain.value = (heaven || realm === 2) ? 0 : 0.22;
-}
+
 function enterHeaven(){
-  heaven = true; dead = false; health = 100; jumpH = 0; vy = 0; camGround = 0; landDip = 0;
+  heaven = true; dead = false; health = maxHp; jumpH = 0; vy = 0; camGround = 0; landDip = 0;
   setRealm(1); beast.visible = false; heavenGroup.visible = true; gunView.visible = false; crossEl.style.display = 'none'; man.visible = false;
   camera.position.set(HX, EYE, 22); yaw = 0; pitch = 0;
   scene.background.setHex(0x8fcbff); scene.fog.color.setHex(0xcfe7ff); scene.fog.density = 0.008;
@@ -356,20 +381,11 @@ function enterHeaven(){
   setHeavenAudio(); updateStats();
   fadeEl.style.transition = 'none'; fadeEl.style.background = '#fff'; fadeEl.style.opacity = '1'; fadeEl.textContent = '';
   void fadeEl.offsetWidth; fadeEl.style.transition = 'opacity 3s'; fadeEl.style.opacity = '0';
-  say('YOU ARE SAFE HERE. CLIMB THE STAIRS TO GO BACK.', 6500);
+  say('YOU ARE SAFE HERE. CLIMB THE STAIRS TO GO BACK TO ' + REALM_NAME[Math.max(1, Math.min(4, deathRealm))] + '.', 6500);
 }
-function exitHeaven(){
-  heaven = false; dead = false; health = 100; ammo = hasGun ? 14 : 0; jumpH = 0; vy = 0; camGround = 0;
-  heavenGroup.visible = false; gunView.visible = hasGun; crossEl.style.display = hasGun ? 'block' : 'none';
-  ambient.color.setHex(0x2a3a44); moon.color.setHex(0x6f8fb0);
-  document.getElementById('vig').style.display = 'block'; document.getElementById('grain').style.display = 'block';
-  camera.position.set(0, EYE, 5); yaw = 0; pitch = 0;
-  setRealm(1); portalA.visible = portalB.visible = false; beast.visible = false;
-  man.visible = true; spawnMan(45); setHeavenAudio(); updateStats();
-  say('THE FOREST AGAIN. HE IS STILL OUT THERE.', 4500);
-}
+
 function die(){
-  dead = true; clearKeys(); joyReset(); recoil = 0;
+  dead = true; deathRealm = heaven ? 1 : realm; clearKeys(); joyReset(); recoil = 0; firing = false;
   fadeEl.style.transition = 'opacity 1.2s'; fadeEl.style.background = '#000'; fadeEl.style.color = '#8a1c14'; fadeEl.textContent = 'YOU DIED'; fadeEl.style.opacity = '1';
   setTimeout(settings.quickResp ? respawnHere : enterHeaven, tm(2800));
 }
@@ -397,7 +413,7 @@ let manHp = 8, manAlive = true, manHit = 0, manAtk = 0, manStagger = 0, manWalk 
 function spawnMan(d){
   const a = Math.random()*6.283, lim = SIZE/2 - 3;
   man.position.set(Math.max(-lim, Math.min(lim, camera.position.x + Math.sin(a)*d)), 0, Math.max(-lim, Math.min(lim, camera.position.z + Math.cos(a)*d)));
-  man.rotation.set(0, 0, 0); manHp = 8; manAlive = true; manFall = 0; manHit = 0; manStagger = 0; won = false;
+  man.rotation.set(0, 0, 0); manHp = 8 * cyc(); manAlive = true; manFall = 0; manHit = 0; manStagger = 0; won = false;
 }
 spawnMan(55);
 function manCollide(nx, nz){
@@ -407,7 +423,7 @@ function manCollide(nx, nz){
   return [nx, nz];
 }
 function updateMan(dt){
-  if (heaven || realm === 2) return;
+  if (heaven || realm !== 1) return;
   if (!manAlive) {
     manFall = Math.min(1, manFall + dt*0.8); man.rotation.x = -1.5*manFall;
     if (manFall >= 1) man.position.y = Math.max(-2.4, man.position.y - dt*0.2);
@@ -439,9 +455,9 @@ function updateMan(dt){
 function hurtMan(d){
   if (!manAlive) return;
   manHp -= d; manHit = 0.12; manStagger = Math.max(manStagger, 0.35);
-  if (manHp <= 0) { manAlive = false; won = true; say('THE TALL MAN FALLS', 4500); setTimeout(openPortalA, tm(2500)); }
+  if (manHp <= 0) { manAlive = false; won = true; kills++; spawnShards(man.position.x, 1.6, man.position.z, 12); say('THE TALL MAN FALLS', 4500); setTimeout(openPortalA, tm(2500)); }
 }
-function hurt(d){ health -= d; hurtFlash = 1; ouch(); updateStats(); if (health <= 0 && !dead) die(); }
+
 
 // ---- Second world: THE HOLLOW GLOW (glowing fungus forest, a different creature) ----
 const RX = -1000;
@@ -529,7 +545,7 @@ let beastHp = 10, beastAlive = true, bState = 'creep', bT = 2, bHit = 0, bFall =
 function spawnBeast(){
   const a = Math.random()*6.283;
   beast.position.set(Math.max(RX - 60, Math.min(RX + 60, camera.position.x + Math.sin(a)*38)), 0, Math.max(-60, Math.min(60, camera.position.z + Math.cos(a)*38)));
-  beast.rotation.set(0, 0, 0); beast.scale.set(1, 1, 1); beastHp = 10; beastAlive = true; bState = 'creep'; bT = 2.5; bFall = 0; bHit = 0; bStagger = 0; beast.visible = true;
+  beast.rotation.set(0, 0, 0); beast.scale.set(1, 1, 1); beastHp = 10 * cyc(); beastAlive = true; bState = 'creep'; bT = 2.5; bFall = 0; bHit = 0; bStagger = 0; beast.visible = true;
 }
 function beastCollide(nx, nz){
   for (const t of shroomPos) { const ox = nx - t[0], oz = nz - t[1], r = t[2] + 0.9, d2 = ox*ox + oz*oz; if (d2 < r*r) { const d = Math.sqrt(d2) || 0.001; nx = t[0] + ox/d*r; nz = t[1] + oz/d*r; } }
@@ -568,12 +584,7 @@ function updateBeast(dt){
   bCapMat.color.setHex(bHit > 0 ? 0xffffff : bState === 'wind' ? 0xffa0f4 : 0xd848c0);
   beastLight.intensity = (bState === 'wind' ? 3 : 1.1) + Math.sin(time*5)*0.2;
 }
-function hurtBeast(d){
-  if (!beastAlive) return;
-  beastHp -= d; bHit = 0.12; bStagger = 0.3;
-  if (bState === 'wind') { bState = 'creep'; bT = 1.5; }
-  if (beastHp <= 0) { beastAlive = false; say('THE BLOOM WITHERS. THE WAY BACK IS OPEN.', 5500); setTimeout(openPortalB, 2500); }
-}
+
 // Portals
 function swirlTex(h1, h2){
   const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
@@ -605,63 +616,12 @@ function openPortalB(){
   const dx = camera.position.x - beast.position.x, dz = camera.position.z - beast.position.z, d = Math.hypot(dx, dz) || 1;
   openPortal(portalB, beast.position.x + dx/d*2.5, beast.position.z + dz/d*2.5);
 }
-function updatePortals(dt){
-  let best = null;
-  for (const p of [portalA, portalB]) {
-    if (!p.visible) continue;
-    p.userData.t += dt; const k = Math.min(1, p.userData.t/1.5);
-    p.scale.setScalar(Math.max(0.01, k)); p.userData.disc.rotation.z += dt*0.9; best = p;
-    const d = Math.hypot(camera.position.x - p.position.x, camera.position.z - p.position.z);
-    if (k >= 1 && d < 1.0 && !teleporting && !dead) teleport(p === portalA ? 2 : 1);
-  }
-  if (best) { portalLight.position.set(best.position.x, 1.8, best.position.z); portalLight.color.setHSL(best.userData.hue/360, 1, 0.6); portalLight.intensity = 2.2*Math.min(1, best.userData.t/1.5) + Math.sin(time*9)*0.2; }
-  else portalLight.intensity = 0;
-}
-function setRealm(n){
-  realm = n; realm2.visible = stars.visible = planetG.visible = sporeMesh.visible = (n === 2);
-  glowLight.intensity = n === 2 ? 1.6 : 0; beastLight.intensity = 0;
-  document.getElementById('grain').style.display = n === 2 ? 'none' : 'block';
-  if (n === 2) { scene.background.setHex(0x090514); scene.fog.color.setHex(0x0b0618); scene.fog.density = 0.032; ambient.color.setHex(0x6a4aa8); ambient.intensity = 0.9; moon.color.setHex(0x5a4aa0); moon.intensity = 0.35; }
-  else { ambient.color.setHex(0x2a3a44); moon.color.setHex(0x6f8fb0); }
-  setHeavenAudio();
-}
-function enterRealm2(){
-  setRealm(2); portalA.visible = false; man.visible = false;
-  health = 100; ammo = 14; jumpH = 0; vy = 0; camGround = 0; landDip = 0;
-  camera.position.set(RX, EYE, 20); yaw = 0; pitch = 0;
-  crates.forEach(c => { c.visible = true; });
-  spawnBeast(); updateStats();
-  say('A DIFFERENT PLACE. SOMETHING IS WATCHING.', 5500);
-}
-function leaveRealm2(){
-  setRealm(1); portalA.visible = portalB.visible = false; beast.visible = false;
-  camera.position.set(0, EYE, 5); yaw = 0; pitch = 0; jumpH = 0; vy = 0; camGround = 0; health = 100; ammo = 14;
-  man.visible = true; spawnMan(55); updateStats();
-  say('BACK IN THE FOREST. HE IS STILL OUT THERE.', 5000);
-}
-function teleport(to){
-  if (teleporting) return;
-  teleporting = true; portalSound();
-  fadeEl.style.transition = 'opacity .9s'; fadeEl.style.background = to === 2 ? '#b9a2ff' : '#d8ffd0'; fadeEl.textContent = ''; fadeEl.style.opacity = '1';
-  setTimeout(() => {
-    if (to === 2) enterRealm2(); else leaveRealm2();
-    fadeEl.style.transition = 'none'; void fadeEl.offsetWidth; fadeEl.style.transition = 'opacity 2s'; fadeEl.style.opacity = '0';
-    teleporting = false;
-  }, 1000);
-}
-function updateRealm2(dt){
-  if (realm !== 2) return;
-  stars.position.copy(camera.position); planetG.position.set(camera.position.x - 50, 95, camera.position.z - 140);
-  sporeMesh.position.set(camera.position.x, 0, camera.position.z);
-  for (let i = 0; i < SP_N; i++) { sporePos[i*3 + 1] += dt*(0.25 + (i % 5)*0.08); sporePos[i*3] += Math.sin(time*0.6 + i)*dt*0.3; if (sporePos[i*3 + 1] > 14) sporePos[i*3 + 1] = 0; }
-  sporeGeo.attributes.position.needsUpdate = true;
-  for (const c of crates) {
-    if (!c.visible) continue;
-    c.rotation.y += dt*1.5; c.position.y = 0.7 + Math.sin(time*2 + c.userData.ph)*0.12;
-    if (ammo < 14 && Math.hypot(camera.position.x - (RX + c.position.x), camera.position.z - c.position.z) < 1.1) { c.visible = false; ammo = Math.min(14, ammo + 6); updateStats(); clickSound(); say('+6 ROUNDS', 1500); }
-  }
-  chimeT -= dt; if (chimeT <= 0) { chimeT = 2.5 + Math.random()*6; chime(); }
-}
+
+
+
+
+
+
 // Sounds for the second world
 function sweepNoise(f0, f1, dur, gain){
   if (!ac || !whiteBuf) return;
@@ -702,34 +662,12 @@ function makeGun(){
 const gunPickup = makeGun(); gunPickup.position.set(TX, 0.53, TZ); gunPickup.rotation.set(0, 0.7, Math.PI/2); gunPickup.scale.setScalar(1.15); scene.add(gunPickup);
 const gunView = new THREE.Group(); gunView.position.set(0.2, -0.2, -0.45); gunView.visible = false; camera.add(gunView);
 const muzzle = new THREE.PointLight(0xffcc88, 0, 12); muzzle.position.set(0.2, -0.1, -0.9); camera.add(muzzle);
-function pickGun(){
-  hasGun = true; ammo = 14; scene.remove(gunPickup); gunView.visible = true; crossEl.style.display = 'block';
-  if (isTouch) fireBtn.style.display = 'block';
-  clickSound(); setTimeout(clickSound, 160); say('GUN EQUIPPED  ·  14 ROUNDS', 3000); updateStats();
-}
+
 const ray = new THREE.Raycaster();
-function shoot(){
-  if (!hasGun || paused || dead || heaven || shootCd > 0) return;
-  if (ammo <= 0) { clickSound(); shootCd = 0.3; say('OUT OF AMMO', 1200); return; }
-  ammo--; shootCd = 0.4; recoil = 1; flashT = 0.06; gunshot(); updateStats();
-  ray.setFromCamera({x: 0, y: 0}, camera);
-  const hit = ray.intersectObjects(realm === 2 ? [beast, shroomStems, shroomCaps] : [man, trunks], true)[0];
-  if (hit && hit.object.userData.man) hurtMan(hit.object.userData.head ? 4 : 1);
-  else if (hit && hit.object.userData.beast) hurtBeast(hit.object.userData.head ? 4 : 1);
-}
+
 fireBtn.addEventListener('pointerdown', e => { e.preventDefault(); shoot(); });
-function useAction(){ if (action === 'gun') pickGun(); else if (action === 'door') toggleDoor(); else if (action === 'gate') exitHeaven(); }
-function gunshot(){
-  if (!ac || !whiteBuf) return;
-  const t = ac.currentTime;
-  const s = ac.createBufferSource(); s.buffer = whiteBuf;
-  const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(5000, t); f.frequency.exponentialRampToValueAtTime(400, t + 0.25);
-  const g = ac.createGain(); g.gain.setValueAtTime(1.8, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-  s.connect(f); f.connect(g); g.connect(master); s.start(t, Math.random()*0.5, 0.35);
-  const o = ac.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.18);
-  const og = ac.createGain(); og.gain.setValueAtTime(1.2, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-  o.connect(og); og.connect(master); o.start(t); o.stop(t + 0.22);
-}
+function useAction(){ if (action === 'gun') pickGun(); else if (action === 'door') toggleDoor(); else if (action === 'gate') exitHeaven(); else if (action === 'lore') readLore(nearLore); else if (action === 'forge') openForge(); }
+
 function clickSound(){
   if (!ac) return;
   const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
@@ -772,7 +710,7 @@ function refill(){ store[cur] = ammo; for (const k in WEAPONS) if (owned[k]) sto
 function giveAmmo(){ store[cur] = ammo; for (const k in WEAPONS) if (owned[k]) store[k] = Math.min(WEAPONS[k].max, store[k] + Math.ceil(WEAPONS[k].max*0.5)); ammo = store[cur]; updateStats(); }
 function needAmmo(){ store[cur] = ammo; return Object.keys(WEAPONS).some(k => owned[k] && store[k] < WEAPONS[k].max); }
 function updateStats(){
-  statsEl.textContent = 'HP ' + Math.max(0, Math.round(health));
+  statsEl.textContent = 'HP ' + Math.max(0, Math.round(health)) + (maxHp > 100 ? '/' + maxHp : '') + '   ◆ ' + shards;
   const W = WEAPONS[cur], n = Object.keys(owned).filter(k => owned[k]).length;
   ammoBox.style.display = (hasGun && !heaven) ? 'block' : 'none';
   ammoLabel.textContent = W.name + (n > 1 ? '  [Q]' : '');
@@ -881,7 +819,7 @@ function spawnHounds(){
 function hurtHound(h, d){
   if (!h.alive) return;
   h.hp -= d; h.hit = 0.15; h.state = 'back'; h.t = 0.5;
-  if (h.hp <= 0) { h.alive = false; if (hounds.every(x => !x.alive)) { say('THE PACK IS DEAD. A PORTAL OPENS.', 5000); setTimeout(openPortalC, tm(2200)); } }
+  if (h.hp <= 0) { h.alive = false; kills++; spawnShards(h.g.position.x, 1.1, h.g.position.z, 2); if (hounds.every(x => !x.alive)) { say('THE PACK IS DEAD. A PORTAL OPENS.', 5000); setTimeout(openPortalC, tm(2200)); } }
 }
 function updateHounds(dt){
   if (realm !== 3 || heaven) return;
@@ -954,7 +892,7 @@ const wave = new THREE.Mesh(new THREE.RingGeometry(0.93, 1, 64), new THREE.MeshB
 wave.rotation.x = -Math.PI/2; wave.visible = false; scene.add(wave);
 let kingHp = 45, kingAlive = true, kAng = -1.5708, kAtkT = 3, kWaveCd = 8, kBlink = 9, kSlam = 0, kHit = 0, kFall = 0, kPhase = 1, waveR = 0, waveHit = false, waveX = 0, waveZ = 0;
 function spawnKing(){
-  kingHp = 45; kingAlive = true; kAng = -1.5708; kAtkT = 3; kWaveCd = 8; kBlink = 9; kSlam = 0; kHit = 0; kFall = 0; kPhase = 1;
+  kingHp = 45 * cyc(); kingAlive = true; kAng = -1.5708; kAtkT = 3; kWaveCd = 8; kBlink = 9; kSlam = 0; kHit = 0; kFall = 0; kPhase = 1;
   king.scale.setScalar(1); king.rotation.set(0, 0, 0); king.visible = true; wave.visible = false; orbs.forEach(o => { o.life = 0; o.m.visible = false; });
 }
 function fireOrbs(n){
@@ -969,7 +907,7 @@ function fireOrbs(n){
 function hurtKing(d){
   if (!kingAlive) return;
   kingHp -= d; kHit = 0.1;
-  if (kingHp <= 0) { kingAlive = false; say('THE HOLLOW KING FALLS', 4500); sweepNoise(100, 3000, 3, 2); setTimeout(ending, tm(3500)); }
+  if (kingHp <= 0) { kingAlive = false; kills++; spawnShards(king.position.x, 2.2, king.position.z, 26); say('THE HOLLOW KING FALLS', 4500); sweepNoise(100, 3000, 3, 2); setTimeout(ending, tm(3500)); }
 }
 function updateKing(dt){
   if (realm !== 4 || heaven) return;
@@ -1009,12 +947,45 @@ function updateKing(dt){
   robeMat.emissive.setHex(kHit > 0 ? 0x6030a0 : 0x120a24); maskMat.emissive.setHex(kHit > 0 ? 0xaaaaee : 0x333040);
   beastLight.intensity = (kSlam > 0 ? 4 : 1.6) + Math.sin(time*4)*0.2;
 }
+function endRow(k, v){ return '<div class="st"><span>' + k + '</span><b>' + v + '</b></div>'; }
 function ending(){
-  teleporting = true; clearKeys();
-  fadeEl.style.transition = 'opacity 4s'; fadeEl.style.background = '#fff'; fadeEl.style.color = '#1b1b24'; fadeEl.textContent = 'YOU ESCAPED'; fadeEl.style.opacity = '1';
-  setTimeout(() => { fadeEl.textContent = 'THE END'; }, tm(5000));
-  setTimeout(() => { leaveRealm2(); fadeEl.style.transition = 'opacity 3s'; fadeEl.style.opacity = '0'; fadeEl.style.color = '#8a1c14'; teleporting = false; }, tm(10500));
+  teleporting = true; endingUp = true; clearKeys(); joyReset(); firing = false;
+  if (document.pointerLockElement) document.exitPointerLock();
+  const prev = progress.cycle || 0;
+  const mins = Math.floor(runTime / 60), secs = Math.floor(runTime % 60);
+  const loreN = progress.lore ? Object.keys(progress.lore).length : 0;
+  document.getElementById('endSub').textContent = prev === 0
+    ? 'THE GRID LETS GO. IT DOES NOT LET GO FOR LONG.'
+    : 'CYCLE ' + (prev + 1) + ' ENDS. THE GRID REBUILDS ITSELF, A LITTLE ANGRIIER.';
+  document.getElementById('endStats').innerHTML =
+    endRow('CYCLE', prev + 1) +
+    endRow('TIME', mins + ':' + String(secs).padStart(2, '0')) +
+    endRow('KILLS', kills) +
+    endRow('SHARDS', shards) +
+    endRow('LORE FOUND', loreN + '/' + LORE.length) +
+    endRow('UPGRADES', (up.damage + up.vitality + up.swift) + '/12');
+  document.getElementById('endNext').textContent = 'BEGIN CYCLE ' + (prev + 2);
+  document.getElementById('endWrap').style.display = 'flex';
+  sweepNoise(120, 2600, 2.6, 1.2);
 }
+function leaveEnding(){
+  document.getElementById('endWrap').style.display = 'none';
+  endingUp = false; teleporting = false; dead = false; health = maxHp; runTime = 0;
+  if (!isTouch && cv.requestPointerLock) cv.requestPointerLock();
+}
+document.getElementById('endNext').addEventListener('click', () => {
+  progress.cycle = (progress.cycle || 0) + 1;
+  kills = 0;
+  saveAll();
+  leaveEnding();
+  leaveRealm2();
+  progress.max = Math.max(progress.max || 1, 1); recordProgress();
+  say('CYCLE ' + (progress.cycle + 1) + '. EVERYTHING IS A LITTLE ANGRIER.', 4500);
+});
+document.getElementById('endStay').addEventListener('click', () => {
+  leaveEnding();
+  say('YOU STAY. THE GRID IS PATIENT.', 3500);
+});
 
 // ---- Pickups: weapons, ammo crates, health ----
 const items = [];
@@ -1051,15 +1022,452 @@ function updatePickups(dt){
       if (!needAmmo()) continue;
       giveAmmo(); say('AMMO', 1200); clickSound(); it.g.visible = false; it.cd = 25;
     } else {
-      if (health >= 100) continue;
-      health = Math.min(100, health + 40); updateStats(); say('+40 HP', 1200); sweepTone(500, 1000, 0.3, 0.4, 'sine'); it.g.visible = false; it.cd = 40;
+      if (health >= maxHp) continue;
+      health = Math.min(maxHp, health + 40); updateStats(); say('+40 HP', 1200); sweepTone(500, 1000, 0.3, 0.4, 'sine'); it.g.visible = false; it.cd = 40;
     }
   }
 }
 
+// ============================================================================
+//  ACT II — inhabitants, shards, the forge and the history of the Grid
+//  Everything below is additive: the four realms keep working even if none of
+//  this exists, but with it they stop being empty boss arenas.
+// ============================================================================
+
+const mobLayer = new THREE.Group(), shardLayer = new THREE.Group();
+const loreLayer = new THREE.Group(), forgeLayer = new THREE.Group();
+scene.add(mobLayer, shardLayer, loreLayer, forgeLayer);
+
+const REALM_X = {1: 0, 2: RX, 3: AX, 4: BX};
+const REALM_NAME = {1: 'THE DEAD FOREST', 2: 'THE HOLLOW GLOW', 3: 'THE ASHEN WASTE', 4: 'THE ECLIPSE'};
+
+// ---- Enemies -----------------------------------------------------------------
+function cyc(){ return 1 + (progress.cycle || 0) * 0.35; }
+const MOB_DEF = {
+  husk:    {hp: 3, spd: 2.15, dmg: 10, r: 0.45, shards: 1, style: 'melee',  name: 'HUSK'},
+  spitter: {hp: 2, spd: 1.45, dmg: 10, r: 0.50, shards: 1, style: 'range',  name: 'SPITTER'},
+  wisp:    {hp: 2, spd: 3.60, dmg: 9,  r: 0.40, shards: 2, style: 'dash',   name: 'WISP'}
+};
+// [kind, local x, local z] per realm
+const SPAWNS = {
+  1: [['husk', -18, -6], ['husk', 16, -14], ['husk', -22, 18], ['husk', 24, 22], ['husk', -8, 30], ['husk', 6, -32]],
+  2: [['spitter', 14, -6], ['spitter', -16, 4], ['husk', 22, 18], ['husk', -20, -18], ['spitter', 4, -26], ['husk', -4, 30]],
+  3: [['husk', 18, -10], ['husk', -18, 12], ['spitter', 26, 6], ['husk', -24, -14]],
+  4: [['wisp', 10, 8], ['wisp', -10, 8], ['wisp', 0, -10], ['wisp', 12, -8]]
+};
+const mobs = [];
+const waveDone = {1: false, 2: false, 3: false, 4: false};
+
+function buildHusk() {
+  const g = new THREE.Group();
+  const flesh = new THREE.MeshStandardMaterial({color: 0x6b6455, roughness: 1, emissive: 0x120f0a});
+  const rag = new THREE.MeshStandardMaterial({color: 0x241f19, roughness: 1});
+  const eye = new THREE.MeshBasicMaterial({color: 0xffb060});
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.78, 0.28), rag); torso.position.y = 1.16; g.add(torso);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.31, 0.27), flesh); head.position.y = 1.69; head.userData.head = true; g.add(head);
+  [-0.06, 0.06].forEach(x => { const e = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.03), eye); e.position.set(x, 1.71, 0.14); g.add(e); });
+  const legs = [], arms = [];
+  [-0.13, 0.13].forEach(x => { const p = new THREE.Group(); p.position.set(x, 0.8, 0); const l = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.8, 0.14), rag); l.position.y = -0.4; p.add(l); g.add(p); legs.push(p); });
+  [-0.33, 0.33].forEach(x => { const p = new THREE.Group(); p.position.set(x, 1.45, 0); const a = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.7, 0.1), flesh); a.position.y = -0.35; p.add(a); g.add(p); arms.push(p); });
+  g.userData.legs = legs; g.userData.arms = arms;
+  g.userData.flash = flesh; g.userData.baseEm = 0x120f0a;
+  return g;
+}
+function buildSpitter() {
+  const g = new THREE.Group();
+  const sacMat = new THREE.MeshStandardMaterial({color: 0x3a1450, emissive: 0x50186a, roughness: 0.7});
+  const sac = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 10), sacMat);
+  sac.position.y = 1.3; g.add(sac);
+  g.userData.flash = sacMat; g.userData.baseEm = 0x50186a;
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.64, 14, 8, 0, 6.283, 0, 1.5708), new THREE.MeshBasicMaterial({color: 0xc45cff, side: THREE.DoubleSide}));
+  cap.position.y = 1.36; cap.scale.y = 0.72; g.add(cap);
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), new THREE.MeshBasicMaterial({color: 0xf2efc4}));
+  eye.position.set(0, 1.32, 0.46); eye.userData.head = true; g.add(eye);
+  const tent = new THREE.MeshStandardMaterial({color: 0x6a3a8a, roughness: 1});
+  for (let i = 0; i < 4; i++) {
+    const a = i / 4 * 6.283;
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.012, 0.85, 5), tent);
+    t.position.set(Math.cos(a) * 0.3, 0.78, Math.sin(a) * 0.3);
+    t.rotation.z = -Math.cos(a) * 0.35; t.rotation.x = Math.sin(a) * 0.35; g.add(t);
+  }
+  return g;
+}
+function buildWisp() {
+  const g = new THREE.Group();
+  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.33), new THREE.MeshBasicMaterial({color: 0xa88cff}));
+  core.position.y = 1.45; core.userData.head = true; g.add(core);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.035, 6, 24), new THREE.MeshBasicMaterial({color: 0xd8c8ff}));
+  ring.position.y = 1.45; ring.rotation.x = 1.15; g.add(ring);
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.9, 10, 8), new THREE.MeshBasicMaterial({color: 0x6a50c0, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false, fog: false}));
+  halo.position.y = 1.45; g.add(halo);
+  g.userData.core = core; g.userData.ring = ring;
+  return g;
+}
+function makeMob(kind, x, z, r) {
+  const D = MOB_DEF[kind];
+  const g = kind === 'husk' ? buildHusk() : kind === 'spitter' ? buildSpitter() : buildWisp();
+  g.position.set(x, 0, z);
+  const scale = 1 + (progress.cycle || 0) * 0.28;
+  const mob = {
+    kind, realm: r, g, hp: D.hp * scale, max: D.hp * scale, alive: true,
+    atk: 1 + Math.random(), hit: 0, fall: 0, ph: Math.random() * 6,
+    spd: D.spd, r: D.r, t: 1.5 + Math.random() * 2, ox: 0, oz: 0, ang: Math.random() * 6.283
+  };
+  g.traverse(o => { if (o.isMesh) o.userData.mob = mob; });
+  mobLayer.add(g); mobs.push(mob);
+  return mob;
+}
+function spawnMobs(n) {
+  for (let i = mobs.length - 1; i >= 0; i--) if (mobs[i].realm === n) { mobLayer.remove(mobs[i].g); mobs.splice(i, 1); }
+  for (const [kind, lx, lz] of SPAWNS[n]) makeMob(kind, REALM_X[n] + lx, lz, n);
+  waveDone[n] = false;
+  for (const s of mobShots) { s.life = 0; s.m.visible = false; }
+}
+function clampToRealm(x, z, n) {
+  if (n === 1) return [Math.max(-68, Math.min(68, x)), Math.max(-68, Math.min(68, z))];
+  if (n === 2) return [Math.max(RX - 72, Math.min(RX + 72, x)), Math.max(-72, Math.min(72, z))];
+  if (n === 3) return [Math.max(AX - 78, Math.min(AX + 78, x)), Math.max(-78, Math.min(78, z))];
+  const dx = x - BX, d = Math.hypot(dx, z) || 0.001, lim = 25.5;
+  return d > lim ? [BX + dx / d * lim, z / d * lim] : [x, z];
+}
+function mobMove(mob, dx, dz) {
+  const g = mob.g;
+  let nx = g.position.x + dx, nz = g.position.z + dz;
+  for (const t of colliders()) {
+    const ox = nx - t[0], oz = nz - t[1], r = t[2] + mob.r, d2 = ox * ox + oz * oz;
+    if (d2 < r * r) { const d = Math.sqrt(d2) || 0.001; nx = t[0] + ox / d * r; nz = t[1] + oz / d * r; }
+  }
+  const c = clampToRealm(nx, nz, mob.realm);
+  nx = c[0]; nz = c[1];
+  if (mob.realm === 1 && Math.abs(nx) < 3.7 && nz < -8.8 && nz > -15.2) nz = nz > -12 ? -8.8 : -15.2;
+  g.position.x = nx; g.position.z = nz;
+}
+function hurtMob(mob, d) {
+  if (!mob.alive) return;
+  mob.hp -= d; mob.hit = 0.14;
+  if (mob.hp > 0) return;
+  mob.alive = false; mob.fall = 0; kills++;
+  spawnShards(mob.g.position.x, 1.1, mob.g.position.z, MOB_DEF[mob.kind].shards);
+  sweepTone(mob.kind === 'wisp' ? 900 : 380, 110, 0.3, 0.45, 'triangle');
+}
+const mobShots = [];
+const shotGeo = new THREE.SphereGeometry(0.17, 8, 6);
+for (let i = 0; i < 26; i++) {
+  const m = new THREE.Mesh(shotGeo, new THREE.MeshBasicMaterial({color: 0xff70c0}));
+  m.visible = false; scene.add(m);
+  mobShots.push({m, vx: 0, vy: 0, vz: 0, life: 0});
+}
+function fireMobShot(from, dmg) {
+  const s = mobShots.find(o => o.life <= 0); if (!s) return;
+  const tx = camera.position.x - from.x, ty = (camera.position.y - 0.3) - from.y, tz = camera.position.z - from.z;
+  const d = Math.hypot(tx, ty, tz) || 1, sp = 13;
+  s.m.position.copy(from); s.m.visible = true;
+  s.vx = tx / d * sp; s.vy = ty / d * sp; s.vz = tz / d * sp;
+  s.life = 4; s.dmg = dmg * (1 + (progress.cycle || 0) * 0.2);
+  sweepTone(320, 180, 0.18, 0.35, 'square');
+}
+function updateMobShots(dt) {
+  for (const s of mobShots) {
+    if (s.life <= 0) continue;
+    s.life -= dt;
+    s.m.position.x += s.vx * dt; s.m.position.y += s.vy * dt; s.m.position.z += s.vz * dt;
+    if (s.m.position.y < 0.1 || s.life <= 0) { s.life = 0; s.m.visible = false; continue; }
+    if (!dead && !heaven && Math.hypot(s.m.position.x - camera.position.x, s.m.position.z - camera.position.z) < 0.55
+      && Math.abs(s.m.position.y - (camera.position.y - 0.4)) < 1.1) {
+      s.life = 0; s.m.visible = false; hurt(s.dmg); hitFlash();
+    }
+  }
+}
+function updateMobs(dt) {
+  if (heaven || teleporting || dead) return;
+  const pxReal = camera.position.x, pzReal = camera.position.z;
+  for (const mob of mobs) {
+    const g = mob.g;
+    if (mob.realm !== realm) { g.visible = false; continue; }
+    if (!mob.alive) {
+      if (mob.fall < 1) {
+        mob.fall = Math.min(1, mob.fall + dt * 2.2);
+        g.rotation.x = -mob.fall * 1.45; g.position.y = -mob.fall * 0.3;
+        if (mob.fall >= 0.7) g.scale.setScalar(Math.max(0.02, 1 - (mob.fall - 0.7) / 0.3));
+        if (mob.fall >= 1) g.visible = false;
+      } else g.visible = false;
+      continue;
+    }
+    g.visible = true;
+    mob.hit = Math.max(0, mob.hit - dt); mob.atk = Math.max(0, mob.atk - dt);
+    const dx = pxReal - g.position.x, dz = pzReal - g.position.z, dist = Math.hypot(dx, dz) || 0.001;
+    const D = MOB_DEF[mob.kind];
+    g.rotation.y = Math.atan2(dx, dz);
+    let moving = 0;
+    if (D.style === 'melee') {
+      if (dist < 38 && dist > 1.25) { mobMove(mob, dx / dist * mob.spd * dt, dz / dist * mob.spd * dt); moving = 1; }
+      if (dist < 1.5 && mob.atk <= 0 && !dead) { mob.atk = 1.25; hurt(D.dmg); }
+    } else if (D.style === 'range') {
+      if (dist < 8) mobMove(mob, -dx / dist * mob.spd * dt, -dz / dist * mob.spd * dt);
+      else if (dist > 15 && dist < 45) mobMove(mob, dx / dist * mob.spd * dt, dz / dist * mob.spd * dt);
+      if (mob.atk <= 0 && dist < 26 && !dead) {
+        mob.atk = 2.4 + Math.random();
+        const from = new THREE.Vector3(g.position.x, 1.35, g.position.z);
+        fireMobShot(from, D.dmg);
+      }
+      moving = 1;
+    } else {
+      mob.ang += dt * 1.5;
+      if (mob.t > 0) {
+        mob.t -= dt;
+        const tx = pxReal + Math.cos(mob.ang) * 6.5, tz = pzReal + Math.sin(mob.ang) * 6.5;
+        const ddx = tx - g.position.x, ddz = tz - g.position.z, dd = Math.hypot(ddx, ddz) || 0.001;
+        mobMove(mob, ddx / dd * mob.spd * dt, ddz / dd * mob.spd * dt);
+      } else if (dist > 1.3) {
+        mobMove(mob, dx / dist * mob.spd * 2.2 * dt, dz / dist * mob.spd * 2.2 * dt);
+        if (dist < 1.8 && mob.atk <= 0) { mob.atk = 1.4; hurt(D.dmg); mob.t = 2 + Math.random() * 2; }
+      } else mob.t = 2 + Math.random() * 2;
+    }
+    // animation
+    if (g.userData.flash) g.userData.flash.emissive.setHex(mob.hit > 0 ? 0x772200 : g.userData.baseEm);
+    if (mob.kind === 'husk') {
+      mob.ph += dt * (moving ? 7 : 1);
+      const sw = Math.sin(mob.ph) * (moving ? 0.55 : 0.05);
+      g.userData.legs[0].rotation.x = sw; g.userData.legs[1].rotation.x = -sw;
+      g.userData.arms[0].rotation.x = -sw * 0.7 - 0.3; g.userData.arms[1].rotation.x = sw * 0.7 - 0.3;
+    } else if (mob.kind === 'spitter') {
+      g.position.y = Math.sin(time * 1.8 + mob.ph) * 0.12;
+      g.rotation.z = Math.sin(time * 0.9 + mob.ph) * 0.06;
+    } else {
+      g.position.y = 0.25 + Math.sin(time * 2.2 + mob.ph) * 0.18;
+      g.userData.ring.rotation.z += dt * 3.2;
+      g.userData.ring.rotation.y += dt * 1.7;
+    }
+  }
+}
+function spawnWave(n) {
+  const kinds = n === 4 ? ['wisp', 'wisp'] : n === 2 ? ['spitter', 'husk', 'husk'] : n === 3 ? ['husk', 'husk', 'spitter'] : ['husk', 'husk', 'husk'];
+  kinds.forEach((k, i) => {
+    const a = Math.random() * 6.283, r = 12 + Math.random() * 5;
+    const mob = makeMob(k, camera.position.x + Math.sin(a) * r, camera.position.z + Math.cos(a) * r, n);
+    spawnShards(mob.g.position.x, 1.4, mob.g.position.z, 1);
+  });
+  say('MORE OF THEM. THEY COME WHEN IT BLEEDS.', 3000);
+}
+function updateWaves() {
+  if (heaven || dead || teleporting || !WEAPONS) return;
+  if (waveDone[realm]) return;
+  const b = bossInfo();
+  if (!b.alive || b.hp > b.max * 0.5) return;
+  waveDone[realm] = true;
+  spawnWave(realm);
+}
+
+// ---- Shards: the currency that survives death -------------------------------
+const shardGeo = new THREE.OctahedronGeometry(0.14);
+const shardMat = new THREE.MeshBasicMaterial({color: 0x9affe0});
+const shardPicks = [];
+let shardBlip = 0;
+function spawnShards(x, y, z, n) {
+  for (let i = 0; i < n; i++) {
+    if (shardPicks.length > 150) break;
+    const m = new THREE.Mesh(shardGeo, shardMat);
+    m.position.set(x, y, z); m.scale.setScalar(0.8 + Math.random() * 0.6);
+    shardLayer.add(m);
+    shardPicks.push({m, vx: (Math.random() - .5) * 3, vy: 3 + Math.random() * 2.5, vz: (Math.random() - .5) * 3, t: 0});
+  }
+}
+function updateShards(dt) {
+  for (let i = shardPicks.length - 1; i >= 0; i--) {
+    const s = shardPicks[i]; s.t += dt;
+    if (s.t < 0.45) {
+      s.vy -= 10 * dt;
+      s.m.position.x += s.vx * dt; s.m.position.y += s.vy * dt; s.m.position.z += s.vz * dt;
+      if (s.m.position.y < 0.3) { s.m.position.y = 0.3; s.vy *= -0.35; s.vx *= 0.7; s.vz *= 0.7; }
+    } else {
+      const dx = camera.position.x - s.m.position.x, dy = (camera.position.y - 0.45) - s.m.position.y, dz = camera.position.z - s.m.position.z;
+      const d = Math.hypot(dx, dy, dz) || 0.001, sp = Math.min(16, 5 + s.t * 12);
+      s.m.position.x += dx / d * sp * dt; s.m.position.y += dy / d * sp * dt; s.m.position.z += dz / d * sp * dt;
+      if (d < 1.1 || s.t > 5) {
+        shardLayer.remove(s.m); shardPicks.splice(i, 1);
+        shards++; updateStats();
+        if ((shardBlip++ % 3) === 0) sweepTone(950, 1500, 0.05, 0.10, 'sine');
+        continue;
+      }
+    }
+    s.m.rotation.y += dt * 5; s.m.rotation.x += dt * 2.5;
+  }
+}
+
+// ---- The Forge: spend shards on yourself ------------------------------------
+const UPGRADES = [
+  {k: 'damage', name: 'HOLLOW ROUNDS', desc: '+15% weapon damage', max: 5, cost: l => 4 + l * 4},
+  {k: 'vitality', name: 'SECOND SKIN', desc: '+25 maximum health', max: 4, cost: l => 5 + l * 5},
+  {k: 'swift', name: 'LIGHT STEP', desc: '+6% movement speed', max: 3, cost: l => 4 + l * 5}
+];
+const FORGE_AT = {1: [-6, 2], 2: [3, 17], 3: [-4, 15], 4: [0, 9]};
+const forges = [];
+function buildForge(n) {
+  const [lx, lz] = FORGE_AT[n];
+  const g = new THREE.Group(); g.position.set(REALM_X[n] + lx, 0, lz);
+  const stone = new THREE.MeshStandardMaterial({color: 0x15100d, roughness: 0.75, metalness: 0.35, emissive: 0x1a0a04});
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.08, 0.45, 8), stone); base.position.y = 0.22; g.add(base);
+  const col = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.46, 1.5, 8), stone); col.position.y = 1.05; g.add(col);
+  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.32, 0.3, 10), stone); bowl.position.y = 1.9; g.add(bowl);
+  const ember = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), new THREE.MeshBasicMaterial({color: 0xff8a3a}));
+  ember.position.y = 2.02; g.add(ember);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.04, 6, 28), new THREE.MeshBasicMaterial({color: 0xffb060}));
+  ring.position.y = 1.5; ring.rotation.x = Math.PI / 2; g.add(ring);
+  const lt = new THREE.PointLight(0xff8a3a, 1.7, 9, 1.6); lt.position.y = 2.1; g.add(lt);
+  g.userData = {ember, ring, realm: n, light: lt};
+  forgeLayer.add(g); forges.push(g);
+  return g;
+}
+for (const n of [1, 2, 3, 4]) buildForge(n);
+
+const forgeEl = document.getElementById('forge');
+let forgeOpen = false, endingUp = false;
+function buildForgeUI() {
+  forgeEl.querySelector('.sh').textContent = '◆ ' + shards + ' SHARDS   ·   CYCLE ' + ((progress.cycle || 0) + 1);
+  const box = document.getElementById('forgeRows');
+  box.innerHTML = '';
+  for (const u of UPGRADES) {
+    const lvl = up[u.k], maxed = lvl >= u.max, cost = u.cost(lvl);
+    const row = document.createElement('div'); row.className = 'row';
+    const b = document.createElement('button');
+    b.innerHTML = u.name + ' <span class="lvl">' + '\u25a0'.repeat(Math.max(0, lvl)) + '\u25a1'.repeat(Math.max(0, u.max - lvl)) + '</span><span class="desc">' + u.desc + '</span>';
+    b.disabled = maxed || shards < cost;
+    b.addEventListener('click', () => {
+      // re-read live state: the panel is rebuilt after every purchase
+      const live = up[u.k], c = u.cost(live);
+      if (live >= u.max || shards < c) return;
+      shards -= c; up[u.k]++;
+      applyUpgrades(); sweepTone(320, 900, 0.35, 0.45, 'triangle');
+      saveAll(); buildForgeUI();
+    });
+    const c = document.createElement('div'); c.className = 'cost';
+    c.textContent = maxed ? 'MAX' : cost + '◆';
+    row.append(b, c); box.appendChild(row);
+  }
+}
+function openForge() {
+  if (paused || heaven) return;
+  forgeOpen = true;
+  setPaused(true);
+  menu.classList.add('hidden');
+  forgeEl.style.display = 'block';
+  buildForgeUI();
+}
+function closeForge() {
+  forgeEl.style.display = 'none';
+  forgeOpen = false;
+  setPaused(false);
+  startAudio();
+  if (!isTouch && cv.requestPointerLock) cv.requestPointerLock();
+}
+document.getElementById('forgeClose').addEventListener('click', closeForge);
+function applyUpgrades() {
+  maxHp = 100 + up.vitality * 25;
+  if (health > maxHp) health = maxHp;
+  updateStats();
+}
+function updateForge(dt) {
+  for (const f of forges) {
+    const on = f.userData.realm === realm && !heaven;
+    f.visible = on;
+    if (!on) continue;
+    f.userData.ember.scale.setScalar(1 + Math.sin(time * 4) * 0.12);
+    f.userData.ring.rotation.z += dt * 0.7;
+    f.userData.light.intensity = 1.5 + Math.sin(time * 3.3) * 0.35;
+  }
+}
+
+// ---- Lore: twelve fragments of what the Grid is -----------------------------
+const LORE = [
+  {r: 1, x: -14, z: 8,   t: 'THE WALK',        b: 'The Grid is not a place. It is a habit. Something walks it because walking is all it remembers.'},
+  {r: 1, x: 12, z: -24,  t: 'THE KNOCKING',    b: 'The Tall Man sold doors before the sky closed. He still knocks. Nobody has answered him in a very long time.'},
+  {r: 1, x: -30, z: -22, t: 'THE CARPENTER',   b: 'This cabin was built by the last person who tried to leave. They got as far as the porch.'},
+  {r: 2, x: 10, z: -4,   t: 'THE GLOW',        b: 'The mushrooms are not plants. They are the forest remembering itself where the trees fell.'},
+  {r: 2, x: -18, z: -12, t: 'THE HUM',         b: 'The Bloom keeps every voice it has eaten. It hums them at night. It is not cruel. It is lonely.'},
+  {r: 2, x: 22, z: 6,    t: 'A NOTE, WET',     b: 'Do not run from the light. Run toward the hum. The hum is a way out.'},
+  {r: 3, x: -16, z: 6,   t: 'THE ASH',         b: 'The ash is a person. All of it. The hounds were people too, until they forgot which way was out.'},
+  {r: 3, x: 24, z: -12,  t: 'THE SCENT',       b: 'Cinder hounds hunt by smell. They cannot smell you if you stand perfectly still. You have not stood still in years.'},
+  {r: 3, x: 0, z: 34,    t: 'THE LOOP',        b: 'THE GRID IS A LOOP. Four doors. One key. You are the key.'},
+  {r: 4, x: 14, z: 6,    t: 'THE ARENA',       b: 'The Hollow King built the arena to keep something in. The pillars face inward. So does the mask.'},
+  {r: 4, x: -14, z: 8,   t: 'THE FACE',        b: 'Every cycle the King wears a new face. This cycle he is wearing yours.'},
+  {r: 4, x: 0, z: -16,   t: 'THE FIFTH DOOR',  b: 'There is a fifth world. The Grid does not want you to know that. — the carpenter'}
+];
+const loreItems = [];
+function buildLoreItem(c, i) {
+  const g = new THREE.Group();
+  const book = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.1, 0.32), new THREE.MeshStandardMaterial({color: 0x2a1f16, emissive: 0x2a1a08, roughness: 1}));
+  book.position.y = 1.1; book.rotation.x = -0.28; g.add(book);
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.62), new THREE.MeshBasicMaterial({color: 0xffd36b, transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending, depthWrite: false, fog: false}));
+  glow.rotation.x = -Math.PI / 2; glow.position.y = 0.05; g.add(glow);
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.02, 3.4, 6, 1, true), new THREE.MeshBasicMaterial({color: 0xffd36b, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false}));
+  beam.position.y = 1.75; g.add(beam);
+  g.position.set(REALM_X[c.r] + c.x, 0, c.z);
+  g.userData = {i, realm: c.r, book, beam, glow};
+  loreLayer.add(g); loreItems.push(g);
+}
+LORE.forEach(buildLoreItem);
+const loreEl = document.getElementById('loreCard');
+function readLore(i) {
+  const c = LORE[i], g = loreItems[i];
+  if (!c) return;
+  if (!progress.lore) progress.lore = {};
+  const isNew = !progress.lore[i];
+  progress.lore[i] = true;
+  loreFound = Object.keys(progress.lore).length;
+  loreEl.querySelector('h3').textContent = (isNew ? 'NEW — LORE ' : 'LORE ') + loreFound + '/' + LORE.length + ' — ' + c.t;
+  loreEl.querySelector('p').textContent = c.b;
+  loreEl.style.display = 'block';
+  clearTimeout(readLore.t);
+  readLore.t = setTimeout(() => { loreEl.style.display = 'none'; }, 12000);
+  if (g) { g.userData.beam.material.opacity = 0.04; g.userData.glow.material.opacity = 0.12; }
+  sweepTone(520, 780, 0.5, 0.22, 'sine');
+  if (isNew) { shards += 3; say('+3 SHARDS', 1600); }
+  saveAll(); updateStats();
+}
+function updateLoreItems(dt) {
+  for (const g of loreItems) {
+    const on = g.userData.realm === realm && !heaven;
+    g.visible = on;
+    if (!on) continue;
+    const found = !!(progress.lore && progress.lore[g.userData.i]);
+    g.userData.book.rotation.y += dt * 0.9;
+    g.userData.book.position.y = 1.1 + Math.sin(time * 1.6 + g.userData.i) * 0.08;
+    g.userData.beam.material.opacity = found ? 0.04 : 0.15 + Math.sin(time * 2) * 0.05;
+  }
+}
+
+// ---- Interaction helpers shared by the prompt system ------------------------
+let nearLore = -1, nearForge = null;
+function scanInteractors() {
+  nearLore = -1; nearForge = null;
+  if (heaven) return;
+  for (const g of loreItems) {
+    if (g.userData.realm !== realm) continue;
+    if (Math.hypot(camera.position.x - g.position.x, camera.position.z - g.position.z) < 2.0) { nearLore = g.userData.i; break; }
+  }
+  if (nearLore < 0) for (const f of forges) {
+    if (f.userData.realm !== realm) continue;
+    if (Math.hypot(camera.position.x - f.position.x, camera.position.z - f.position.z) < 2.3) { nearForge = f; break; }
+  }
+}
+function hitFlash() {
+  hurtFlash = Math.max(hurtFlash, 0.6);
+}
+function enterRealmByIndex(n) {
+  if (n === 1) leaveRealm2();
+  else if (n === 2) enterRealm2();
+  else if (n === 3) enterRealm3();
+  else enterRealm4();
+}
+function initActTwo() {
+  spawnMobs(1);
+  applyUpgrades();
+}
+
 // ---- Shooting, switching, health bar, portals, realms (these replace the earlier versions) ----
 function targetsFor(){
-  return realm === 2 ? [beast, shroomStems, shroomCaps] : realm === 3 ? [...hounds.map(h => h.g), rocks] : realm === 4 ? [king, pillars] : [man, trunks];
+  const base = realm === 2 ? [beast, shroomStems, shroomCaps] : realm === 3 ? [...hounds.map(h => h.g), rocks] : realm === 4 ? [king, pillars] : [man, trunks];
+  return base.concat([mobLayer]);
 }
 function shoot(){
   if (!hasGun || paused || dead || heaven || teleporting || shootCd > 0) return;
@@ -1071,12 +1479,12 @@ function shoot(){
     const sx = (Math.random() - .5)*2*W.spread, sy = (Math.random() - .5)*2*W.spread;
     ray.setFromCamera({x: sx, y: sy}, camera);
     let hit = ray.intersectObjects(tg, true)[0];
-    const isT = h => h && (h.object.userData.man || h.object.userData.beast || h.object.userData.hound || h.object.userData.boss);
+    const isT = h => h && (h.object.userData.man || h.object.userData.beast || h.object.userData.hound || h.object.userData.boss || h.object.userData.mob);
     if (settings.aimAssist && !isT(hit)) for (const a of [[0.03, 0], [-0.03, 0], [0, 0.04], [0, -0.04]]) { ray.setFromCamera({x: sx + a[0], y: sy + a[1]}, camera); const h2 = ray.intersectObjects(tg, true)[0]; if (isT(h2)) { hit = h2; break; } }
     if (!hit) continue;
-    const o = hit.object.userData, d = o.head ? W.head : W.dmg;
-    if (o.man || o.beast || o.hound || o.boss) hitMark(o.head);
-    if (o.man) hurtMan(d); else if (o.beast) hurtBeast(d); else if (o.hound) hurtHound(o.hound, d); else if (o.boss) hurtKing(o.head ? d : d*0.7);
+    const o = hit.object.userData, d = (o.head ? W.head : W.dmg) * (1 + up.damage * 0.15);
+    if (o.man || o.beast || o.hound || o.boss || o.mob) hitMark(o.head);
+    if (o.man) hurtMan(d); else if (o.beast) hurtBeast(d); else if (o.hound) hurtHound(o.hound, d); else if (o.boss) hurtKing(o.head ? d : d*0.7); else if (o.mob) hurtMob(o.mob, d);
   }
 }
 document.addEventListener('keydown', e => {
@@ -1092,13 +1500,13 @@ fireBtn.addEventListener('pointerdown', () => { firing = true; });
 swapBtn.addEventListener('pointerdown', e => { e.preventDefault(); cycleWeapon(); });
 let lastBar = '';
 function bossInfo(){
-  if (realm === 2) return {name: 'THE BLOOM', alive: beastAlive, hp: Math.max(0, beastHp), max: 10, pos: beast.position};
+  if (realm === 2) return {name: 'THE BLOOM', alive: beastAlive, hp: Math.max(0, beastHp), max: 10 * cyc(), pos: beast.position};
   if (realm === 3) {
     const live = hounds.filter(h => h.alive); let hp = 0; live.forEach(h => { hp += Math.max(0, h.hp); });
-    return {name: 'CINDER HOUNDS', alive: live.length > 0, hp, max: hounds.length*3, pos: (live[0] || hounds[0]).g.position};
+    return {name: 'CINDER HOUNDS', alive: live.length > 0, hp, max: hounds.length * 3 * cyc(), pos: (live[0] || hounds[0]).g.position};
   }
-  if (realm === 4) return {name: 'THE HOLLOW KING', alive: kingAlive, hp: Math.max(0, kingHp), max: 45, pos: king.position};
-  return {name: 'THE TALL MAN', alive: manAlive, hp: Math.max(0, manHp), max: 8, pos: man.position};
+  if (realm === 4) return {name: 'THE HOLLOW KING', alive: kingAlive, hp: Math.max(0, kingHp), max: 45 * cyc(), pos: king.position};
+  return {name: 'THE TALL MAN', alive: manAlive, hp: Math.max(0, manHp), max: 8 * cyc(), pos: man.position};
 }
 function updateBars(dt){
   const b = bossInfo();
@@ -1124,7 +1532,7 @@ function hurtBeast(d){
   if (!beastAlive) return;
   beastHp -= d; bHit = 0.12; bStagger = 0.3;
   if (bState === 'wind') { bState = 'creep'; bT = 1.5; }
-  if (beastHp <= 0) { beastAlive = false; say('THE BLOOM WITHERS. A NEW PORTAL OPENS.', 5500); setTimeout(openPortalB, tm(2500)); }
+  if (beastHp <= 0) { beastAlive = false; kills++; spawnShards(beast.position.x, 1.6, beast.position.z, 14); say('THE BLOOM WITHERS. A NEW PORTAL OPENS.', 5500); setTimeout(openPortalB, tm(2500)); }
 }
 function updatePortals(dt){
   let best = null;
@@ -1151,7 +1559,7 @@ function setRealm(n){
   glowLight.intensity = n === 2 ? 1.6 : n === 4 ? 1.0 : 0;
   portalA.visible = portalB.visible = portalC.visible = false;
   if (n !== 2) beast.visible = false;
-  hounds.forEach(h => { h.g.visible = (n === 3); }); king.visible = (n === 4);
+  hounds.forEach(h => { h.g.visible = (n === 3); }); king.visible = (n === 4); man.visible = (n === 1);
   (n === 4 ? king : beast).add(beastLight); beastLight.position.set(0, n === 4 ? 5.5 : 2, 0.5); beastLight.intensity = 0;
   document.getElementById('grain').style.display = n === 2 ? 'none' : 'block';
   if (n === 2) { scene.background.setHex(0x090514); scene.fog.color.setHex(0x0b0618); scene.fog.density = 0.032; ambient.color.setHex(0x6a4aa8); ambient.intensity = 0.9; moon.color.setHex(0x5a4aa0); moon.intensity = 0.35; }
@@ -1161,36 +1569,39 @@ function setRealm(n){
   setHeavenAudio();
 }
 function enterRealm2(){
-  setRealm(2); man.visible = false; health = 100; jumpH = 0; vy = 0; camGround = 0; landDip = 0;
+  setRealm(2); man.visible = false; health = maxHp; jumpH = 0; vy = 0; camGround = 0; landDip = 0;
   camera.position.set(RX, EYE, 20); yaw = 0; pitch = 0;
-  resetItems(realm2); spawnBeast(); refill();
+  resetItems(realm2); spawnBeast(); refill(); spawnMobs(2);
   say('A DIFFERENT PLACE. SOMETHING IS WATCHING.', 5500);
 }
 function enterRealm3(){
-  setRealm(3); health = 100; jumpH = 0; vy = 0; camGround = 0; landDip = 0;
+  setRealm(3); health = maxHp; jumpH = 0; vy = 0; camGround = 0; landDip = 0;
   camera.position.set(AX, EYE, 20); yaw = 0; pitch = 0;
-  resetItems(realm3); spawnHounds(); refill();
+  resetItems(realm3); spawnHounds(); refill(); spawnMobs(3);
   sweepTone(300, 120, 1.4, 0.6, 'sawtooth');
   say('THE ASHEN WASTE. THEY HAVE YOUR SCENT.', 5500);
 }
 function enterRealm4(){
-  setRealm(4); health = 100; jumpH = 0; vy = 0; camGround = 0; landDip = 0;
+  setRealm(4); health = maxHp; jumpH = 0; vy = 0; camGround = 0; landDip = 0;
   camera.position.set(BX, EYE, 18); yaw = 0; pitch = 0;
-  resetItems(realm4); spawnKing(); refill();
+  resetItems(realm4); spawnKing(); refill(); spawnMobs(4);
   say('THE HOLLOW KING. AIM FOR THE MASK. JUMP THE SHOCKWAVES.', 6000);
 }
 function leaveRealm2(){
-  setRealm(1); camera.position.set(0, EYE, 5); yaw = 0; pitch = 0; jumpH = 0; vy = 0; camGround = 0; health = 100;
-  man.visible = true; spawnMan(55); refill();
+  setRealm(1); camera.position.set(0, EYE, 5); yaw = 0; pitch = 0; jumpH = 0; vy = 0; camGround = 0; health = maxHp;
+  man.visible = true; spawnMan(55); refill(); spawnMobs(1);
   say('BACK IN THE FOREST. HE IS STILL OUT THERE.', 5000);
 }
 function exitHeaven(){
-  heaven = false; dead = false; health = 100; jumpH = 0; vy = 0; camGround = 0;
+  heaven = false; dead = false; health = maxHp; jumpH = 0; vy = 0; camGround = 0; landDip = 0;
   heavenGroup.visible = false; gunView.visible = hasGun; crossEl.style.display = hasGun ? 'block' : 'none';
   document.getElementById('vig').style.display = 'block';
-  camera.position.set(0, EYE, 5); yaw = 0; pitch = 0;
-  setRealm(1); man.visible = true; spawnMan(45); refill();
-  say('THE FOREST AGAIN. HE IS STILL OUT THERE.', 4500);
+  document.getElementById('grain').style.display = 'block';
+  ambient.intensity = 0.35; moon.intensity = 0.18;
+  yaw = 0; pitch = 0;
+  const back = Math.max(1, Math.min(4, deathRealm));
+  enterRealmByIndex(back);
+  say('BACK TO ' + REALM_NAME[back] + '. IT REMEMBERS YOU.', 4000);
 }
 function teleport(to){
   if (teleporting) return;
@@ -1225,17 +1636,26 @@ function updateWorlds(dt){
 // ---- Quality of life: settings, saving, objective compass, hit markers, regen ----
 const SKEY = 'grid-walker-save';
 let settings = {sens: 1, fov: 72, vol: 1, invY: false, bob: true, grain: true};
-let progress = {max: 1, owned: {pistol: false, shotgun: false, rifle: false}};
 let volNode = null, bobScale = 1, invY = false, lastHurt = -99, hpShown = 100, muted = false, objKey = '';
 const objEl = document.getElementById('obj'), objArrow = document.getElementById('objArrow'), objText = document.getElementById('objText');
-function saveAll(){ try { localStorage.setItem(SKEY, JSON.stringify({settings, progress})); } catch (e) {} }
-function loadAll(){ try { const d = JSON.parse(localStorage.getItem(SKEY) || 'null'); if (d) { Object.assign(settings, d.settings || {}); if (d.progress) progress = Object.assign(progress, d.progress); } } catch (e) {} }
-function applySettings(){
-  sens = settings.sens; invY = settings.invY; bobScale = settings.bob ? 1 : 0;
-  camera.fov = settings.fov; camera.updateProjectionMatrix();
-  document.body.classList.toggle('nograin', !settings.grain);
-  if (volNode) volNode.gain.value = muted ? 0 : settings.vol;
+function saveAll(){
+  try {
+    progress.up = {damage: up.damage, vitality: up.vitality, swift: up.swift};
+    progress.shards = shards; progress.kills = kills;
+    localStorage.setItem(SKEY, JSON.stringify({settings, progress}));
+  } catch (e) {}
 }
+function loadAll(){
+  try {
+    const d = JSON.parse(localStorage.getItem(SKEY) || 'null');
+    if (d) { Object.assign(settings, d.settings || {}); if (d.progress) progress = Object.assign(progress, d.progress); }
+  } catch (e) {}
+  if (progress.up) Object.assign(up, progress.up);
+  shards = progress.shards || 0; kills = progress.kills || 0;
+  maxHp = 100 + up.vitality * 25;
+  loreFound = progress.lore ? Object.keys(progress.lore).length : 0;
+}
+
 function toggleMute(){ muted = !muted; applySettings(); say(muted ? 'MUTED' : 'SOUND ON', 1200); }
 function recordProgress(){ progress.max = Math.max(progress.max, realm); for (const k in owned) if (owned[k]) progress.owned[k] = true; saveAll(); buildWarp(); }
 function buildWarp(){
@@ -1255,18 +1675,7 @@ function restoreProgress(){
   selectWeapon(owned.rifle ? 'rifle' : owned.shotgun ? 'shotgun' : 'pistol'); refill();
   say('PROGRESS RESTORED', 2500);
 }
-function initSettings(){
-  loadAll();
-  const $ = id => document.getElementById(id);
-  $('sens').value = settings.sens; $('fov').value = settings.fov; $('vol').value = settings.vol;
-  $('invY').checked = settings.invY; $('bobT').checked = settings.bob; $('grainT').checked = settings.grain;
-  const bind = (id, key, fn) => $(id).addEventListener('input', e => { settings[key] = fn(e.target); applySettings(); saveAll(); });
-  bind('sens', 'sens', t => parseFloat(t.value)); bind('fov', 'fov', t => parseFloat(t.value)); bind('vol', 'vol', t => parseFloat(t.value));
-  bind('invY', 'invY', t => t.checked); bind('bobT', 'bob', t => t.checked); bind('grainT', 'grain', t => t.checked);
-  if (!document.documentElement.requestFullscreen) $('fs').style.display = 'none';
-  $('fs').addEventListener('click', () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); });
-  applySettings(); buildWarp();
-}
+
 function hitMark(head){
   crossEl.classList.add('hit'); crossEl.classList.toggle('head', !!head);
   clearTimeout(hitMark.t); hitMark.t = setTimeout(() => crossEl.classList.remove('hit'), 110);
@@ -1291,20 +1700,7 @@ function objective(){
   }
   return kingAlive ? {t: 'KILL THE HOLLOW KING', x: king.position.x, z: king.position.z} : null;
 }
-function updateQoL(dt){
-  if (realm > progress.max || Object.keys(owned).some(k => owned[k] && !progress.owned[k])) recordProgress();
-  if (!dead && !heaven && !teleporting && health < 60 && time - lastHurt > 6) {
-    health = Math.min(60, health + dt*3);
-    const r = Math.round(health); if (r !== hpShown) { hpShown = r; updateStats(); }
-  }
-  const o = (dead || teleporting) ? null : objective();
-  if (!o) { objEl.style.display = 'none'; return; }
-  objEl.style.display = 'flex';
-  const dx = o.x - camera.position.x, dz = o.z - camera.position.z;
-  objArrow.style.transform = 'rotate(' + ((Math.atan2(dx, -dz) + yaw)*180/Math.PI).toFixed(0) + 'deg)';
-  const txt = o.t + '  ·  ' + Math.round(Math.hypot(dx, dz)) + 'M';
-  if (txt !== objKey) { objKey = txt; objText.textContent = txt; }
-}
+
 document.addEventListener('keydown', e => {
   if (e.repeat) return;
   if (e.code === 'KeyM') toggleMute();
@@ -1379,9 +1775,8 @@ function rumble(ms, s){
   try { const g = Array.from(navigator.getGamepads()).find(x => x && x.connected); if (g && g.vibrationActuator) g.vibrationActuator.playEffect('dual-rumble', {duration: ms, strongMagnitude: s, weakMagnitude: s}); } catch (e) {}
 }
 function respawnHere(){
-  dead = false; health = 100; refill(); jumpH = 0; vy = 0; camGround = 0; landDip = 0; yaw = 0; pitch = 0; camera.rotation.z = 0;
-  const sp = [[0, 5], [RX, 20], [AX, 20], [BX, 18]][Math.max(1, realm) - 1];
-  camera.position.set(sp[0], EYE, sp[1]);
+  dead = false; health = maxHp; jumpH = 0; vy = 0; camGround = 0; landDip = 0; yaw = 0; pitch = 0; camera.rotation.z = 0;
+  enterRealmByIndex(Math.max(1, Math.min(4, deathRealm || realm)));
   fadeEl.style.transition = 'opacity 1s'; fadeEl.style.opacity = '0'; fadeEl.textContent = '';
   say('YOU WAKE WHERE YOU FELL', 2500);
 }
@@ -1517,11 +1912,18 @@ const cv = renderer.domElement;
 document.addEventListener('mousemove', e => { if (document.pointerLockElement === cv) look(e.movementX, e.movementY); });
 document.addEventListener('mousedown', e => { if (document.pointerLockElement === cv && e.button === 0) shoot(); });
 let lookId = null, lx = 0, ly = 0;
-cv.addEventListener('pointerdown', e => { if (e.pointerType === 'touch' && lookId === null) { lookId = e.pointerId; lx = e.clientX; ly = e.clientY; } });
+cv.addEventListener('pointerdown', e => {
+  if (document.pointerLockElement !== cv && lookId === null) {
+    lookId = e.pointerId; lx = e.clientX; ly = e.clientY;
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+});
 cv.addEventListener('pointermove', e => { if (e.pointerId === lookId) { look(e.clientX - lx, e.clientY - ly); lx = e.clientX; ly = e.clientY; } });
 const lookEnd = e => { if (e.pointerId === lookId) lookId = null; };
 cv.addEventListener('pointerup', lookEnd);
 cv.addEventListener('pointercancel', lookEnd);
+cv.addEventListener('mousedown', e => { if (e.button === 0 && document.pointerLockElement !== cv && !paused && !dead && !heaven) shoot(); });
+document.addEventListener('pointerlockerror', () => { if (!paused && !isTouch) say('POINTER LOCK BLOCKED · DRAG TO LOOK', 5000); });
 
 // Joystick
 const joyEl = document.getElementById('joy'), knob = document.getElementById('knob');
@@ -1542,8 +1944,10 @@ addEventListener('blur', joyReset);
 // ---- Audio (starts on first Enter click) ----
 let ac = null, master = null, noiseBuf = null, rainGain = null, windGain = null, whiteBuf = null;
 function startAudio(){
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
   if (ac) { ac.resume(); master.gain.value = 1; return; }
-  ac = new (window.AudioContext || window.webkitAudioContext)();
+  ac = new AC();
   volNode = ac.createGain(); volNode.connect(ac.destination); master = ac.createGain(); master.connect(volNode); applySettings();
   const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 140; lp.connect(master);
   const dg = ac.createGain(); dg.gain.value = 0.22; dg.connect(lp); droneGain = dg;
@@ -1647,13 +2051,13 @@ document.getElementById('resume').addEventListener('click', () => {
   startAudio(); setPaused(false);
   if (!isTouch && cv.requestPointerLock) cv.requestPointerLock();
 });
-document.getElementById('reset').addEventListener('click', () => { if (heaven) exitHeaven(); else if (realm === 2) leaveRealm2(); camera.position.set(0, EYE, 5); yaw = 0; pitch = 0; });
+document.getElementById('reset').addEventListener('click', () => { enterRealmByIndex(heaven ? 1 : Math.max(1, realm)); yaw = 0; pitch = 0; });
 document.getElementById('sens').addEventListener('input', e => { sens = parseFloat(e.target.value); });
 document.getElementById('pauseBtn').addEventListener('click', () => setPaused(true));
 const jb = document.getElementById('jumpBtn');
 jb.addEventListener('pointerdown', e => { e.preventDefault(); keys.Space = true; });
 ['pointerup','pointercancel','pointerleave'].forEach(t => jb.addEventListener(t, () => { delete keys.Space; }));
-document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement !== cv) { clearKeys(); if (!isTouch && !paused) setPaused(true); } });
+document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement !== cv) { clearKeys(); if (!isTouch && !paused && !forgeOpen && !endingUp) setPaused(true); } });
 document.addEventListener('pointerlockerror', () => setPaused(true));
 
 // ---- Loop ----
@@ -1730,6 +2134,7 @@ function loop(){
   hurtEl.style.opacity = Math.max(hurtFlash, (health < 30 && !heaven) ? 0.25 + Math.sin(time*6)*0.1 : 0);
   updateMan(dt); updateHeaven(dt); updateBars(dt); updateBeast(dt); updateRealm2(dt); updatePortals(dt);
   updateHounds(dt); updateKing(dt); updateWorlds(dt); updatePickups(dt);
+  updateMobs(dt); updateMobShots(dt); updateShards(dt); updateForge(dt); updateLoreItems(dt); updateWaves();
   if (firing && WEAPONS[cur].auto) shoot();
   updateQoL(dt);
   const rc = settings.recoil ? 1 : 0; gunView.position.z = -0.45 + recoil*0.1*rc; gunView.rotation.x = recoil*0.25*rc;
@@ -1748,7 +2153,7 @@ function loop(){
   if (len > 1) { fx /= len; fz /= len; }
   const moving = len > 0.01;
   const run = settings.runMode === 'always' ? true : settings.runMode === 'toggle' ? runToggled : !!(keys.ShiftLeft || keys.ShiftRight);
-  const speed = (run ? 7 : 3.6) * Math.min(len, 1);
+  const speed = (run ? 7 : 3.6) * Math.min(len, 1) * (1 + up.swift * 0.06);
 
   if (moving) {
     const sy = Math.sin(yaw), cy = Math.cos(yaw);
@@ -1800,9 +2205,10 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 });
-loop();
 initSettings();
 restoreProgress();
+initActTwo();
+loop();
 </script>
 </body>
 </html>
