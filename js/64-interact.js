@@ -27,5 +27,6 @@ function enterRealmByIndex(n) {
 function initActTwo() {
   spawnMobs(1);
   applyUpgrades();
+  houseVisual();
 }
 
