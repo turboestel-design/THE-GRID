@@ -172,6 +172,7 @@ body.lefty #swapBtn{right:auto;left:192px}
 #forge .lvl{color:#c9a24a;letter-spacing:2px}
 #forge .desc{display:block;opacity:.5;font-size:11px;letter-spacing:1px}
 #forge .cost{min-width:46px;text-align:right;color:#c9a24a;font-size:12px}
+#forge .houseHead{margin:20px 0 2px;padding-top:12px;border-top:1px solid #1c1410;font-size:9px;letter-spacing:.34em;color:var(--blood);text-transform:uppercase}
 #forge .close{width:100%;text-align:center;margin-top:12px;border-left-color:#3a2a25;flex:none}
 #loreCard{position:fixed;left:50%;bottom:13%;transform:translateX(-50%);z-index:11;display:none;width:min(540px,88vw);padding:16px 20px;background:rgba(8,6,4,.95);border:2px solid #3a2a25;border-left:6px solid #c9a24a;color:var(--bone);font:13px "Courier New",monospace;letter-spacing:1px;line-height:1.6;text-shadow:0 1px 3px #000}
 #loreCard h3{margin:0 0 6px;font-size:11px;letter-spacing:4px;color:#c9a24a}

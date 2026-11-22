@@ -20,7 +20,7 @@ function loadAll(){
   } catch (e) {}
   if (progress.up) Object.assign(up, progress.up);
   shards = progress.shards || 0; kills = progress.kills || 0;
-  maxHp = 100 + up.vitality * 25;
+  maxHp = 100 + up.vitality * 25 + houseBonus();
   loreFound = progress.lore ? Object.keys(progress.lore).length : 0;
 }
 
@@ -28,9 +28,10 @@ function toggleMute(){ muted = !muted; applySettings(); say(muted ? 'MUTED' : 'S
 function recordProgress(){ progress.max = Math.max(progress.max, Math.min(4, realm)); for (const k in owned) if (owned[k]) progress.owned[k] = true; saveAll(); buildWarp(); }
 function buildWarp(){
   const w = document.getElementById('warp'); w.innerHTML = '';
-  for (let n = 2; n <= 4; n++) {
-    if (progress.max < n) continue;
-    const b = document.createElement('button'); b.textContent = 'Warp: World ' + n;
+  for (let n = 1; n <= 4; n++) {
+    if (n > 1 && progress.max < n) continue;
+    const b = document.createElement('button');
+    b.textContent = n === 1 ? 'Warp: World 1 \u00b7 the forest (start)' : 'Warp: World ' + n;
     b.addEventListener('click', () => { if (heaven) exitHeaven(); document.getElementById('resume').click(); setTimeout(() => teleport(n), 50); });
     w.appendChild(b);
   }

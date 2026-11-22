@@ -72,6 +72,15 @@ for (const [name, enter] of realms) {
 run('forge:open', 'paused = false; shards = 99; openForge(); [paused, forgeOpen]');
 run('forge:buy', 'document.querySelectorAll("#forgeRows button").forEach(b => { b.click(); b.click(); }); [up.damage, up.vitality, up.swift, maxHp, shards]');
 run('forge:close', 'closeForge(); forgeOpen');
+run('house:costs', '[0, 1, 4, 9].map(houseCost)');
+run('house:buy', '(() => { setRealm(1); paused = false; shards = 2000; openForge(); '
+  + 'const b = [...document.querySelectorAll("#forgeRows button")].find(x => x.textContent.includes("CABIN")); '
+  + 'const m0 = maxHp; b.click(); return [progress.house, maxHp - m0, shards]; })()');
+run('house:max', '(() => { for (let i = 0; i < 12; i++) { const b = [...document.querySelectorAll("#forgeRows button")].find(x => x.textContent.includes("CABIN")); if (b && !b.disabled) b.click(); } '
+  + 'return [progress.house, maxHp, houseWindows.filter(w => w.visible).length]; })()');
+run('house:heal', '(() => { closeForge(); health = 30; camera.position.set(0, 1.65, -11); paused = false; '
+  + 'for (let i = 0; i < 100; i++) updateHouse(0.05); return health > 30; })()');
+run('warp:world1', '(() => { buildWarp(); return [...document.querySelectorAll("#warp button")].some(b => b.textContent.indexOf("World 1") === 0); })()');
 run('lore:read', 'for (const g of loreItems) readLore(g.userData.i); [loreFound, Object.keys(progress.lore).length]');
 run('interact:scan', 'camera.position.set(-6, 1.65, 2); scanInteractors(); [nearLore, !!nearForge]');
 run('save:roundtrip', 'saveAll(); [JSON.parse(localStorage.getItem(SKEY)).progress.shards, JSON.parse(localStorage.getItem(SKEY)).progress.up.damage]');
@@ -119,5 +128,5 @@ if (errors.length) {
   for (const e of [...new Set(errors)]) console.log(' -', e);
   process.exitCode = 1;
 } else {
-  console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, the Congregation, the Zombie Dimension, forge, lore, shards, checkpoint death, NG+ all OK');
+  console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, the Congregation, the Zombie Dimension, house upgrades, forge, lore, shards, checkpoint death, NG+ all OK');
 }
