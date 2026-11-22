@@ -163,6 +163,10 @@ run('dim:rounds', '(() => { setRealm(5); dimActive = true; clearDimensionMobs();
   + 'return [a, [dimWave, r10.length, r10[0].hp, +r10[0].spd.toFixed(2), r10.filter(m => m.runner).length]]; })()');
 run('dim:runner', '(() => { clearDimensionMobs(); dimWave = 4; spawnDimWave(); const ms = mobs.filter(m => m.realm === 5); '
   + 'const run = ms.find(m => m.runner), walk = ms.find(m => !m.runner); return [!!run, !!walk, run.spd > walk.spd]; })()');
+run('dim:escalate', '(() => { clearDimensionMobs(); dimWave = 0; spawnDimWave(); const a = mobs.filter(m => m.realm === 5); '
+  + 'const n1 = a.length, hp1 = a[0].hp, sp1 = a[0].spd; clearDimensionMobs(); dimWave = 9; spawnDimWave(); '
+  + 'const b = mobs.filter(m => m.realm === 5); const run = b.find(m => m.runner); '
+  + 'return [b.length > n1, b[0].hp > hp1, run.spd > sp1 * 1.5]; })()');
 run('dim:cover', '(() => { const b = dimBoxes[0]; '
   + 'return [wallBetween(b[0] - 3, (b[1] + b[3]) / 2, b[2] + 3, (b[1] + b[3]) / 2), targetsFor().includes(dimMeshes[0])]; })()');
 run('dim:mobblocked', '(() => { clearDimensionMobs(); const b = dimBoxes[0]; const x = (b[0] + b[2]) / 2, z = b[3] + 2.4; '

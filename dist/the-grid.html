@@ -1444,7 +1444,7 @@ const dimLeftEl = document.getElementById('dimLeft');
 function tuneDimMob(m, round, runner) {
   const hpMul = Math.min(2.6, 1 + (round - 1) * 0.12);
   const dmgMul = Math.min(2.0, 1 + (round - 1) * 0.05);
-  const spdMul = Math.min(1.35, 1 + (round - 1) * 0.02);
+  const spdMul = Math.min(1.7, 1 + (round - 1) * 0.04);
   m.hp = m.max = Math.max(1, Math.round(m.max * hpMul));
   m.dmg = Math.round(((MOB_DEF[m.kind] || MOB_DEF.zombie).dmg) * dmgMul);
   m.spd *= spdMul;
@@ -1502,9 +1502,9 @@ function leaveDimension() {
 function spawnDimWave() {
   dimWave++;
   const round = dimWave;
-  const n = Math.min(3 + round, 12);
-  const runners = round >= 10 ? n : round >= 5 ? Math.min(round - 4, Math.ceil(n / 2)) : 0;
-  const spits = round >= 7 ? Math.min(2, round - 6) : 0;
+  const n = Math.min(3 + Math.round(round * 1.5), 18);
+  const runners = round >= 10 ? n : round >= 5 ? Math.min(round - 3, Math.ceil(n * 0.6)) : 0;
+  const spits = round >= 6 ? Math.min(3, round - 5) : 0;
   for (let i = 0; i < n; i++) {
     const a = Math.random() * 6.283, r = 11 + Math.random() * 9;
     const c = clampToRealm(ZX + Math.sin(a) * r, 14 + Math.cos(a) * r, 5);
@@ -1515,9 +1515,9 @@ function spawnDimWave() {
     const c = clampToRealm(ZX + Math.sin(a) * r, 14 + Math.cos(a) * r, 5);
     tuneDimMob(makeMob('spitter', c[0], c[1], 5), round, false);
   }
-  dimWaveT = Math.max(4, 8 - round * 0.2);
+  dimWaveT = Math.max(3, 8 - round * 0.25);
   if (round % 5 === 0) { spawnLord(5); say('ROUND ' + round + '  ·  IT FOUND YOU', 3000); }
-  else say('ROUND ' + round + (runners ? '  ·  THEY RUN' : ''), 2400);
+  else say('ROUND ' + round + '  ·  ' + (n + spits) + ' OF THEM' + (runners ? '  ·  THEY RUN' : ''), 2400);
   sweepTone(120, 50, 0.6, 0.4, 'square');
 }
 
