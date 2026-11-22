@@ -80,8 +80,13 @@ run('home:unlock', 'progress.cleared = true; buildForgeUI(); '
 run('home:table', '(() => { progress.interior = 1; interiorVisual(); const a = coffeeTable.visible; '
   + 'progress.interior = 2; interiorVisual(); return [a, coffeeTable.visible]; })()');
 run('home:hitboxes', '(() => { progress.house = 6; progress.interior = 8; realm = 1; '
-  + 'return [homeColliders().length, colliders().length > treePos.length]; })()');
-run('home:gate-gap', 'homeColliders().filter(c => Math.abs(c[0]) < 0.5 && c[1] === -6.4).length');
+  + 'const b = homeBoxes(); return [b.length, b.every(x => x.length === 4 && x[2] > x[0] && x[3] > x[1])]; })()');
+run('home:table-box', '(() => { progress.interior = 2; return homeBoxes()[0]; })()');
+run('home:gate-gap', '(() => { progress.house = 6; return homeBoxes().filter(b => b[1] < -6.3 && b[3] > -6.6 && b[0] < 0.35 && b[2] > -0.35).length; })()');
+run('home:no-ghost-wall', '(() => { progress.house = 6; const hit = () => homeBoxes().filter(b => b[0] <= 0 && b[2] >= 0 && b[1] <= -11.9 && b[3] >= -12.3).length; '
+  + 'progress.interior = 1; const empty = hit(); progress.interior = 2; return [empty, hit()]; })()');
+run('home:mob-fence', '(() => { setRealm(1); spawnMobs(1); progress.house = 4; const z = mobs.find(m => m.kind === "zombie"); z.rise = 0; '
+  + 'z.g.position.set(3, 0, -5.2); for (let i = 0; i < 20; i++) mobMove(z, 0, -0.15); return z.g.position.z > -6.0; })()');
 run('house:costs', '[0, 1, 4, 9].map(houseCost)');
 run('house:buy', '(() => { setRealm(1); paused = false; shards = 2000; openForge(); '
   + 'const b = [...document.querySelectorAll("#forgeRows button")].find(x => x.textContent.includes("CABIN")); '

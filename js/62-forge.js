@@ -13,29 +13,33 @@ const HOUSE_MAX = 10;
 function homeUnlocked() {
   return !!(progress.cleared || (progress.max || 1) >= 4 || (progress.cycle || 0) > 0);
 }
-// Everything bought for the cabin is solid. Built lazily and cached, because
-// colliders() runs on every movement frame.
-let houseColCache = null, houseColKey = '';
-function homeColliders() {
+// Everything bought for the cabin is solid, and the collision boxes are cut to
+// the actual footprints rather than circles around them: [minX, minZ, maxX, maxZ].
+// Lights, the chandelier, the lantern and the beacon are decoration and have no
+// collision at all — nothing invisible stands between you and the middle of the
+// room except the furniture you can see.
+let homeBoxCache = null, homeBoxKey = '';
+function homeBoxes() {
   const h = houseLv(), i = interiorLv();
   const key = h + ':' + i;
-  if (key === houseColKey && houseColCache) return houseColCache;
-  const out = [];
-  if (h >= 4) {
-    for (let k = 0; k < 9; k++) { const x = -6 + k * 1.5; if (Math.abs(x) < 0.5) continue; out.push([x, -6.4, 0.22]); }
-    for (const cx of [-5.2, -2.6, 1.4, 5.2]) {
-      for (let t = -1; t <= 1; t++) out.push([cx + t * 0.72, -6.4, 0.3]);
-    }
+  if (key === homeBoxKey && homeBoxCache) return homeBoxCache;
+  const b = [];
+  if (h >= 4) {                                                        // fence
+    for (let k = 0; k < 9; k++) { const x = -6 + k * 1.5; if (Math.abs(x) < 0.5) continue; b.push([x - 0.09, -6.49, x + 0.09, -6.31]); }
+    for (const cx of [-5.6, -2.2, 2.2, 5.6]) b.push([cx - 1.15, -6.45, cx + 1.15, -6.35]);
   }
-  if (h >= 6) { out.push([-1.5, -8.5, 0.55], [1.5, -8.5, 0.55]); }          // sandbags
-  if (i >= 2) { out.push([0, -12.1, 0.92], [-0.95, -12.1, 0.34], [0.95, -12.1, 0.34]); }
-  if (i >= 3) { out.push([0, -14.55, 0.95]); }                                // fireplace
-  if (i >= 4) { out.push([-2.6, -13.3, 0.75]); }                              // bed
-  if (i >= 5) { out.push([3.12, -12.4, 0.72]); }                              // bookshelf
-  if (i >= 7) { out.push([2.7, -10.45, 0.7], [-2.9, -10.1, 0.36]); }          // crates, barrel
-  if (i >= 8) { out.push([-2.1, -11.2, 0.45], [-1.35, -12.0, 0.34]); }        // chair, side table
-  houseColCache = out; houseColKey = key;
-  return out;
+  if (h >= 6) b.push([-1.86, -8.7, -1.14, -8.3], [1.14, -8.7, 1.86, -8.3]);   // sandbags
+  if (i >= 2) {
+    b.push([-0.75, -12.55, 0.75, -11.65]);                             // table top
+    b.push([-1.17, -12.32, -0.73, -11.88], [0.73, -12.32, 1.17, -11.88]); // chairs
+  }
+  if (i >= 3) b.push([-0.95, -14.79, 0.95, -14.37]);                   // fireplace
+  if (i >= 4) b.push([-3.18, -14.33, -2.02, -12.28]);                  // bed
+  if (i >= 5) b.push([2.93, -13.15, 3.31, -11.65]);                    // bookshelf
+  if (i >= 7) b.push([2.15, -10.95, 3.15, -9.95], [-3.2, -10.4, -2.6, -9.8]);   // crates, barrel
+  if (i >= 8) b.push([-2.35, -11.45, -1.85, -10.95], [-1.56, -12.21, -1.14, -11.79]); // chair, side table
+  homeBoxCache = b; homeBoxKey = key;
+  return b;
 }
 function houseLv() { return Math.min(HOUSE_MAX, (progress && progress.house) || 0); }
 function houseCost(l) { return 8 + l * 7 + l * l * 3; }              // 8, 18, 34, 56, 84, 118, 158, 204, 256, 314
@@ -96,7 +100,7 @@ const hsGlow = (c, o) => new THREE.MeshBasicMaterial({color: c, transparent: tru
     p.position.set(x, 0.58, -6.4); p.rotation.z = (Math.random() - .5) * 0.1; g.add(p);
   }
   [-6.1, -1.4].forEach(() => {});
-  [-5.2, -2.6, 1.4, 5.2].forEach(x => {
+  [-5.6, -2.2, 2.2, 5.6].forEach(x => {
     const rail = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.12, 0.1), wood);
     rail.position.set(x, 0.9, -6.4); g.add(rail);
   });

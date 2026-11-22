@@ -290,6 +290,17 @@ function mobMove(mob, dx, dz) {
     const ox = nx - t[0], oz = nz - t[1], r = t[2] + mob.r, d2 = ox * ox + oz * oz;
     if (d2 < r * r) { const d = Math.sqrt(d2) || 0.001; nx = t[0] + ox / d * r; nz = t[1] + oz / d * r; }
   }
+  if (mob.realm === 1 && typeof homeBoxes === 'function') {
+    for (const b of homeBoxes()) {
+      const bx = Math.max(b[0], Math.min(nx, b[2])), bz = Math.max(b[1], Math.min(nz, b[3]));
+      const ox = nx - bx, oz = nz - bz, d2 = ox * ox + oz * oz, rr = mob.r;
+      if (d2 < rr * rr) {
+        if (d2 > 1e-6) { const d = Math.sqrt(d2); nx = bx + ox / d * rr; nz = bz + oz / d * rr; }
+        else { const l = nx - b[0], r = b[2] - nx, tp = nz - b[1], bt = b[3] - nz, m = Math.min(l, r, tp, bt);
+          if (m === l) nx = b[0] - rr; else if (m === r) nx = b[2] + rr; else if (m === tp) nz = b[1] - rr; else nz = b[3] + rr; }
+      }
+    }
+  }
   const c = clampToRealm(nx, nz, mob.realm);
   nx = c[0]; nz = c[1];
   if (mob.realm === 1 && Math.abs(nx) < 3.7 && nz < -8.8 && nz > -15.2) nz = nz > -12 ? -8.8 : -15.2;
