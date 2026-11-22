@@ -140,6 +140,7 @@ function closeDimShop() {
   dimShopOpen = false;
   setPaused(false);
   startAudio();
+  if (!isTouch && cv.requestPointerLock) cv.requestPointerLock();   // take the cursor back, or you cannot aim
 }
 if (dimShopEl) {
   document.getElementById('dimShopClose').addEventListener('click', closeDimShop);

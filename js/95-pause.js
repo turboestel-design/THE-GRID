@@ -131,6 +131,12 @@ document.querySelectorAll('.panelClose').forEach(b => b.addEventListener('click'
 document.getElementById('reset').addEventListener('click', () => { enterRealmByIndex(heaven ? 1 : Math.max(1, realm)); yaw = 0; pitch = 0; });
 document.getElementById('sens').addEventListener('input', e => { sens = parseFloat(e.target.value); });
 document.getElementById('pauseBtn').addEventListener('click', () => setPaused(true));
+// if anything leaves the cursor loose mid-game, clicking the world takes it back
+cv.addEventListener('mousedown', () => {
+  if (isTouch || !started) return;
+  if (paused || forgeOpen || (typeof dimShopOpen !== 'undefined' && dimShopOpen)) return;
+  if (document.pointerLockElement !== cv && cv.requestPointerLock) cv.requestPointerLock();
+});
 
 // keyboard: arrows move the selection, Enter confirms, Escape backs out of a panel
 document.addEventListener('keydown', e => {

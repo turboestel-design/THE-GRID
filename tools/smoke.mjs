@@ -191,6 +191,9 @@ run('dim:hut-sealed', '(() => { mobs.length = 0; const m = makeMob("zombie", ZX,
   + 'for (let i = 0; i < 80; i++) mobMove(m, 0, 0.08); const out = m.g.position.z < 31.3; '
   + 'const inside = makeMob("zombie", ZX, 33, 5); inside.rise = 0; mobMove(inside, 0, 0.01); '
   + 'return [out, inside.g.position.z > 34.7 || inside.g.position.z < 31.3]; })()');
+run('shop:pointer-lock', '(() => { const old = cv.requestPointerLock; let n = 0; cv.requestPointerLock = () => { n++; }; '
+  + 'paused = false; setRealm(5); openDimShop(); closeDimShop(); const shop = n; openForge(); closeForge(); '
+  + 'cv.requestPointerLock = old; paused = false; return [shop, n - shop, paused]; })()');
 run('dim:buy', '(() => { const keep = shards; shards = 400; buildDimShop(); buyDim("scatter"); const r = [owned.scatter, cur, dimGear.scatter, shards]; shards = keep; return r; })()');
 run('dim:gear-drop', '(() => { dimGear.gre = 2; dimGear.bomb = 1; dropDimGear(); return [owned.scatter, owned.ripper, cur, dimGear.gre, dimGear.bomb, dimGear.hot]; })()');
 run('dim:grenade', '(() => { setRealm(5); paused = false; dead = false; mobs.length = 0; const z = makeMob("zombie", ZX + 0.4, 20, 5); z.rise = 0; '
