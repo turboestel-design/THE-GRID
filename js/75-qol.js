@@ -45,6 +45,23 @@ function restoreProgress(){
   say('PROGRESS RESTORED', 2500);
 }
 
+// Erasing the save has to erase the running game with it: shards to nothing, the
+// gun back on the table, the upgrades gone, the dimension shut again.
+function wipeProgress() {
+  progress = {max: 1, owned: {pistol: false, shotgun: false, rifle: false}, cycle: 0, lore: {}};
+  shards = 0; kills = 0; hasGun = false; ammo = 0;
+  for (const k in owned) owned[k] = false;
+  for (const k in store) store[k] = 0;
+  up.damage = up.vitality = up.swift = 0;
+  if (typeof applyUpgrades === 'function') applyUpgrades();
+  if (typeof dropDimGear === 'function') dropDimGear();
+  if (realm === 5 && typeof resetDimension === 'function') resetDimension();
+  if (typeof gunView !== 'undefined') gunView.visible = false;
+  if (typeof gunPickup !== 'undefined' && !gunPickup.parent) { gunPickup.visible = true; scene.add(gunPickup); }
+  if (typeof crossEl !== 'undefined') crossEl.style.display = 'none';
+  if (typeof maxHp !== 'undefined') health = maxHp;
+  updateStats();
+}
 function hitMark(head){
   crossEl.classList.add('hit'); crossEl.classList.toggle('head', !!head);
   clearTimeout(hitMark.t); hitMark.t = setTimeout(() => crossEl.classList.remove('hit'), 110);

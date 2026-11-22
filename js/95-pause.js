@@ -192,9 +192,7 @@ if (wipeBtn) wipeBtn.addEventListener('click', () => {
   }
   try { localStorage.removeItem(SKEY); } catch (e) {}
   // if the reload is blocked, the running game still has to be a new game
-  progress = {max: 1, owned: {pistol: false, shotgun: false, rifle: false}, cycle: 0, lore: {}};
-  shards = 0; kills = 0; hasGun = false; up.damage = up.vitality = up.swift = 0;
-  if (realm === 5 && typeof resetDimension === 'function') resetDimension();
+  wipeProgress();
   wipeBtn.textContent = 'SAVE ERASED';
   try { location.reload(); } catch (e) {}
 });

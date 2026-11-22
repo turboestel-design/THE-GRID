@@ -236,6 +236,9 @@ run('ending:panel', 'enterRealm4(); kingHp = 1; hurtKing(99); ending(); document
 run('ending:ngplus', 'document.getElementById("endNext").click(); [progress.cycle, realm, teleporting]');
 run('respawn', 'respawnHere();');
 run('pickups', 'for (const it of items) { camera.position.set(it.wx, 1.65, it.wz); updatePickups(0.016); }');
+run('save:wipe', '(() => { shards = 500; kills = 40; owned.rifle = true; ammo = 12; up.damage = 2; up.vitality = 1; progress.cleared = true; progress.lore = {a: 1}; '
+  + 'wipeProgress(); return [shards, kills, hasGun, owned.rifle, ammo, up.damage, up.vitality, Object.keys(progress.lore).length, dimUnlocked(), maxHp]; })()');
+run('save:wipe-gun', '(() => { wipeProgress(); return [gunView.visible, !!gunPickup.parent, crossEl.style.display]; })()');
 
 if (errors.length) {
   console.log('FAIL');
