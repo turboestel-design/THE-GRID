@@ -82,6 +82,11 @@ run('house:heal', '(() => { closeForge(); health = 30; camera.position.set(0, 1.
   + 'for (let i = 0; i < 100; i++) updateHouse(0.05); return health > 30; })()');
 run('house:stages', '[0,1,2,3,4,5,6,7,8,9,10].map(l => { progress.house = l; houseVisual(); return houseStages.filter(s => s.g.visible).length; })');
 run('house:animate', '(() => { for (let l = 0; l <= 10; l++) { progress.house = l; houseVisual(); for (let i = 0; i < 5; i++) houseAnimate(0.05); } return true; })()');
+run('interior:stages', '[0,1,5,10].map(l => { progress.interior = l; interiorVisual(); return interiorStages.filter(s => s.g.visible).length; })');
+run('interior:buy', '(() => { progress.interior = 0; paused = false; shards = 2000; openForge(); '
+  + 'const b = [...document.querySelectorAll("#forgeRows button")].find(x => x.textContent.includes("FURNISH")); '
+  + 'b.click(); return [progress.interior, shards]; })()');
+run('interior:animate', '(() => { for (let l = 0; l <= 10; l++) { progress.interior = l; interiorVisual(); for (let i = 0; i < 4; i++) interiorAnimate(0.05); } return true; })()');
 run('warp:world1', '(() => { buildWarp(); return [...document.querySelectorAll("#warp button")].some(b => b.textContent.indexOf("World 1") === 0); })()');
 run('lore:read', 'for (const g of loreItems) readLore(g.userData.i); [loreFound, Object.keys(progress.lore).length]');
 run('interact:scan', 'camera.position.set(-6, 1.65, 2); scanInteractors(); [nearLore, !!nearForge]');

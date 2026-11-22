@@ -41,6 +41,7 @@ function buildStatus() {
     + '<div class="statusRow"><span>Lore</span><b>' + loreN + '/12</b></div>'
     + '<div class="statusRow"><span>Cycle</span><b>' + (1 + (progress.cycle || 0)) + '</b></div>'
     + '<div class="statusRow"><span>The house</span><b>' + houseLv() + ' / ' + HOUSE_MAX + '</b></div>'
+    + '<div class="statusRow"><span>The interior</span><b>' + interiorLv() + ' / ' + INTERIOR_MAX + '</b></div>'
     + '<div class="statusHead">Forge</div>'
     + '<div class="statusRow"><span>Damage</span><b>+' + (up.damage || 0) + '</b></div>'
     + '<div class="statusRow"><span>Vitality</span><b>+' + (up.vitality || 0) + '</b></div>'

@@ -28,5 +28,6 @@ function initActTwo() {
   spawnMobs(1);
   applyUpgrades();
   houseVisual();
+  interiorVisual();
 }
 

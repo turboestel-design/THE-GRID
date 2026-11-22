@@ -2096,9 +2096,176 @@ function houseAnimate(dt) {
     s10.g.userData.beam.rotation.y += dt * 0.25;
   }
 }
-function applyHouse() { applyUpgrades(); houseVisual(); }
+// ---- The interior: ten levels of furniture, bought the same way --------------
+const INTERIOR_MAX = 10;
+function interiorLv() { return Math.min(INTERIOR_MAX, (progress && progress.interior) || 0); }
+function interiorCost(l) { return 6 + l * 5 + l * l * 2; }           // 6, 13, 24, 39, 58, 81, 108, 139, 174, 213
+const interiorStages = [];
+function interiorStage(lvl, group) {
+  group.visible = false; scene.add(group);
+  interiorStages.push({lvl, g: group});
+  return group;
+}
+const darkWood = () => new THREE.MeshStandardMaterial({color: 0x3a2418, roughness: 1, flatShading: true});
+const cloth = c => new THREE.MeshStandardMaterial({color: c, roughness: 1});
+const candleGlow = () => new THREE.MeshBasicMaterial({color: 0xffc070, fog: false});
+
+// 1 · a rug on the floor
+{
+  const g = new THREE.Group();
+  const rug = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 2.3), cloth(0x5a1a1c));
+  rug.rotation.x = -Math.PI / 2; rug.position.set(0, 0.03, -12.1); g.add(rug);
+  const trim = new THREE.Mesh(new THREE.PlaneGeometry(2.85, 1.95), cloth(0x7a2a24));
+  trim.rotation.x = -Math.PI / 2; trim.position.set(0, 0.035, -12.1); g.add(trim);
+  const roomLight = new THREE.PointLight(0xffb060, 0.7, 11, 1.6);
+  roomLight.position.set(0, 2.5, -12.1); g.add(roomLight);
+  interiorStage(1, g);
+}
+// 2 · a table and two chairs
+{
+  const g = new THREE.Group(), wood = darkWood();
+  const top = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.07, 0.9), wood); top.position.set(0, 0.76, -12.1); g.add(top);
+  [[-0.62, -0.35], [0.62, -0.35], [-0.62, 0.35], [0.62, 0.35]].forEach(([x, z]) => {
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.74, 0.08), wood);
+    l.position.set(x, 0.37, -12.1 + z); g.add(l);
+  });
+  [-0.95, 0.95].forEach(x => {
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.07, 0.44), wood); seat.position.set(x, 0.45, -12.1); g.add(seat);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.55, 0.07), wood); back.position.set(x, 0.72, -12.32); g.add(back);
+    [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17]].forEach(([lx, lz]) => {
+      const l = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 0.06), wood);
+      l.position.set(x + lx, 0.22, -12.1 + lz); g.add(l);
+    });
+  });
+  interiorStage(2, g);
+}
+// 3 · a fireplace at the back wall, with fire
+{
+  const g = new THREE.Group();
+  const brick = new THREE.MeshStandardMaterial({color: 0x2e2320, roughness: 1, flatShading: true});
+  const mantel = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.5, 0.42), brick); mantel.position.set(0, 0.75, -14.58); g.add(mantel);
+  const shelf = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.12, 0.56), darkWood()); shelf.position.set(0, 1.56, -14.5); g.add(shelf);
+  const hole = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.88, 0.1), new THREE.MeshBasicMaterial({color: 0x120402})); hole.position.set(0, 0.55, -14.36); g.add(hole);
+  const fire = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.7), candleGlow()); fire.position.set(0, 0.5, -14.3); g.add(fire);
+  const fl = new THREE.PointLight(0xff7a2a, 1.9, 8, 1.6); fl.position.set(0, 0.7, -14.1); g.add(fl);
+  g.userData.fire = fire; g.userData.fl = fl;
+  interiorStage(3, g);
+}
+// 4 · a bed in the corner
+{
+  const g = new THREE.Group();
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.32, 2.05), darkWood()); frame.position.set(-2.6, 0.18, -13.3); g.add(frame);
+  const mat = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.18, 1.9), cloth(0x3a3a44)); mat.position.set(-2.6, 0.42, -13.3); g.add(mat);
+  const pil = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.14, 0.34), cloth(0x6a5a4a)); pil.position.set(-2.6, 0.55, -14.1); g.add(pil);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.6, 0.1), darkWood()); head.position.set(-2.6, 0.5, -14.3); g.add(head);
+  interiorStage(4, g);
+}
+// 5 · a bookshelf, filled
+{
+  const g = new THREE.Group(), wood = darkWood();
+  const shell = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.9, 1.5), wood); shell.position.set(3.12, 0.95, -12.4); g.add(shell);
+  for (let i = 0; i < 4; i++) {
+    const board = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.06, 1.44), wood); board.position.set(3.12, 0.35 + i * 0.46, -12.4); g.add(board);
+    for (let k = 0; k < 7; k++) {
+      const bk = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.3, 0.07), cloth([0x6a2a24, 0x2a4a3a, 0x3a3a6a, 0x6a5a2a][k % 4]));
+      bk.position.set(3.12, 0.53 + i * 0.46, -13.02 + k * 0.15); g.add(bk);
+    }
+  }
+  interiorStage(5, g);
+}
+// 6 · a lantern hung from the ceiling
+{
+  const g = new THREE.Group();
+  const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.55, 4), hsGlow(0x3a2a20, 1));
+  cord.position.set(0, 2.95, -11.2); g.add(cord);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.34, 0.24), candleGlow()); body.position.set(0, 2.6, -11.2); g.add(body);
+  const ll = new THREE.PointLight(0xffb265, 1.5, 9, 1.8); ll.position.set(0, 2.55, -11.2); g.add(ll);
+  g.userData.lamp = body; g.userData.ll = ll;
+  interiorStage(6, g);
+}
+// 7 · crates and supplies in the corner
+{
+  const g = new THREE.Group(), wood = darkWood();
+  [[2.5, 0.3, -10.2, 0.6], [2.9, 0.3, -10.7, 0.5], [2.6, 0.85, -10.35, 0.45]].forEach(([x, y, z, s]) => {
+    const c = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), wood);
+    c.position.set(x, y, z); c.rotation.y = Math.random(); g.add(c);
+  });
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.26, 0.8, 10), wood);
+  barrel.position.set(-2.9, 0.4, -10.1); g.add(barrel);
+  interiorStage(7, g);
+}
+// 8 · a rocking chair and a candle on a side table
+{
+  const g = new THREE.Group(), wood = darkWood();
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.07, 0.5), wood); seat.position.set(-2.1, 0.46, -11.2); g.add(seat);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.07), wood); back.position.set(-2.1, 0.78, -11.45); back.rotation.x = -0.14; g.add(back);
+  [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]].forEach(([lx, lz]) => {
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.46, 0.06), wood);
+    l.position.set(-2.1 + lx, 0.23, -11.2 + lz); g.add(l);
+  });
+  [[-0.36, 0], [0.36, 0]].forEach(([lx]) => {
+    const r = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.8), wood);
+    r.position.set(-2.1 + lx, 0.04, -11.2); g.add(r);
+  });
+  const st = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.42), wood); st.position.set(-1.35, 0.25, -12.0); g.add(st);
+  const cd = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.26, 6), candleGlow()); cd.position.set(-1.35, 0.63, -12.0); g.add(cd);
+  const cl = new THREE.PointLight(0xffb265, 0.9, 5, 1.8); cl.position.set(-1.35, 0.75, -12.0); g.add(cl);
+  g.userData.candle = cd; g.userData.cl = cl;
+  interiorStage(8, g);
+}
+// 9 · pictures on the walls
+{
+  const g = new THREE.Group();
+  const frameMat = darkWood();
+  [[-2.4, 1.8, -9.13, 0], [1.9, 1.95, -9.13, 0], [-3.37, 1.75, -10.6, 1]].forEach(([x, y, z, side]) => {
+    const f = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.46, 0.06), frameMat);
+    const canvas = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.34), cloth([0x2a3a44, 0x44342a, 0x3a2a3a][Math.floor(Math.random() * 3)]));
+    f.position.set(x, y, z); canvas.position.set(x, y, z + (side ? 0 : 0.04));
+    if (side) { f.rotation.y = canvas.rotation.y = Math.PI / 2; canvas.position.x = x + 0.04; canvas.position.z = z; }
+    g.add(f, canvas);
+  });
+  interiorStage(9, g);
+}
+// 10 · a chandelier, and the room properly lit
+{
+  const g = new THREE.Group();
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.52, 0.045, 6, 22), hsGlow(0x6a5a3a, 1));
+  ring.position.set(0, 2.75, -12.1); ring.rotation.x = Math.PI / 2; g.add(ring);
+  const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 4), hsGlow(0x6a5a3a, 1));
+  chain.position.set(0, 3.05, -12.1); g.add(chain);
+  for (let i = 0; i < 5; i++) {
+    const a = i / 5 * 6.283;
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.2, 5), candleGlow());
+    c.position.set(Math.cos(a) * 0.52, 2.86, -12.1 + Math.sin(a) * 0.52); g.add(c);
+  }
+  const cl2 = new THREE.PointLight(0xffc078, 2.4, 12, 1.5); cl2.position.set(0, 2.7, -12.1); g.add(cl2);
+  g.userData.ring = ring; g.userData.cl2 = cl2;
+  interiorStage(10, g);
+}
+
+function interiorVisual() {
+  const lvl = interiorLv();
+  for (const s of interiorStages) s.g.visible = lvl >= s.lvl;
+}
+function interiorAnimate(dt) {
+  const lvl = interiorLv();
+  if (lvl <= 0) return;
+  const at = n => interiorStages.find(s => s.lvl === n);
+  const s3 = at(3), s6 = at(6), s8 = at(8), s10 = at(10);
+  if (lvl >= 3 && s3) {
+    const flick = 0.75 + Math.sin(time * 9.3) * 0.16 + Math.sin(time * 23.1) * 0.09;
+    s3.g.userData.fl.intensity = 1.9 * flick;
+    s3.g.userData.fire.scale.y = 0.9 + flick * 0.2;
+  }
+  if (lvl >= 6 && s6) s6.g.userData.ll.intensity = 1.5 * (0.92 + Math.sin(time * 5.7) * 0.08);
+  if (lvl >= 8 && s8) s8.g.userData.cl.intensity = 0.9 * (0.85 + Math.sin(time * 7.1) * 0.15);
+  if (lvl >= 10 && s10) { s10.g.userData.cl2.intensity = 2.4 * (0.94 + Math.sin(time * 3.3) * 0.06); s10.g.userData.ring.rotation.z += dt * 0.2; }
+}
+function applyInterior() { interiorVisual(); }
+
+function applyHouse() { applyUpgrades(); houseVisual(); interiorVisual(); }
 function updateHouse(dt) {
-  if (realm === 1 && !heaven) houseAnimate(dt);
+  if (realm === 1 && !heaven) { houseAnimate(dt); interiorAnimate(dt); }
   if (realm !== 1 || heaven || dead || paused) return;
   if (houseLv() <= 0 || !insideHouse()) return;
   if (health >= maxHp) return;
@@ -2174,6 +2341,30 @@ function buildForgeUI() {
     c.textContent = maxed ? 'MAX' : cost + '\u25c6';
     row.append(b, c);
     box.append(head, row);
+
+    const lvlI = interiorLv(), maxedI = lvlI >= INTERIOR_MAX, costI = interiorCost(lvlI);
+    const headI = document.createElement('div');
+    headI.className = 'houseHead';
+    headI.textContent = 'THE INTERIOR';
+    const rowI = document.createElement('div'); rowI.className = 'row';
+    const bI = document.createElement('button');
+    bI.innerHTML = 'FURNISH IT <span class="lvl">' + '\u25a0'.repeat(Math.max(0, lvlI)) + '\u25a1'.repeat(Math.max(0, INTERIOR_MAX - lvlI))
+      + '</span><span class="desc">nothing but comfort \u00b7 every level puts something in the room</span>';
+    bI.disabled = maxedI || shards < costI;
+    bI.addEventListener('click', () => {
+      const live = interiorLv(), c = interiorCost(live);
+      if (live >= INTERIOR_MAX || shards < c) return;
+      shards -= c; progress.interior = live + 1;
+      applyInterior(); saveAll();
+      gorePuff(0, 1.4, -12, 14, 0xffc070, 2.6, 3.2);
+      sweepTone(300, 820, 0.35, 0.35, 'triangle');
+      say('SOMETHING ELSE IN THE ROOM', 2000);
+      buildForgeUI();
+    });
+    const cI = document.createElement('div'); cI.className = 'cost';
+    cI.textContent = maxedI ? 'MAX' : costI + '\u25c6';
+    rowI.append(bI, cI);
+    box.append(headI, rowI);
   }
 }
 function openForge() {
@@ -2304,6 +2495,7 @@ function initActTwo() {
   spawnMobs(1);
   applyUpgrades();
   houseVisual();
+  interiorVisual();
 }
 
 </script>
@@ -3033,6 +3225,7 @@ function buildStatus() {
     + '<div class="statusRow"><span>Lore</span><b>' + loreN + '/12</b></div>'
     + '<div class="statusRow"><span>Cycle</span><b>' + (1 + (progress.cycle || 0)) + '</b></div>'
     + '<div class="statusRow"><span>The house</span><b>' + houseLv() + ' / ' + HOUSE_MAX + '</b></div>'
+    + '<div class="statusRow"><span>The interior</span><b>' + interiorLv() + ' / ' + INTERIOR_MAX + '</b></div>'
     + '<div class="statusHead">Forge</div>'
     + '<div class="statusRow"><span>Damage</span><b>+' + (up.damage || 0) + '</b></div>'
     + '<div class="statusRow"><span>Vitality</span><b>+' + (up.vitality || 0) + '</b></div>'
