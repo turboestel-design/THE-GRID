@@ -272,6 +272,20 @@ function leaveDimension() {
   }, tm(900));
 }
 
+// a spawn point on the ring, never inside the hut or inside a piece of cover
+function dimSpawnPoint(minR, maxR) {
+  for (let i = 0; i < 40; i++) {
+    const a = Math.random() * 6.283, r = minR + Math.random() * (maxR - minR);
+    const x = ZX + Math.sin(a) * r, z = 14 + Math.cos(a) * r;
+    if (Math.hypot(x - ZX - DIM_HUT_AT.x, z - DIM_HUT_AT.z) < 6.5) continue;
+    if (inDimProp(x - ZX, z, 1.8)) continue;
+    if (Math.hypot(x - camera.position.x, z - camera.position.z) < 6) continue;
+    const c = clampToRealm(x, z, 5);
+    return c;
+  }
+  return clampToRealm(ZX + 20, 14, 5);
+}
+
 function spawnDimWave() {
   dimWave++;
   const round = dimWave;
@@ -279,13 +293,11 @@ function spawnDimWave() {
   const runners = round >= 10 ? n : round >= 5 ? Math.min(round - 3, Math.ceil(n * 0.6)) : 0;
   const spits = round >= 6 ? Math.min(3, round - 5) : 0;
   for (let i = 0; i < n; i++) {
-    const a = Math.random() * 6.283, r = 11 + Math.random() * 9;
-    const c = clampToRealm(ZX + Math.sin(a) * r, 14 + Math.cos(a) * r, 5);
+    const c = dimSpawnPoint(11, 20);
     tuneDimMob(makeMob('zombie', c[0], c[1], 5), round, i < runners);
   }
   for (let i = 0; i < spits; i++) {
-    const a = Math.random() * 6.283, r = 15 + Math.random() * 6;
-    const c = clampToRealm(ZX + Math.sin(a) * r, 14 + Math.cos(a) * r, 5);
+    const c = dimSpawnPoint(15, 21);
     tuneDimMob(makeMob('spitter', c[0], c[1], 5), round, false);
   }
   dimWaveT = Math.max(3, 8 - round * 0.25);

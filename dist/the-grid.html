@@ -1519,6 +1519,20 @@ function leaveDimension() {
   }, tm(900));
 }
 
+// a spawn point on the ring, never inside the hut or inside a piece of cover
+function dimSpawnPoint(minR, maxR) {
+  for (let i = 0; i < 40; i++) {
+    const a = Math.random() * 6.283, r = minR + Math.random() * (maxR - minR);
+    const x = ZX + Math.sin(a) * r, z = 14 + Math.cos(a) * r;
+    if (Math.hypot(x - ZX - DIM_HUT_AT.x, z - DIM_HUT_AT.z) < 6.5) continue;
+    if (inDimProp(x - ZX, z, 1.8)) continue;
+    if (Math.hypot(x - camera.position.x, z - camera.position.z) < 6) continue;
+    const c = clampToRealm(x, z, 5);
+    return c;
+  }
+  return clampToRealm(ZX + 20, 14, 5);
+}
+
 function spawnDimWave() {
   dimWave++;
   const round = dimWave;
@@ -1526,13 +1540,11 @@ function spawnDimWave() {
   const runners = round >= 10 ? n : round >= 5 ? Math.min(round - 3, Math.ceil(n * 0.6)) : 0;
   const spits = round >= 6 ? Math.min(3, round - 5) : 0;
   for (let i = 0; i < n; i++) {
-    const a = Math.random() * 6.283, r = 11 + Math.random() * 9;
-    const c = clampToRealm(ZX + Math.sin(a) * r, 14 + Math.cos(a) * r, 5);
+    const c = dimSpawnPoint(11, 20);
     tuneDimMob(makeMob('zombie', c[0], c[1], 5), round, i < runners);
   }
   for (let i = 0; i < spits; i++) {
-    const a = Math.random() * 6.283, r = 15 + Math.random() * 6;
-    const c = clampToRealm(ZX + Math.sin(a) * r, 14 + Math.cos(a) * r, 5);
+    const c = dimSpawnPoint(15, 21);
     tuneDimMob(makeMob('spitter', c[0], c[1], 5), round, false);
   }
   dimWaveT = Math.max(3, 8 - round * 0.25);
@@ -1684,6 +1696,8 @@ const dimDeal = new THREE.Vector2(0, 32.6);       // local: where you stand to t
     put(0.06, 0.06, 0.44, -1.5 + i * 0.42, 1.32, Z1 - 0.34, iron);
   }
 }
+// one solid block as far as the dead are concerned: they cannot follow you in
+const dimHutSolid = [ZX + DIM_HUT.x - DIM_HUT.w / 2, DIM_HUT.z - DIM_HUT.d / 2, ZX + DIM_HUT.x + DIM_HUT.w / 2, DIM_HUT.z + DIM_HUT.d / 2];
 function nearDimHut() {
   if (realm !== 5) return false;
   return Math.hypot(camera.position.x - ZX - dimDeal.x, camera.position.z - dimDeal.y) < 2.7;
@@ -1983,7 +1997,8 @@ function spawnLord(r) {
   if (lord) return lord;
   const g = buildLord();
   const a = Math.random() * 6.283;
-  const c = clampToRealm(camera.position.x + Math.sin(a) * 11, camera.position.z + Math.cos(a) * 11, r);
+  const c = (r === 5 && typeof dimSpawnPoint === 'function') ? dimSpawnPoint(9, 14)
+    : clampToRealm(camera.position.x + Math.sin(a) * 11, camera.position.z + Math.cos(a) * 11, r);
   g.position.set(c[0], 0, c[1]);
   const l = {g, realm: r, hp: LORD_HP * cyc(), max: LORD_HP * cyc(), alive: true, atk: 2.5, summon: 4, ph: 0, hit: 0, fall: 0};
   g.traverse(o => { if (o.isMesh) o.userData.lord = l; });
@@ -2169,6 +2184,7 @@ function mobMove(mob, dx, dz) {
     for (const b of homeSolidBoxes()) { const r = pushOutBox(nx, nz, mob.r, b); if (r) { nx = r[0]; nz = r[1]; } }
   } else if (mob.realm === 5 && typeof dimBoxes !== 'undefined') {
     for (const b of dimBoxes) { const r = pushOutBox(nx, nz, mob.r, b); if (r) { nx = r[0]; nz = r[1]; } }
+    if (typeof dimHutSolid !== 'undefined') { const r = pushOutBox(nx, nz, mob.r, dimHutSolid); if (r) { nx = r[0]; nz = r[1]; } }
   }
   const c = clampToRealm(nx, nz, mob.realm);
   nx = c[0]; nz = c[1];

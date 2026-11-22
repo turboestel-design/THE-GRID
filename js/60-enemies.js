@@ -112,7 +112,8 @@ function spawnLord(r) {
   if (lord) return lord;
   const g = buildLord();
   const a = Math.random() * 6.283;
-  const c = clampToRealm(camera.position.x + Math.sin(a) * 11, camera.position.z + Math.cos(a) * 11, r);
+  const c = (r === 5 && typeof dimSpawnPoint === 'function') ? dimSpawnPoint(9, 14)
+    : clampToRealm(camera.position.x + Math.sin(a) * 11, camera.position.z + Math.cos(a) * 11, r);
   g.position.set(c[0], 0, c[1]);
   const l = {g, realm: r, hp: LORD_HP * cyc(), max: LORD_HP * cyc(), alive: true, atk: 2.5, summon: 4, ph: 0, hit: 0, fall: 0};
   g.traverse(o => { if (o.isMesh) o.userData.lord = l; });
@@ -298,6 +299,7 @@ function mobMove(mob, dx, dz) {
     for (const b of homeSolidBoxes()) { const r = pushOutBox(nx, nz, mob.r, b); if (r) { nx = r[0]; nz = r[1]; } }
   } else if (mob.realm === 5 && typeof dimBoxes !== 'undefined') {
     for (const b of dimBoxes) { const r = pushOutBox(nx, nz, mob.r, b); if (r) { nx = r[0]; nz = r[1]; } }
+    if (typeof dimHutSolid !== 'undefined') { const r = pushOutBox(nx, nz, mob.r, dimHutSolid); if (r) { nx = r[0]; nz = r[1]; } }
   }
   const c = clampToRealm(nx, nz, mob.realm);
   nx = c[0]; nz = c[1];

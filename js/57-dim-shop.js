@@ -55,6 +55,8 @@ const dimDeal = new THREE.Vector2(0, 32.6);       // local: where you stand to t
     put(0.06, 0.06, 0.44, -1.5 + i * 0.42, 1.32, Z1 - 0.34, iron);
   }
 }
+// one solid block as far as the dead are concerned: they cannot follow you in
+const dimHutSolid = [ZX + DIM_HUT.x - DIM_HUT.w / 2, DIM_HUT.z - DIM_HUT.d / 2, ZX + DIM_HUT.x + DIM_HUT.w / 2, DIM_HUT.z + DIM_HUT.d / 2];
 function nearDimHut() {
   if (realm !== 5) return false;
   return Math.hypot(camera.position.x - ZX - dimDeal.x, camera.position.z - dimDeal.y) < 2.7;

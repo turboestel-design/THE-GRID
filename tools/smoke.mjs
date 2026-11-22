@@ -184,6 +184,13 @@ run('dim:health', '(() => { const it = items.find(i => i.group === dim && i.kind
   + 'const r = [health, !it.g.visible]; maxHp = oldMax; health = maxHp; return r; })()');
 run('dim:hut', '(() => { setRealm(5); paused = false; dead = false; heaven = false; teleporting = false; camera.position.set(ZX, 1.65, 32.4); '
   + 'updateDoor(0.016); const a = action; useAction(); const r = [a, dimShopOpen, paused, dimShopRows.children.length]; closeDimShop(); return r; })()');
+run('dim:spawn-clear', '(() => { setRealm(5); camera.position.set(ZX, 1.65, 14); let hut = 0, prop = 0; '
+  + 'for (let i = 0; i < 300; i++) { const c = dimSpawnPoint(11, 20); const lx = c[0] - ZX; '
+  + 'if (lx > -2.2 && lx < 2.2 && c[1] > 31.3 && c[1] < 34.7) hut++; if (inDimProp(lx, c[1], 0.2)) prop++; } return [hut, prop]; })()');
+run('dim:hut-sealed', '(() => { mobs.length = 0; const m = makeMob("zombie", ZX, 26, 5); m.rise = 0; '
+  + 'for (let i = 0; i < 80; i++) mobMove(m, 0, 0.08); const out = m.g.position.z < 31.3; '
+  + 'const inside = makeMob("zombie", ZX, 33, 5); inside.rise = 0; mobMove(inside, 0, 0.01); '
+  + 'return [out, inside.g.position.z > 34.7 || inside.g.position.z < 31.3]; })()');
 run('dim:buy', '(() => { const keep = shards; shards = 400; buildDimShop(); buyDim("scatter"); const r = [owned.scatter, cur, dimGear.scatter, shards]; shards = keep; return r; })()');
 run('dim:gear-drop', '(() => { dimGear.gre = 2; dimGear.bomb = 1; dropDimGear(); return [owned.scatter, owned.ripper, cur, dimGear.gre, dimGear.bomb, dimGear.hot]; })()');
 run('dim:grenade', '(() => { setRealm(5); paused = false; dead = false; mobs.length = 0; const z = makeMob("zombie", ZX + 0.4, 20, 5); z.rise = 0; '
