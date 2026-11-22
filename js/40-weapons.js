@@ -5,9 +5,12 @@
 const WEAPONS = {
   pistol:  {name: 'PISTOL',  max: 14, cd: 0.4,  auto: false, pellets: 1, spread: 0,     dmg: 1,   head: 4,   kick: 1},
   shotgun: {name: 'SHOTGUN', max: 8,  cd: 0.95, auto: false, pellets: 8, spread: 0.075, dmg: 0.6, head: 1.2, kick: 2},
-  rifle:   {name: 'RIFLE',   max: 30, cd: 0.11, auto: true,  pellets: 1, spread: 0.012, dmg: 0.5, head: 2,   kick: 0.35}
+  rifle:   {name: 'RIFLE',   max: 30, cd: 0.11, auto: true,  pellets: 1, spread: 0.012, dmg: 0.5, head: 2,   kick: 0.35},
+  // bought at the hut in the Zombie Dimension; never carried out of it
+  scatter: {name: 'SCATTERGUN', max: 10, cd: 1.0, auto: false, pellets: 10, spread: 0.085, dmg: 0.85, head: 1.6, kick: 2.6},
+  ripper:  {name: 'RIPPER',  max: 30, cd: 0.075, auto: true, pellets: 1, spread: 0.022, dmg: 0.6, head: 2.4, kick: 0.3}
 };
-const owned = {pistol: false, shotgun: false, rifle: false}, store = {pistol: 0, shotgun: 0, rifle: 0};
+const owned = {pistol: false, shotgun: false, rifle: false, scatter: false, ripper: false}, store = {pistol: 0, shotgun: 0, rifle: 0, scatter: 0, ripper: 0};
 let cur = 'pistol', firing = false;
 const ammoLabel = document.getElementById('ammoLabel'), swapBtn = document.getElementById('swapBtn');
 statsEl.textContent = 'HP 100';
@@ -15,8 +18,16 @@ function box(w, h, d, mat, x, y, z){ const m = new THREE.Mesh(new THREE.BoxGeome
 const woodMat2 = new THREE.MeshStandardMaterial({color: 0x5a3a22, emissive: 0x1a0f08, roughness: 1});
 function makeShotgun(){ const g = new THREE.Group(); g.add(box(0.05, 0.05, 0.6, gunMat, 0, 0.03, -0.2), box(0.045, 0.045, 0.6, gunMat, 0, -0.025, -0.2), box(0.07, 0.06, 0.22, woodMat2, 0, -0.04, -0.12), box(0.06, 0.09, 0.3, gunMat, 0, 0, 0.12), box(0.05, 0.12, 0.22, woodMat2, 0, -0.04, 0.32)); return g; }
 function makeRifle(){ const g = new THREE.Group(); g.add(box(0.05, 0.08, 0.5, gunMat, 0, 0, 0), box(0.03, 0.03, 0.4, gunMat, 0, 0.02, -0.4), box(0.04, 0.15, 0.07, gunMat, 0, -0.11, 0.02), box(0.05, 0.1, 0.3, woodMat2, 0, -0.02, 0.38), box(0.03, 0.04, 0.12, gunMat, 0, 0.07, -0.05)); return g; }
-const views = {pistol: makeGun(), shotgun: makeShotgun(), rifle: makeRifle()};
-views.shotgun.position.z = -0.1; views.rifle.position.z = -0.12;
+function makeScatter(){ const g = new THREE.Group(); g.add(box(0.075, 0.075, 0.72, gunMat, 0, 0.045, -0.24), box(0.075, 0.075, 0.72, gunMat, 0, -0.045, -0.24), box(0.09, 0.1, 0.3, woodMat2, 0, -0.05, -0.16), box(0.08, 0.11, 0.32, gunMat, 0, 0, 0.14), box(0.06, 0.14, 0.26, woodMat2, 0, -0.05, 0.36)); return g; }
+function makeRipper(){
+  const g = new THREE.Group();
+  g.add(box(0.06, 0.1, 0.52, gunMat, 0, 0, 0), box(0.035, 0.035, 0.5, gunMat, 0, 0.03, -0.44),
+    box(0.05, 0.16, 0.08, gunMat, 0, -0.12, 0.02), box(0.06, 0.11, 0.32, woodMat2, 0, -0.02, 0.4));
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.1, 10), gunMat);
+  drum.rotation.x = Math.PI / 2; drum.position.set(0, -0.06, 0.08); g.add(drum);
+  return g; }
+const views = {pistol: makeGun(), shotgun: makeShotgun(), rifle: makeRifle(), scatter: makeScatter(), ripper: makeRipper()};
+views.shotgun.position.z = -0.1; views.rifle.position.z = -0.12; views.scatter.position.z = -0.1; views.ripper.position.z = -0.12;
 for (const k in views) { views[k].visible = (k === 'pistol'); gunView.add(views[k]); }
 function selectWeapon(t){
   if (!owned[t]) return;
@@ -47,7 +58,8 @@ function pickGun(){
 function hurt(d){ if (teleporting || settings.god) return; if (typeof hurtMarker === 'function') hurtMarker(); health -= d*(DMG[settings.diff] || 1); lastHurt = time; hurtFlash = settings.reduceFlash ? 0.4 : 1; rumble(250, 0.8); ouch(); updateStats(); if (health <= 0 && !dead) die(); }
 function gunshot(t){
   if (!ac || !whiteBuf) return;
-  const P = {pistol: [5000, 400, 0.3, 1.8, 140, 40, 0.18], shotgun: [3500, 180, 0.55, 2.6, 110, 30, 0.3], rifle: [7000, 900, 0.14, 1.3, 180, 70, 0.09]}[t || 'pistol'];
+  const P = {pistol: [5000, 400, 0.3, 1.8, 140, 40, 0.18], shotgun: [3500, 180, 0.55, 2.6, 110, 30, 0.3], rifle: [7000, 900, 0.14, 1.3, 180, 70, 0.09],
+    scatter: [3000, 150, 0.62, 3.1, 95, 26, 0.34], ripper: [6800, 950, 0.12, 1.15, 190, 80, 0.08]}[t || 'pistol'];
   const n = ac.currentTime, s = ac.createBufferSource(); s.buffer = whiteBuf;
   const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(P[0], n); f.frequency.exponentialRampToValueAtTime(P[1], n + P[2]);
   const g = ac.createGain(); g.gain.setValueAtTime(P[3], n); g.gain.exponentialRampToValueAtTime(0.001, n + P[2] + 0.05);

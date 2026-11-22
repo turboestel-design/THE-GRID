@@ -20,14 +20,16 @@ function shoot(){
     const isT = h => h && (h.object.userData.man || h.object.userData.beast || h.object.userData.hound || h.object.userData.boss || h.object.userData.mob || h.object.userData.lord);
     if (settings.aimAssist && !isT(hit)) for (const a of [[0.03, 0], [-0.03, 0], [0, 0.04], [0, -0.04]]) { ray.setFromCamera({x: sx + a[0], y: sy + a[1]}, camera); const h2 = ray.intersectObjects(tg, true)[0]; if (isT(h2)) { hit = h2; break; } }
     if (!hit) continue;
-    const o = hit.object.userData, d = (o.head ? W.head : W.dmg) * (1 + up.damage * 0.15);
+    const hot = (realm === 5 && typeof dimGear !== 'undefined' && dimGear.hot) ? 1.25 : 1;
+    const o = hit.object.userData, d = (o.head ? W.head : W.dmg) * (1 + up.damage * 0.15) * hot;
     if (o.man || o.beast || o.hound || o.boss || o.mob || o.lord) hitMark(o.head);
     if (o.man) hurtMan(d); else if (o.beast) hurtBeast(d); else if (o.hound) hurtHound(o.hound, d); else if (o.boss) hurtKing(o.head ? d : d*0.7); else if (o.mob) hurtMob(o.mob, d, o.head); else if (o.lord) hurtLord(d);
   }
 }
 document.addEventListener('keydown', e => {
   if (paused || e.repeat) return;
-  if (e.code === 'Digit1') selectWeapon('pistol'); else if (e.code === 'Digit2') selectWeapon('shotgun'); else if (e.code === 'Digit3') selectWeapon('rifle'); else if (e.code === 'KeyQ') cycleWeapon();
+  if (e.code === 'Digit1') selectWeapon('pistol'); else if (e.code === 'Digit2') selectWeapon('shotgun'); else if (e.code === 'Digit3') selectWeapon('rifle');
+  else if (e.code === 'Digit4') selectWeapon('scatter'); else if (e.code === 'Digit5') selectWeapon('ripper'); else if (e.code === 'KeyQ') cycleWeapon();
 });
 document.addEventListener('mousedown', e => { if (e.button === 0 && document.pointerLockElement === renderer.domElement) firing = true; });
 document.addEventListener('mouseup', () => { firing = false; });
@@ -92,6 +94,7 @@ function setHeavenAudio(){
   if (droneGain) droneGain.gain.value = (heaven || realm > 1) ? 0 : 0.22;
 }
 function setRealm(n){
+  if (realm === 5 && n !== 5 && typeof dropDimGear === 'function') dropDimGear();   // nothing bought in the dimension travels
   realm = n;
   realm2.visible = sporeMesh.visible = planetG.visible = (n === 2);
   realm3.visible = ashMesh.visible = emberMesh.visible = (n === 3);

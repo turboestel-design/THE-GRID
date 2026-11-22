@@ -89,6 +89,7 @@ function loop(){
   updateHorde(dt); updateHordeLord(dt); updateGore(dt); updateDimension(dt); updateHouse(dt);
   if (firing && WEAPONS[cur].auto) shoot();
   updateQoL(dt);
+  if (typeof updateDimGearFx === 'function') updateDimGearFx(dt);
   const rc = settings.recoil ? 1 : 0; gunView.position.z = -0.45 + recoil*0.1*rc; gunView.rotation.x = recoil*0.25*rc;
   muzzle.intensity = flashT > 0 ? 6*(settings.reduceFlash ? 0.3 : 1) : 0; flashT -= dt;
   if (teleporting) { renderer.render(scene, camera); return; }
@@ -107,7 +108,7 @@ function loop(){
   if (len > 1) { fx /= len; fz /= len; }
   const moving = len > 0.01;
   const run = settings.runMode === 'always' ? true : settings.runMode === 'toggle' ? runToggled : !!(keys.ShiftLeft || keys.ShiftRight);
-  const speed = (run ? 7 : 3.6) * Math.min(len, 1) * (1 + up.swift * 0.06);
+  const speed = (run ? 7 : 3.6) * Math.min(len, 1) * (1 + up.swift * 0.06) * (typeof dimFatigue === 'function' ? dimFatigue() : 1);
 
   if (moving) {
     const sy = Math.sin(yaw), cy = Math.cos(yaw);

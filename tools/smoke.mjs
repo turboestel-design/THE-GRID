@@ -182,6 +182,16 @@ run('dim:ammo', '(() => { setRealm(5); paused = false; dead = false; heaven = fa
 run('dim:health', '(() => { const it = items.find(i => i.group === dim && i.kind === "health"); it.cd = 0; it.g.visible = true; '
   + 'const oldMax = maxHp; maxHp = 100; health = 10; camera.position.set(it.wx, 1.65, it.wz); updatePickups(0.016); '
   + 'const r = [health, !it.g.visible]; maxHp = oldMax; health = maxHp; return r; })()');
+run('dim:hut', '(() => { setRealm(5); paused = false; dead = false; heaven = false; teleporting = false; camera.position.set(ZX, 1.65, 32.4); '
+  + 'updateDoor(0.016); const a = action; useAction(); const r = [a, dimShopOpen, paused, dimShopRows.children.length]; closeDimShop(); return r; })()');
+run('dim:buy', '(() => { const keep = shards; shards = 400; buildDimShop(); buyDim("scatter"); const r = [owned.scatter, cur, dimGear.scatter, shards]; shards = keep; return r; })()');
+run('dim:gear-drop', '(() => { dimGear.gre = 2; dimGear.bomb = 1; dropDimGear(); return [owned.scatter, owned.ripper, cur, dimGear.gre, dimGear.bomb, dimGear.hot]; })()');
+run('dim:grenade', '(() => { setRealm(5); paused = false; dead = false; mobs.length = 0; const z = makeMob("zombie", ZX + 0.4, 20, 5); z.rise = 0; '
+  + 'camera.position.set(ZX, 1.65, 15.2); camera.lookAt(ZX, 1.5, 21); camera.updateMatrixWorld(); dimGear.gre = 1; throwGrenade(); '
+  + 'for (let i = 0; i < 200 && dimGrenades.length; i++) updateDimGearFx(0.02); return [z.alive, dimGear.gre]; })()');
+run('dim:nuke', '(() => { mobs.length = 0; for (let i = 0; i < 4; i++) { const m = makeMob("zombie", ZX + i, 22, 5); m.rise = 0; } '
+  + 'dimGear.bomb = 1; detonateNuke(); return [dimGear.bomb, mobs.filter(m => m.alive).length]; })()');
+run('dim:fatigue', '[1, 5, 10, 20].map(r => { dimWave = r; return +dimFatigue().toFixed(2); })');
 run('dim:reset-items', '(() => { items.filter(i => i.group === dim).forEach(i => { i.cd = 0; i.g.visible = false; }); resetItems(dim); '
   + 'return items.filter(i => i.group === dim && i.g.visible).length; })()');
 run('dim:hud', '(() => { updateDimension(0.016); return [dimRoundEl.style.display, dimRoundNum.textContent, dimLeftEl.textContent]; })()');

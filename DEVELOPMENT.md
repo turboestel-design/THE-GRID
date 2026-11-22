@@ -49,6 +49,7 @@ js/
   45-world-3-ash.js     world 3 scenery + Cinder Hounds
   50-world-4-eclipse.js world 4 arena + boss: THE HOLLOW KING
   55-pickups.js         floating weapons, ammo and health
+  57-dim-shop.js        the hut: dimension-only weapons, grenades, the bomb
   60-enemies.js         husks, spitters, wisps, zombies, the horde, the Congregation
   52-zombie-dimension.js the fifth place: graveyard, the arena cover, rounds, the rift home
   66-gore.js            the blood/dirt particle pool

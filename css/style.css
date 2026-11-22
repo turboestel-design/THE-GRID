@@ -121,6 +121,8 @@ canvas{display:block;touch-action:none}
 #dimRound{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 56px);transform:translateX(-50%);text-align:center;display:none;pointer-events:none;z-index:4;text-shadow:0 1px 4px #000}
 #dimRoundNum{display:block;color:#e8c0a0;font-size:15px;letter-spacing:6px}
 #dimLeft{display:block;color:#b08a7a;font-size:11px;letter-spacing:3px;margin-top:3px}
+#dimGear{display:block;color:#c9a24a;font-size:10px;letter-spacing:2px;margin-top:4px}
+#nuke{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:20}
 #bossBar{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);transform:translateX(-50%);width:min(340px,60vw);display:none;pointer-events:none;z-index:4}
 #bossName{text-align:center;color:var(--bone);font-size:12px;letter-spacing:5px;margin-bottom:4px;text-shadow:0 1px 4px #000}
 #bossTrack{position:relative;height:12px;background:rgba(0,0,0,.7);border:2px solid #3a2a25}
@@ -165,18 +167,18 @@ body.lefty #fireBtn{right:auto;left:108px}
 body.lefty #swapBtn{right:auto;left:192px}
 
 /* ---- Act II UI: forge, lore cards, ending ---- */
-#forge{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:12;display:none;width:min(380px,92vw);max-height:88vh;overflow:auto;padding:22px;background:#0b0806;border:3px solid #050302;border-left:6px solid var(--blood);color:var(--bone);font:13px "Courier New",monospace;letter-spacing:1px;box-shadow:0 0 0 1px #2a1c14,0 0 70px #000}
-#forge h2{margin:0 0 4px;font-size:20px;letter-spacing:6px;color:var(--blood)}
-#forge .sh{margin:0 0 14px;font-size:12px;opacity:.85;letter-spacing:2px;color:#c9a24a}
-#forge .row{display:flex;align-items:center;gap:8px;margin:8px 0}
-#forge button{flex:1;padding:9px 10px;background:#120d0a;color:var(--bone);border:2px solid #000;border-left:4px solid #3a1512;font:inherit;letter-spacing:1px;cursor:pointer;text-align:left;line-height:1.4}
-#forge button:hover:not(:disabled){border-left-color:var(--blood);background:#1a1210}
-#forge button:disabled{opacity:.38;cursor:not-allowed}
-#forge .lvl{color:#c9a24a;letter-spacing:2px}
-#forge .desc{display:block;opacity:.5;font-size:11px;letter-spacing:1px}
-#forge .cost{min-width:46px;text-align:right;color:#c9a24a;font-size:12px}
-#forge .houseHead{margin:20px 0 2px;padding-top:12px;border-top:1px solid #1c1410;font-size:9px;letter-spacing:.34em;color:var(--blood);text-transform:uppercase}
-#forge .close{width:100%;text-align:center;margin-top:12px;border-left-color:#3a2a25;flex:none}
+#forge,#dimShop{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:12;display:none;width:min(380px,92vw);max-height:88vh;overflow:auto;padding:22px;background:#0b0806;border:3px solid #050302;border-left:6px solid var(--blood);color:var(--bone);font:13px "Courier New",monospace;letter-spacing:1px;box-shadow:0 0 0 1px #2a1c14,0 0 70px #000}
+#forge h2,#dimShop h2{margin:0 0 4px;font-size:20px;letter-spacing:6px;color:var(--blood)}
+#forge .sh,#dimShop .sh{margin:0 0 14px;font-size:12px;opacity:.85;letter-spacing:2px;color:#c9a24a}
+#forge .row,#dimShop .row{display:flex;align-items:center;gap:8px;margin:8px 0}
+#forge button,#dimShop button{flex:1;padding:9px 10px;background:#120d0a;color:var(--bone);border:2px solid #000;border-left:4px solid #3a1512;font:inherit;letter-spacing:1px;cursor:pointer;text-align:left;line-height:1.4}
+#forge button:hover:not(:disabled),#dimShop button:hover:not(:disabled){border-left-color:var(--blood);background:#1a1210}
+#forge button:disabled,#dimShop button:disabled{opacity:.38;cursor:not-allowed}
+#forge .lvl,#dimShop .lvl{color:#c9a24a;letter-spacing:2px}
+#forge .desc,#dimShop .desc{display:block;opacity:.5;font-size:11px;letter-spacing:1px}
+#forge .cost,#dimShop .cost{min-width:46px;text-align:right;color:#c9a24a;font-size:12px}
+#forge .houseHead,#dimShop .houseHead{margin:20px 0 2px;padding-top:12px;border-top:1px solid #1c1410;font-size:9px;letter-spacing:.34em;color:var(--blood);text-transform:uppercase}
+#forge .close,#dimShop .close{width:100%;text-align:center;margin-top:12px;border-left-color:#3a2a25;flex:none}
 #loreCard{position:fixed;left:50%;bottom:13%;transform:translateX(-50%);z-index:11;display:none;width:min(540px,88vw);padding:16px 20px;background:rgba(8,6,4,.95);border:2px solid #3a2a25;border-left:6px solid #c9a24a;color:var(--bone);font:13px "Courier New",monospace;letter-spacing:1px;line-height:1.6;text-shadow:0 1px 3px #000}
 #loreCard h3{margin:0 0 6px;font-size:11px;letter-spacing:4px;color:#c9a24a}
 #loreCard p{margin:0;opacity:.9}

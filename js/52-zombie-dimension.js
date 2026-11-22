@@ -7,6 +7,7 @@
 //  THE ZOMBIE DIMENSION — graveyard, red moon, waves
 // ============================================================================
 const ZX = -3000;
+const DIM_HUT_AT = {x: 0, z: 33};        // the shop hut stands here; nothing grows in it
 const dim = new THREE.Group(); dim.position.set(ZX, 0, 0); dim.visible = false; scene.add(dim);
 
 // ---- ground ----------------------------------------------------------------
@@ -148,7 +149,7 @@ stones.frustumCulled = false;
     do {
       const a = Math.random() * 6.283, r = 13 + Math.random() * 56;
       x = Math.sin(a) * r; z = Math.cos(a) * r; tries++;
-    } while ((Math.hypot(x, z - 14) < 5 || inDimProp(x, z, 1.3)) && tries < 40);
+    } while ((Math.hypot(x, z - 14) < 5 || inDimProp(x, z, 1.3) || Math.hypot(x - DIM_HUT_AT.x, z - DIM_HUT_AT.z) < 4.6) && tries < 40);
     e.set((Math.random() - .5) * 0.28, Math.random() * 6.28, (Math.random() - .5) * 0.32, 'XYZ');
     q.setFromEuler(e);
     const s = 0.75 + Math.random() * 0.75;
@@ -173,7 +174,7 @@ dim.add(stones);
     q.setFromEuler(e);
     const s = 0.6 + Math.random() * 0.7;
     const tx = Math.sin(a) * r, tz = Math.cos(a) * r;
-    if (inDimProp(tx, tz, 1.6)) { i--; continue; }
+    if (inDimProp(tx, tz, 1.6) || Math.hypot(tx - DIM_HUT_AT.x, tz - DIM_HUT_AT.z) < 5) { i--; continue; }
     trees.setMatrixAt(i, m4.compose(p.set(tx, 0, tz), q, sc.set(s, s * (0.7 + Math.random() * 0.8), s)));
   }
   trees.instanceMatrix.needsUpdate = true;
@@ -237,7 +238,7 @@ function clearDimensionMobs() {
   for (let i = mobs.length - 1; i >= 0; i--) if (mobs[i].realm === 5) { mobLayer.remove(mobs[i].g); mobs.splice(i, 1); }
   if (typeof lord !== 'undefined' && lord && lord.realm === 5) { lordLayer.remove(lord.g); lord = null; }
 }
-function resetDimension() { dimActive = false; dimWave = 0; dimWaveT = 0; dimCleared = true; clearDimensionMobs(); }
+function resetDimension() { dimActive = false; dimWave = 0; dimWaveT = 0; dimCleared = true; clearDimensionMobs(); if (typeof dropDimGear === 'function') dropDimGear(); }
 
 function enterDimension() {
   if (teleporting) return;
@@ -261,6 +262,7 @@ function leaveDimension() {
   teleporting = true; portalSound();
   fadeEl.style.transition = 'opacity .9s'; fadeEl.style.background = '#000'; fadeEl.textContent = ''; fadeEl.style.opacity = '1';
   setTimeout(() => {
+    if (typeof dropDimGear === 'function') dropDimGear();
     resetDimension();
     setRealm(1);
     camera.position.set(0, EYE, 5); yaw = 0; pitch = 0;
@@ -291,6 +293,9 @@ function spawnDimWave() {
   else say('ROUND ' + round + '  ·  ' + (n + spits) + ' OF THEM' + (runners ? '  ·  THEY RUN' : ''), 2400);
   sweepTone(120, 50, 0.6, 0.4, 'square');
 }
+
+// every round you are a little heavier on your feet
+function dimFatigue() { return realm === 5 ? Math.max(0.6, 1 - Math.max(0, dimWave - 1) * 0.045) : 1; }
 
 function dimAlive() {
   let n = 0;
