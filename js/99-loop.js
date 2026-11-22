@@ -157,7 +157,7 @@ function loop(){
   if (resting) {
     camera.position.set(resting.x, resting.y + Math.sin(time * 1.1) * 0.006, resting.z);
     camera.rotation.z = 0;
-    if (resting.kind === 'bed') camera.rotation.x = Math.max(pitch, -0.9);
+    if (resting.kind === 'bed') camera.rotation.x = Math.max(pitch, -0.45);
   }
   torch.position.x = 0.25 + (moving ? Math.sin(bobT*0.5) * 0.03 : 0);
   renderer.render(scene, camera);

@@ -110,6 +110,15 @@ run('rest:stand', 'keys.KeyW = true; loop(); keys.KeyW = false; [resting === nul
 run('rest:bed', '(() => { camera.position.set(-2.6, 1.65, -11.9); updateDoor(0.016); const a = action; useAction(); '
   + 'const kind = resting && resting.kind; for (let i = 0; i < 3; i++) loop(); const y = +camera.position.y.toFixed(2); '
   + 'standUp(); return [a, kind, y, resting === null]; })()');
+run('rest:bed-clear', '(() => { progress.interior = 10; interiorVisual(); camera.position.set(-2.6, 1.65, -13.6); updateDoor(0.016); useAction(); '
+  + 'loop(); const down = new THREE.Raycaster(camera.position.clone(), new THREE.Vector3(0, -1, 0), 0, 3)'
+  + '.intersectObjects(scene.children, true).filter(h => h.object.visible !== false)[0]; '
+  + 'const back = new THREE.Raycaster(camera.position.clone(), new THREE.Vector3(0, 0, -1), 0, 3)'
+  + '.intersectObjects(scene.children, true).filter(h => h.object.visible !== false)[0]; '
+  + 'const ahead = new THREE.Raycaster(camera.position.clone(), new THREE.Vector3(0, 0, 1), 0, 1)'
+  + '.intersectObjects(scene.children, true).filter(h => h.object.visible !== false).length; '
+  + 'const r = [down ? +down.distance.toFixed(2) : 9, back ? +back.distance.toFixed(2) : 9, ahead]; '
+  + 'standUp(); return r; })()');
 run('rest:gated', '(() => { progress.interior = 1; camera.position.set(-0.95, 1.65, -11.6); updateDoor(0.016); return action; })()');
 run('warp:world1', '(() => { buildWarp(); return [...document.querySelectorAll("#warp button")].some(b => b.textContent.indexOf("World 1") === 0); })()');
 run('lore:read', 'for (const g of loreItems) readLore(g.userData.i); [loreFound, Object.keys(progress.lore).length]');

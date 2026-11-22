@@ -274,6 +274,12 @@ const candleGlow = () => new THREE.MeshBasicMaterial({color: 0xffc070, fog: fals
   const mat = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.18, 1.9), cloth(0x3a3a44)); mat.position.set(-2.6, 0.42, -13.3); g.add(mat);
   const pil = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.14, 0.34), cloth(0x6a5a4a)); pil.position.set(-2.6, 0.55, -14.1); g.add(pil);
   const head = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.6, 0.1), darkWood()); head.position.set(-2.6, 0.5, -14.3); g.add(head);
+  const blanket = new THREE.Mesh(new THREE.BoxGeometry(1.07, 0.09, 1.34), cloth(0x5a3a32));
+  blanket.position.set(-2.6, 0.56, -12.73); g.add(blanket);
+  const fold = new THREE.Mesh(new THREE.BoxGeometry(1.09, 0.1, 0.26), cloth(0x8a7a66));
+  fold.position.set(-2.6, 0.565, -13.32); g.add(fold);
+  const skirt = new THREE.Mesh(new THREE.BoxGeometry(1.07, 0.2, 0.05), cloth(0x4a2e28));
+  skirt.position.set(-2.6, 0.47, -12.08); g.add(skirt);
   interiorStage(4, g);
 }
 // 5 · a bookshelf, filled
@@ -393,8 +399,8 @@ function sitDown(kind) {
     say('YOU SIT. IT IS QUIET IN HERE.', 1800);
   } else {
     resting = {
-      kind: 'bed', x: -2.6, z: -13.15, y: 0.62,
-      yaw: Math.PI, pitch: 0.16,
+      kind: 'bed', x: -2.6, z: -13.72, y: 0.78,
+      yaw: Math.PI, pitch: 0.02,
       stand: {x: -1.55, z: -13.2}
     };
     say('YOU LIE DOWN. JUST FOR A MINUTE.', 2200);
