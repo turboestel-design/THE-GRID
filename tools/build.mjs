@@ -1,5 +1,5 @@
-// Bundles the split source back into one self-contained file for sharing.
-// Usage: npm run build   ->  the-grid.html
+// Bundles the split source back into one self-contained file for shipping.
+// Usage: npm run build   ->  dist/the-grid.html
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -19,6 +19,7 @@ html = html.replace(/<script src="([^"]+)"><\/script>/g, (m, src) => {
   return `<script>\n${js}</script>`;
 });
 
-const out = path.join(ROOT, 'the-grid.html');
+fs.mkdirSync(path.join(ROOT, 'dist'), { recursive: true });
+const out = path.join(ROOT, 'dist', 'the-grid.html');
 fs.writeFileSync(out, html);
-console.log(`built the-grid.html — ${(html.length / 1024).toFixed(0)} KB, ${html.split('\n').length} lines, single file`);
+console.log(`built dist/the-grid.html — ${(html.length / 1024).toFixed(0)} KB, ${html.split('\n').length} lines, single file`);
