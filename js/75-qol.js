@@ -52,7 +52,7 @@ function hitMark(head){
 }
 function objective(){
   if (heaven) return {t: 'CLIMB THE STAIRS TO THE GATE', x: HX, z: -25};
-  if (realm === 5) return {t: 'WAVE ' + dimWave + '  \u00b7  HOLD THE DIMENSION', x: ZX, z: 14};
+  if (realm === 5) return {t: 'ROUND ' + Math.max(0, dimWave) + '  \u00b7  HOLD THE DIMENSION', x: ZX, z: 14};
   if (realm === 1) {
     if (!hasGun) return {t: 'FIND THE GUN IN THE HOUSE', x: TX, z: TZ};
     if (manAlive) return {t: 'KILL THE TALL MAN', x: man.position.x, z: man.position.z};

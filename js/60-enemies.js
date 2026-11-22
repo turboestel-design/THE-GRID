@@ -296,6 +296,8 @@ function mobMove(mob, dx, dz) {
   }
   if (mob.realm === 1 && typeof homeSolidBoxes === 'function') {
     for (const b of homeSolidBoxes()) { const r = pushOutBox(nx, nz, mob.r, b); if (r) { nx = r[0]; nz = r[1]; } }
+  } else if (mob.realm === 5 && typeof dimBoxes !== 'undefined') {
+    for (const b of dimBoxes) { const r = pushOutBox(nx, nz, mob.r, b); if (r) { nx = r[0]; nz = r[1]; } }
   }
   const c = clampToRealm(nx, nz, mob.realm);
   nx = c[0]; nz = c[1];
@@ -337,7 +339,7 @@ function updateMobShots(dt) {
     s.life -= dt;
     const ox2 = s.m.position.x, oz2 = s.m.position.z;
     s.m.position.x += s.vx * dt; s.m.position.y += s.vy * dt; s.m.position.z += s.vz * dt;
-    if (s.realm === 1 && typeof wallBetween === 'function'
+    if ((s.realm === 1 || s.realm === 5) && typeof wallBetween === 'function'
       && wallBetween(ox2, oz2, s.m.position.x, s.m.position.z)) { s.life = 0; s.m.visible = false; continue; }
     if (s.m.position.y < 0.1 || s.life <= 0) { s.life = 0; s.m.visible = false; continue; }
     if (!dead && !heaven && Math.hypot(s.m.position.x - camera.position.x, s.m.position.z - camera.position.z) < 0.55
@@ -384,7 +386,7 @@ function updateMobs(dt) {
       if (dist < 38 && dist > 1.25) { mobMove(mob, dx / dist * sp * dt, dz / dist * sp * dt); moving = 1; }
       if (dist < 1.5 && mob.atk <= 0 && !dead && !wallBetween(g.position.x, g.position.z, pxReal, pzReal)) {
         mob.atk = mob.kind === 'zombie' ? 1.6 : 1.25;
-        hurt(D.dmg);
+        hurt(mob.dmg || D.dmg);
         if (mob.kind === 'zombie') { gorePuff(g.position.x, 1.4, g.position.z, 2, 0x4a1010, 1.2, 1.2); sweepTone(200, 60, 0.3, 0.3, 'square'); }
       }
     } else if (D.style === 'range') {
@@ -393,7 +395,7 @@ function updateMobs(dt) {
       if (mob.atk <= 0 && dist < 26 && !dead && !wallBetween(g.position.x, g.position.z, pxReal, pzReal)) {
         mob.atk = 2.4 + Math.random();
         const from = new THREE.Vector3(g.position.x, 1.35, g.position.z);
-        fireMobShot(from, D.dmg);
+        fireMobShot(from, mob.dmg || D.dmg);
       }
       moving = 1;
     } else {
@@ -405,7 +407,7 @@ function updateMobs(dt) {
         mobMove(mob, ddx / dd * mob.spd * dt, ddz / dd * mob.spd * dt);
       } else if (dist > 1.3) {
         mobMove(mob, dx / dist * mob.spd * 2.2 * dt, dz / dist * mob.spd * 2.2 * dt);
-        if (dist < 1.8 && mob.atk <= 0) { mob.atk = 1.4; hurt(D.dmg); mob.t = 2 + Math.random() * 2; }
+        if (dist < 1.8 && mob.atk <= 0) { mob.atk = 1.4; hurt(mob.dmg || D.dmg); mob.t = 2 + Math.random() * 2; }
       } else mob.t = 2 + Math.random() * 2;
     }
     // animation

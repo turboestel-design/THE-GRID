@@ -3,7 +3,7 @@
    index.html. Splitting this file cannot change behaviour. */
 // ---- Shooting, switching, health bar, portals, realms (these replace the earlier versions) ----
 function targetsFor(){
-  if (realm === 5) return [mobLayer, lordLayer];
+  if (realm === 5) return [mobLayer, lordLayer, ...dimMeshes];
   const base = realm === 2 ? [beast, shroomStems, shroomCaps] : realm === 3 ? [...hounds.map(h => h.g), rocks] : realm === 4 ? [king, pillars] : realm === 1 ? [man, trunks, ...wallMeshes] : [man, trunks];
   return base.concat([mobLayer, lordLayer]);
 }

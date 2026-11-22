@@ -50,7 +50,7 @@ js/
   50-world-4-eclipse.js world 4 arena + boss: THE HOLLOW KING
   55-pickups.js         floating weapons, ammo and health
   60-enemies.js         husks, spitters, wisps, zombies, the horde, the Congregation
-  52-zombie-dimension.js the fifth place: graveyard, waves, the rift home
+  52-zombie-dimension.js the fifth place: graveyard, the arena cover, rounds, the rift home
   66-gore.js            the blood/dirt particle pool
   61-shards.js          shard currency
   62-forge.js           the Forge and its upgrades

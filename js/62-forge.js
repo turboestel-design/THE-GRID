@@ -68,6 +68,7 @@ function segHitsBox(ax, az, bx, bz, b) {
 }
 function wallBetween(ax, az, bx, bz) {
   for (const b of wallsNow()) if (segHitsBox(ax, az, bx, bz, b)) return true;
+  if (realm === 5 && typeof dimBoxes !== 'undefined') for (const b of dimBoxes) if (segHitsBox(ax, az, bx, bz, b)) return true;
   return false;
 }
 function houseLv() { return Math.min(HOUSE_MAX, (progress && progress.house) || 0); }

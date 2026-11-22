@@ -118,6 +118,9 @@ canvas{display:block;touch-action:none}
 #ammoRow{display:flex;gap:3px;margin-top:6px;max-width:122px;flex-wrap:wrap}
 #ammoRow span{display:block;width:5px;height:14px;background:#c9a24a;box-shadow:inset -1px 0 0 rgba(0,0,0,.35)}
 #ammoRow span.spent{background:#2a2420;opacity:.55}
+#dimRound{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 56px);transform:translateX(-50%);text-align:center;display:none;pointer-events:none;z-index:4;text-shadow:0 1px 4px #000}
+#dimRoundNum{display:block;color:#e8c0a0;font-size:15px;letter-spacing:6px}
+#dimLeft{display:block;color:#b08a7a;font-size:11px;letter-spacing:3px;margin-top:3px}
 #bossBar{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);transform:translateX(-50%);width:min(340px,60vw);display:none;pointer-events:none;z-index:4}
 #bossName{text-align:center;color:var(--bone);font-size:12px;letter-spacing:5px;margin-bottom:4px;text-shadow:0 1px 4px #000}
 #bossTrack{position:relative;height:12px;background:rgba(0,0,0,.7);border:2px solid #3a2a25}
@@ -147,14 +150,14 @@ canvas{display:block;touch-action:none}
 #cross.hit.head{border-color:#ffd36b}
 body.nograin #grain{display:none !important}
 :root{--hud:1;--touch:1;--xh:5px;--xhc:#ddd5c4}
-#stats,#obj,#msg,#ammoBox,#hint,#prompt,#bossBar,#cap{zoom:var(--hud)}
+#stats,#obj,#msg,#ammoBox,#hint,#prompt,#bossBar,#cap,#dimRound{zoom:var(--hud)}
 #joy,#fireBtn,#jumpBtn,#swapBtn,#pauseBtn{zoom:var(--touch)}
 #cross{width:var(--xh);height:var(--xh);margin:calc(var(--xh)/-2);background:var(--xhc)}
 body.xh-plus #cross{background:linear-gradient(var(--xhc),var(--xhc)) center/100% 2px no-repeat,linear-gradient(var(--xhc),var(--xhc)) center/2px 100% no-repeat}
 body.xh-ring #cross{background:transparent;border:2px solid var(--xhc);border-radius:50%;box-sizing:border-box}
 #cap{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 70px);transform:translateX(-50%);padding:4px 12px;background:rgba(0,0,0,.7);color:var(--bone);font-size:13px;letter-spacing:2px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:7}
 #fps{position:fixed;right:12px;top:calc(env(safe-area-inset-top,0px) + 62px);display:none;color:var(--bone);font-size:12px;letter-spacing:2px;text-shadow:0 1px 3px #000;pointer-events:none}
-body.hide-msg #msg,body.hide-hint #hint,body.hide-obj #obj,body.hide-stats #stats,body.hide-stats #ammoBox,body.hide-boss #bossBar,body.hide-prompt #prompt,body.hide-fade #fade,body.novig #vig,body.noxh #cross,body.notext #msg,body.notext #hint,body.notext #obj,body.notext #prompt,body.notext #cap,body.notext #bossName,body.notext #ammoLabel,body.notext #stats{display:none !important}
+body.hide-msg #msg,body.hide-hint #hint,body.hide-obj #obj,body.hide-stats #stats,body.hide-stats #ammoBox,body.hide-boss #bossBar,body.hide-boss #dimRound,body.hide-prompt #prompt,body.hide-fade #fade,body.novig #vig,body.noxh #cross,body.notext #msg,body.notext #hint,body.notext #obj,body.notext #prompt,body.notext #cap,body.notext #bossName,body.notext #ammoLabel,body.notext #stats{display:none !important}
 body.notext #fade{color:transparent !important}
 body.lefty #joy{left:auto;right:24px}
 body.lefty #jumpBtn{right:auto;left:24px}

@@ -123,7 +123,8 @@ function loop(){
     }
     const tableSolid = (typeof interiorLv === 'function' && interiorLv() < 2) ? [TABLE_BOX] : [];
     const homeSolid = (realm === 1 && typeof homeBoxes === 'function') ? homeBoxes() : [];
-    const boxes = realm > 1 ? [] : (doorAngle < 0.9 ? solids.concat([doorBox]) : solids).concat(tableSolid, homeSolid);
+    const dimSolid = (realm === 5 && typeof dimBoxes !== 'undefined') ? dimBoxes : [];
+    const boxes = realm > 1 ? dimSolid : (doorAngle < 0.9 ? solids.concat([doorBox]) : solids).concat(tableSolid, homeSolid);
     for (const b of boxes) {
       const cx = Math.max(b[0], Math.min(nx, b[2])), cz = Math.max(b[1], Math.min(nz, b[3]));
       const ox = nx - cx, oz = nz - cz, d2 = ox*ox + oz*oz, r = 0.32;

@@ -156,6 +156,21 @@ run('lord:kill', '(() => { hurtLord(9999); return [lord.alive, bossInfo().name];
 run('lord:fade', '(() => { for (let i = 0; i < 130; i++) updateHordeLord(0.016); return [lord === null, lordLayer.children.length]; })()');
 run('dim:realm', 'setRealm(5); [realm, dim.visible, REALM_NAME[5]]');
 run('dim:wave', '(() => { dimActive = true; dimWave = 0; dimWaveT = 0; updateDimension(0.016); return [dimWave, mobs.filter(m => m.realm === 5).length]; })()');
+run('dim:props', '[dimBoxes.length, dimBoxes.every(b => b[2] > b[0] && b[3] > b[1] && b[0] > ZX - 60 && b[0] < ZX + 60), dimMeshes.length > 20]');
+run('dim:rounds', '(() => { setRealm(5); dimActive = true; clearDimensionMobs(); dimWave = 0; spawnDimWave(); '
+  + 'const r1 = mobs.filter(m => m.realm === 5); const a = [dimWave, r1.length, r1[0].hp, +r1[0].spd.toFixed(2)]; '
+  + 'clearDimensionMobs(); dimWave = 9; spawnDimWave(); const r10 = mobs.filter(m => m.realm === 5); '
+  + 'return [a, [dimWave, r10.length, r10[0].hp, +r10[0].spd.toFixed(2), r10.filter(m => m.runner).length]]; })()');
+run('dim:runner', '(() => { clearDimensionMobs(); dimWave = 4; spawnDimWave(); const ms = mobs.filter(m => m.realm === 5); '
+  + 'const run = ms.find(m => m.runner), walk = ms.find(m => !m.runner); return [!!run, !!walk, run.spd > walk.spd]; })()');
+run('dim:cover', '(() => { const b = dimBoxes[0]; '
+  + 'return [wallBetween(b[0] - 3, (b[1] + b[3]) / 2, b[2] + 3, (b[1] + b[3]) / 2), targetsFor().includes(dimMeshes[0])]; })()');
+run('dim:mobblocked', '(() => { clearDimensionMobs(); const b = dimBoxes[0]; const x = (b[0] + b[2]) / 2, z = b[3] + 2.4; '
+  + 'const m = makeMob("zombie", x, z, 5); m.rise = 0; for (let i = 0; i < 40; i++) mobMove(m, 0, -0.08); '
+  + 'const inside = m.g.position.x > b[0] && m.g.position.x < b[2] && m.g.position.z > b[1] && m.g.position.z < b[3]; return [inside, m.g.position.z > b[1]]; })()');
+run('dim:clear', '(() => { clearDimensionMobs(); dimWave = 2; dimCleared = false; health = 40; shards = 5; dimWaveT = 99; '
+  + 'updateDimension(0.016); const r = [health, shards, dimCleared]; health = maxHp; return r; })()');
+run('dim:hud', '(() => { updateDimension(0.016); return [dimRoundEl.style.display, dimRoundNum.textContent, dimLeftEl.textContent]; })()');
 run('dim:objective', 'objective().t');
 run('dim:rift', '(() => { camera.position.set(ZX, 1.65, 14); paused = false; dead = false; heaven = false; updateDimension(0.016); updateDoor(0.016); return [nearRift, action]; })()');
 run('dim:clamp', 'clampToRealm(ZX + 999, 999, 5)');
