@@ -31,19 +31,35 @@
   <button id="endStay">KEEP WANDERING</button>
 </div></div>
 <div id="menu">
-  <div class="titleScreen">
-    <div class="brand">
-      <h1 id="menuTitle" data-text="THE GRID" class="logo">THE GRID</h1>
-      <p id="menuSub" class="tagline">DO NOT STOP WALKING</p>
+  <div class="menuShell">
+    <div class="menuCol brandCol">
+      <div class="brand">
+        <h1 id="menuTitle" data-text="THE GRID" class="logo">THE GRID</h1>
+        <p id="menuSub" class="tagline">DO NOT STOP WALKING</p>
+      </div>
+      <nav class="nav" id="nav">
+        <button id="resume" class="navBtn primary">ENTER THE GRID</button>
+        <button id="navHow" class="navBtn">How to play</button>
+        <button id="navWorlds" class="navBtn">Worlds</button>
+        <button id="navSettings" class="navBtn">Settings</button>
+        <button id="navCredits" class="navBtn">Credits</button>
+      </nav>
+      <p class="keys">WASD move &middot; Shift run &middot; Space jump &middot; E use &middot; Click shoot &middot; Q swap &middot; P pause</p>
     </div>
-    <nav class="nav">
-      <button id="resume" class="navBtn primary">ENTER THE GRID</button>
-      <button id="navWorlds" class="navBtn">Worlds</button>
-      <button id="navSettings" class="navBtn">Settings</button>
-      <button id="navCredits" class="navBtn">Credits</button>
-    </nav>
-    <div class="meta"><span id="saveMeta">NO SAVE</span><span class="dot">·</span><span>V0.3</span></div>
-    <p class="keys">WASD move · Shift run · Space jump · E use · Click shoot · Q swap · P pause</p>
+    <aside class="menuCol cardCol">
+      <div class="saveCard">
+        <h2>Walker file</h2>
+        <dl class="saveGrid">
+          <dt>World</dt><dd id="statWorld">&mdash;</dd>
+          <dt>Shards</dt><dd id="statShards">0</dd>
+          <dt>Lore</dt><dd id="statLore">0/12</dd>
+          <dt>Kills</dt><dd id="statKills">0</dd>
+          <dt>Cycle</dt><dd id="statCycle">1</dd>
+        </dl>
+        <div class="cardFoot"><span id="saveMeta">NO SAVE</span><span class="ver">V0.3</span></div>
+        <button id="wipe" class="wipeBtn" hidden>Erase save</button>
+      </div>
+    </aside>
   </div>
 
   <section class="panel" id="panelWorlds">
@@ -66,6 +82,24 @@
       <div id="settingsBox"></div>
       <button id="fs">Fullscreen</button>
       <button id="reset">Return to start</button>
+    </div>
+  </section>
+
+  <section class="panel" id="panelHow">
+    <header><h2>How to play</h2><button class="panelClose" aria-label="Close">&#10005;</button></header>
+    <div class="panelBody">
+      <dl class="credits">
+        <dt>Move</dt><dd>W A S D</dd>
+        <dt>Run</dt><dd>Shift</dd>
+        <dt>Jump</dt><dd>Space</dd>
+        <dt>Interact / forge</dt><dd>E</dd>
+        <dt>Shoot</dt><dd>Left click</dd>
+        <dt>Weapons</dt><dd>1 / 2 / 3, Q to cycle</dd>
+        <dt>Pause</dt><dd>P</dd>
+        <dt>Mute</dt><dd>M</dd>
+      </dl>
+      <p class="note">Death is not the end. You keep every shard, every lore fragment and every upgrade — go back to the forge and spend them.</p>
+      <p class="note">Each world ends with something that wants you dead. The tether nodes are the only way forward.</p>
     </div>
   </section>
 

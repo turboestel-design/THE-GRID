@@ -15,6 +15,17 @@ run('menu:panels', 'document.getElementById("navSettings").click(); ["panelSetti
 run('menu:panelSwitch', 'document.getElementById("navWorlds").click(); ["panelSettings","panelWorlds"].map(i => document.getElementById(i).classList.contains("open"))');
 run('menu:escape', 'document.dispatchEvent(new window.KeyboardEvent("keydown",{code:"Escape"})); document.getElementById("panelWorlds").classList.contains("open")');
 run('menu:meta', 'shards = 12; refreshMenu(); document.getElementById("saveMeta").textContent');
+run('menu:card', 'shards = 7; kills = 3; progress.owned.pistol = true; progress.max = 2; refreshMenu(); '
+  + '["statWorld","statShards","statLore","statKills","statCycle","saveMeta"].map(i => document.getElementById(i).textContent)');
+run('menu:nav', 'setPaused(true); closePanels(); selectNav(0); '
+  + 'document.dispatchEvent(new window.KeyboardEvent("keydown",{code:"ArrowDown"})); navBtns()[navSel].id');
+run('menu:navWrap', 'selectNav(0); document.dispatchEvent(new window.KeyboardEvent("keydown",{code:"ArrowUp"})); navBtns()[navSel].id');
+run('menu:navEnter', 'closePanels(); selectNav(1); '
+  + 'document.dispatchEvent(new window.KeyboardEvent("keydown",{code:"Enter"})); '
+  + '[document.getElementById("panelHow").classList.contains("open"), anyPanelOpen()]');
+run('menu:navEscape', 'document.dispatchEvent(new window.KeyboardEvent("keydown",{code:"Escape"})); anyPanelOpen()');
+run('menu:wipeArm', 'document.getElementById("wipe").click(); '
+  + '[document.getElementById("wipe").classList.contains("arm"), document.getElementById("wipe").textContent]');
 run('menu:backIn', 'document.getElementById("resume").click(); paused');
 
 // 1. probe
