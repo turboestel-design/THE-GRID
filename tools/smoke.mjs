@@ -96,6 +96,9 @@ run('dim:wave', '(() => { dimActive = true; dimWave = 0; dimWaveT = 0; updateDim
 run('dim:objective', 'objective().t');
 run('dim:rift', '(() => { camera.position.set(ZX, 1.65, 14); paused = false; dead = false; heaven = false; updateDimension(0.016); updateDoor(0.016); return [nearRift, action]; })()');
 run('dim:clamp', 'clampToRealm(ZX + 999, 999, 5)');
+run('dim:move', '(() => { setRealm(5); camera.position.set(ZX, 1.65, 14); paused = false; dead = false; teleporting = false; '
+  + 'keys.KeyW = true; keys.KeyD = true; for (let i = 0; i < 30; i++) loop(); keys.KeyW = false; keys.KeyD = false; '
+  + 'return [isFinite(camera.position.x), isFinite(camera.position.z), camera.position.x > ZX - 60]; })()');
 run('dim:bossbar', 'bossInfo().name');
 run('dim:leave', '(() => { resetDimension(); setRealm(1); return [realm, dim.visible, dimActive]; })()');
 

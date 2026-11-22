@@ -103,7 +103,7 @@ function setRealm(n){
   hounds.forEach(h => { h.g.visible = (n === 3); }); king.visible = (n === 4); man.visible = (n === 1);
   (n === 4 ? king : beast).add(beastLight); beastLight.position.set(0, n === 4 ? 5.5 : 2, 0.5); beastLight.intensity = 0;
   document.getElementById('grain').style.display = n === 2 ? 'none' : 'block';
-  if (n === 5) { scene.background.setHex(0x120409); scene.fog.color.setHex(0x180610); scene.fog.density = 0.05; ambient.color.setHex(0x9a4a58); ambient.intensity = 0.72; moon.color.setHex(0xff4a4a); moon.intensity = 1.0; }
+  if (n === 5) { scene.background.setHex(0x1a070e); scene.fog.color.setHex(0x2a0a16); scene.fog.density = 0.022; ambient.color.setHex(0xc07a86); ambient.intensity = 1.25; moon.color.setHex(0xff6a6a); moon.intensity = 1.7; }
   else if (n === 2) { scene.background.setHex(0x090514); scene.fog.color.setHex(0x0b0618); scene.fog.density = 0.032; ambient.color.setHex(0x6a4aa8); ambient.intensity = 0.9; moon.color.setHex(0x5a4aa0); moon.intensity = 0.35; }
   else if (n === 3) { scene.background.setHex(0x7a2c12); scene.fog.color.setHex(0x7a2c12); scene.fog.density = 0.02; ambient.color.setHex(0xff9060); ambient.intensity = 0.8; moon.color.setHex(0xff7a3a); moon.intensity = 1.1; }
   else if (n === 4) { scene.background.setHex(0x030208); scene.fog.color.setHex(0x050310); scene.fog.density = 0.012; ambient.color.setHex(0x7a6ac0); ambient.intensity = 0.7; moon.color.setHex(0xd8c8ff); moon.intensity = 0.6; }

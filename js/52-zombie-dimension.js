@@ -27,7 +27,7 @@ for (let i = 0; i < 40; i++) {
 const dtex = new THREE.CanvasTexture(dcv);
 dtex.wrapS = dtex.wrapT = THREE.RepeatWrapping; dtex.repeat.set(15, 15); dtex.anisotropy = 4;
 const ground5 = new THREE.Mesh(new THREE.PlaneGeometry(170, 170),
-  new THREE.MeshStandardMaterial({map: dtex, roughness: 1, emissive: 0x140508, emissiveIntensity: 0.55}));
+  new THREE.MeshStandardMaterial({map: dtex, roughness: 1, emissive: 0x2e0c16, emissiveIntensity: 1.1}));
 ground5.rotation.x = -Math.PI / 2; dim.add(ground5);
 
 // ---- gravestones (collide, so the dead have something to shamble around) ----
@@ -35,7 +35,7 @@ const gravePos = [];
 const stoneGeo = new THREE.BoxGeometry(0.78, 1.25, 0.2);
 stoneGeo.translate(0, 0.62, 0);
 const stones = new THREE.InstancedMesh(stoneGeo,
-  new THREE.MeshStandardMaterial({color: 0x2b2733, roughness: 1, emissive: 0x0a0508}), 240);
+  new THREE.MeshStandardMaterial({color: 0x4a4453, roughness: 1, emissive: 0x140a12, emissiveIntensity: 0.8}), 240);
 stones.frustumCulled = false;
 {
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), sc = new THREE.Vector3();

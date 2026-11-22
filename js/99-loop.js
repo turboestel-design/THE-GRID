@@ -78,7 +78,7 @@ function loop(){
   updateDoor(dt);
   // Flashlight flicker: mostly steady, occasional stutters
   if (dip > 0) dip -= dt; else if (Math.random() < dt * 0.25) dip = 0.05 + Math.random()*0.25;
-  torch.intensity = (heaven || realm > 1) ? 0 : (dip > 0 && settings.flicker) ? 0.3 + Math.random()*1.2 : 2.3 + Math.sin(time*7)*0.08;
+  torch.intensity = (heaven || (realm > 1 && realm !== 5)) ? 0 : (dip > 0 && settings.flicker) ? 0.3 + Math.random()*1.2 : 2.3 + Math.sin(time*7)*0.08;
   torch.intensity *= settings.torch;
   if (paused) { if (!started) titleCam(dt); renderer.render(scene, camera); return; }
   shootCd = Math.max(0, shootCd - dt); recoil = Math.max(0, recoil - dt*6); hurtFlash = Math.max(0, hurtFlash - dt*1.5);
@@ -110,7 +110,7 @@ function loop(){
   if (moving) {
     const sy = Math.sin(yaw), cy = Math.cos(yaw);
     const dx = -sy*fz + cy*fx, dz = -cy*fz - sy*fx;
-    const lim = SIZE/2 - 0.5, cx0 = heaven ? HX : [0, 0, RX, AX, BX][realm], lm = heaven ? 36 : [lim, lim, 70, 70, 26][realm];
+    const lim = SIZE/2 - 0.5, cx0 = heaven ? HX : [0, 0, RX, AX, BX, ZX][realm], lm = heaven ? 36 : [lim, lim, 70, 70, 26, 48][realm];
     let nx = Math.max(cx0 - lm, Math.min(cx0 + lm, camera.position.x + dx*speed*dt));
     let nz = Math.max(-lm, Math.min(lm, camera.position.z + dz*speed*dt));
     if (heaven) { nz = Math.max(-27, nz); if (nz < -5) nx = HX + Math.max(-3.1, Math.min(3.1, nx - HX)); }
