@@ -212,7 +212,7 @@ run('dim:saved-unlock', '(() => { const keep = progress.cleared; progress.cleare
   + 'const d = JSON.parse(localStorage.getItem("grid-walker-save") || "{}"); progress.cleared = keep; '
   + 'localStorage.removeItem("grid-walker-save"); return !!d.progress && !!d.progress.cleared; })()');
 run('dim:settings-row', '(() => { buildSettingsUI(); return document.getElementById("settingsBox").textContent.toUpperCase().includes("UNLOCK THE ZOMBIE DIMENSION"); })()');
-run('menu:return-to-start', '(() => { heaven = false; setRealm(3); document.getElementById("reset").click(); return [realm, +camera.position.x.toFixed(1), +camera.position.z.toFixed(1)]; })()');
+run('menu:no-reset-button', '(() => [!!document.getElementById("reset"), document.getElementById("settingsBox").parentNode.textContent.includes("Return to world 1")])()');
 run('dim:reset-items', '(() => { items.filter(i => i.group === dim).forEach(i => { i.cd = 0; i.g.visible = false; }); resetItems(dim); '
   + 'return items.filter(i => i.group === dim && i.g.visible).length; })()');
 run('dim:hud', '(() => { updateDimension(0.016); return [dimRoundEl.style.display, dimRoundNum.textContent, dimLeftEl.textContent]; })()');

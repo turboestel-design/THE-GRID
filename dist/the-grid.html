@@ -285,7 +285,6 @@ body.lefty #swapBtn{right:auto;left:192px}
       <label class="chk"><input type="checkbox" id="grainT" checked> Film grain</label>
       <div id="settingsBox"></div>
       <button id="fs">Fullscreen</button>
-      <button id="reset">Return to world 1 (keeps progress)</button>
       <button id="wipe2" class="wipeBtn">Start over — erase save</button>
     </div>
   </section>
@@ -3948,11 +3947,6 @@ document.getElementById('navSettings').addEventListener('click', () => openPanel
 document.getElementById('navCredits').addEventListener('click', () => openPanel('panelCredits'));
 document.querySelectorAll('.panelClose').forEach(b => b.addEventListener('click', closePanels));
 
-document.getElementById('reset').addEventListener('click', () => {
-  if (realm === 5 && typeof resetDimension === 'function') resetDimension();
-  heaven = false; enterRealmByIndex(1);
-  camera.position.set(0, EYE, 5); yaw = 0; pitch = 0;
-});
 document.getElementById('sens').addEventListener('input', e => { sens = parseFloat(e.target.value); });
 document.getElementById('pauseBtn').addEventListener('click', () => setPaused(true));
 // if anything leaves the cursor loose mid-game, clicking the world takes it back
