@@ -86,6 +86,8 @@ run('warp:world1', '(() => { buildWarp(); return [...document.querySelectorAll("
 run('lore:read', 'for (const g of loreItems) readLore(g.userData.i); [loreFound, Object.keys(progress.lore).length]');
 run('interact:scan', 'camera.position.set(-6, 1.65, 2); scanInteractors(); [nearLore, !!nearForge]');
 run('save:roundtrip', 'saveAll(); [JSON.parse(localStorage.getItem(SKEY)).progress.shards, JSON.parse(localStorage.getItem(SKEY)).progress.up.damage]');
+run('cheat:infShards', 'settings.infShards = true; shards = 3; paused = false; updateQoL(0.016); [shards > 999, DEF.infShards]');
+run('cheat:infShardsOff', 'settings.infShards = false; shards = 5; updateQoL(0.016); shards');
 
 // 4b. the dead: walkers that climb out of the ground, headshots and the horde
 run('dead:kind', 'setRealm(1); spawnMobs(1); paused = false; [MOB_DEF.zombie.hp, MOB_DEF.zombie.name, mobs.filter(m => m.kind === "zombie").length]');

@@ -7,6 +7,7 @@ const SCHEMA = [
     ['diff', 'select', 'Difficulty', [['story', 'Story (half damage)'], ['normal', 'Normal'], ['hard', 'Hard (1.5x damage)']], 'normal'],
     ['god', 'check', 'Invincible', null, false],
     ['infAmmo', 'check', 'Infinite ammo', null, false],
+    ['infShards', 'check', 'Infinite shards (playtesting)', null, false],
     ['aimAssist', 'check', 'Aim assist', null, false],
     ['autoDoor', 'check', 'Auto-open the house door', null, false],
     ['autoGun', 'check', 'Auto-pickup the gun', null, false],
@@ -169,6 +170,7 @@ function updateQoL(dt){
     const r = Math.round(health); if (r !== hpShown) { hpShown = r; updateStats(); }
   }
   if (settings.infAmmo && hasGun && ammo < WEAPONS[cur].max) { ammo = WEAPONS[cur].max; updateStats(); }
+  if (settings.infShards && shards < 9999) { shards = 9999; updateStats(); }
   if (settings.autoDoor && realm === 1 && !doorOpen && !dead && !teleporting && !insideHouse() && Math.hypot(camera.position.x, camera.position.z - Z0) < 1.7) toggleDoor();
   if (settings.autoGun && realm === 1 && !hasGun && Math.hypot(camera.position.x - TX, camera.position.z - TZ) < 1.5) pickGun();
   runTime += dt; fpsN++;
