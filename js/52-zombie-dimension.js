@@ -247,6 +247,7 @@ function enterDimension() {
     setRealm(5);
     camera.position.set(ZX, EYE, 14); yaw = 0; pitch = 0;
     clearDimensionMobs();
+    if (typeof resetItems === 'function') resetItems(dim);
     dimActive = true; dimWave = 0; dimWaveT = 3.2; dimCleared = true;
     fadeEl.style.transition = 'none'; void fadeEl.offsetWidth; fadeEl.style.transition = 'opacity 2s'; fadeEl.style.opacity = '0';
     teleporting = false;

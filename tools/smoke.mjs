@@ -170,6 +170,16 @@ run('dim:mobblocked', '(() => { clearDimensionMobs(); const b = dimBoxes[0]; con
   + 'const inside = m.g.position.x > b[0] && m.g.position.x < b[2] && m.g.position.z > b[1] && m.g.position.z < b[3]; return [inside, m.g.position.z > b[1]]; })()');
 run('dim:clear', '(() => { clearDimensionMobs(); dimWave = 2; dimCleared = false; health = 40; shards = 5; dimWaveT = 99; '
   + 'updateDimension(0.016); const r = [health, shards, dimCleared]; health = maxHp; return r; })()');
+run('dim:pickups', '(() => { const d = items.filter(i => i.group === dim); return [d.length, d.filter(i => i.kind === "ammo").length, '
+  + 'd.filter(i => i.kind === "health").length, d.filter(i => inDimProp(i.wx - ZX, i.wz, 0.6)).length]; })()');
+run('dim:ammo', '(() => { setRealm(5); paused = false; dead = false; heaven = false; hasGun = true; owned.pistol = true; cur = "pistol"; '
+  + 'const it = items.find(i => i.group === dim && i.kind === "ammo"); it.cd = 0; it.g.visible = true; ammo = 0; store.pistol = 0; '
+  + 'camera.position.set(it.wx, 1.65, it.wz); updatePickups(0.016); return [ammo > 0, !it.g.visible, it.cd > 0]; })()');
+run('dim:health', '(() => { const it = items.find(i => i.group === dim && i.kind === "health"); it.cd = 0; it.g.visible = true; '
+  + 'const oldMax = maxHp; maxHp = 100; health = 10; camera.position.set(it.wx, 1.65, it.wz); updatePickups(0.016); '
+  + 'const r = [health, !it.g.visible]; maxHp = oldMax; health = maxHp; return r; })()');
+run('dim:reset-items', '(() => { items.filter(i => i.group === dim).forEach(i => { i.cd = 0; i.g.visible = false; }); resetItems(dim); '
+  + 'return items.filter(i => i.group === dim && i.g.visible).length; })()');
 run('dim:hud', '(() => { updateDimension(0.016); return [dimRoundEl.style.display, dimRoundNum.textContent, dimLeftEl.textContent]; })()');
 run('dim:objective', 'objective().t');
 run('dim:rift', '(() => { camera.position.set(ZX, 1.65, 14); paused = false; dead = false; heaven = false; updateDimension(0.016); updateDoor(0.016); return [nearRift, action]; })()');

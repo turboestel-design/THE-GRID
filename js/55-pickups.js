@@ -21,6 +21,9 @@ addItem(realm3, 'weapon', 'rifle', -6, 14);
 [[0, -8], [-12, 30]].forEach(p => addItem(realm3, 'health', '', p[0], p[1]));
 [[14, 0], [-14, 0], [0, 14], [0, -14]].forEach(p => addItem(realm4, 'ammo', '', p[0], p[1]));
 [[10, 10], [-10, -10], [10, -10]].forEach(p => addItem(realm4, 'health', '', p[0], p[1]));
+// the Zombie Dimension: spread out so a long run means moving for your ammo
+[[14, 26], [-16, 20], [20, 9], [-20, 4], [2, -2], [24, 18]].forEach(p => addItem(dim, 'ammo', '', p[0], p[1]));
+[[10, 18], [-10, 10], [8, 30], [-8, -6], [-24, 26]].forEach(p => addItem(dim, 'health', '', p[0], p[1]));
 function updatePickups(dt){
   for (const it of items) {
     if (!it.group.visible) continue;
