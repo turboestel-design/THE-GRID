@@ -19,17 +19,48 @@ function cyc(){ return 1 + (progress.cycle || 0) * 0.35; }
 const MOB_DEF = {
   husk:    {hp: 3, spd: 2.15, dmg: 10, r: 0.45, shards: 1, style: 'melee',  name: 'HUSK'},
   spitter: {hp: 2, spd: 1.45, dmg: 10, r: 0.50, shards: 1, style: 'range',  name: 'SPITTER'},
-  wisp:    {hp: 2, spd: 3.60, dmg: 9,  r: 0.40, shards: 2, style: 'dash',   name: 'WISP'}
+  wisp:    {hp: 2, spd: 3.60, dmg: 9,  r: 0.40, shards: 2, style: 'dash',   name: 'WISP'},
+  zombie:  {hp: 5, spd: 1.00, dmg: 15, r: 0.50, shards: 3, style: 'melee',  name: 'ZOMBIE'}
 };
 // [kind, local x, local z] per realm
 const SPAWNS = {
-  1: [['husk', -18, -6], ['husk', 16, -14], ['husk', -22, 18], ['husk', 24, 22], ['husk', -8, 30], ['husk', 6, -32]],
+  1: [['husk', -18, -6], ['husk', 16, -14], ['husk', -22, 18], ['husk', 24, 22], ['husk', -8, 30], ['husk', 6, -32],
+      ['zombie', 30, -24], ['zombie', -30, -26]],
   2: [['spitter', 14, -6], ['spitter', -16, 4], ['husk', 22, 18], ['husk', -20, -18], ['spitter', 4, -26], ['husk', -4, 30]],
-  3: [['husk', 18, -10], ['husk', -18, 12], ['spitter', 26, 6], ['husk', -24, -14]],
-  4: [['wisp', 10, 8], ['wisp', -10, 8], ['wisp', 0, -10], ['wisp', 12, -8]]
+  3: [['husk', 18, -10], ['husk', -18, 12], ['spitter', 26, 6], ['husk', -24, -14], ['zombie', 8, 26], ['zombie', -30, 0]],
+  4: [['wisp', 10, 8], ['wisp', -10, 8], ['wisp', 0, -10], ['wisp', 12, -8], ['zombie', -14, -6], ['zombie', 16, 4]]
 };
 const mobs = [];
 const waveDone = {1: false, 2: false, 3: false, 4: false};
+
+// ---- The horde: the dead claw out of the ground on a timer -------------------
+const HORDE_FIRST = 34, HORDE_EVERY = 42, HORDE_CAP = 7, HORDE_RISE = 1.6;
+let hordeT = HORDE_FIRST, hordeN = 0;
+function hordeAlive() {
+  let n = 0;
+  for (const m of mobs) if (m.alive && m.kind === 'zombie' && m.realm === realm) n++;
+  return n;
+}
+function updateHorde(dt) {
+  const tag = document.getElementById('hordeTag'), num = document.getElementById('hordeNum');
+  if (heaven || dead || teleporting || paused) { if (tag) tag.style.display = 'none'; return; }
+  const alive = hordeAlive();
+  if (tag) { tag.style.display = alive ? 'block' : 'none'; if (num) num.textContent = alive; }
+  if (alive >= HORDE_CAP) return;
+  hordeT -= dt;
+  if (hordeT > 0) return;
+  hordeT = HORDE_EVERY;
+  hordeN++;
+  const pack = Math.min(2 + hordeN, 5);
+  for (let i = 0; i < pack; i++) {
+    const a = Math.random() * 6.283, r = 8 + Math.random() * 6;
+    const c = clampToRealm(camera.position.x + Math.sin(a) * r, camera.position.z + Math.cos(a) * r, realm);
+    makeMob('zombie', c[0], c[1], realm);
+  }
+  say('HORDE ' + hordeN + '  \u00b7  THE GROUND MOVES', 2800);
+  sweepTone(90, 38, 1.1, 0.5, 'sawtooth');
+}
+function resetHorde() { hordeT = HORDE_FIRST; hordeN = 0; }
 
 function buildHusk() {
   const g = new THREE.Group();
@@ -76,15 +107,41 @@ function buildWisp() {
   g.userData.core = core; g.userData.ring = ring;
   return g;
 }
+function buildZombie() {
+  const g = new THREE.Group();
+  const skin = new THREE.MeshStandardMaterial({color: 0x6a7a52, roughness: 1, emissive: 0x0d1207});
+  const rag = new THREE.MeshStandardMaterial({color: 0x2b2419, roughness: 1});
+  const bone = new THREE.MeshStandardMaterial({color: 0xb8ad90, roughness: 1});
+  const eye = new THREE.MeshBasicMaterial({color: 0x9fe85a});
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.8, 0.3), rag); torso.position.y = 1.2; torso.rotation.x = 0.16; g.add(torso);
+  const ribs = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.34, 0.06), bone); ribs.position.set(0, 1.26, 0.16); ribs.rotation.x = 0.16; g.add(ribs);
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.12), skin); neck.position.set(0.02, 1.63, 0.1); g.add(neck);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.3, 0.28), skin);
+  head.position.set(0.03, 1.82, 0.14); head.rotation.z = 0.24; head.userData.head = true; g.add(head);
+  [-0.05, 0.05].forEach(x => { const e = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.03), eye); e.position.set(x + 0.03, 1.84, 0.29); g.add(e); });
+  const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.06, 0.1), bone); jaw.position.set(0.03, 1.72, 0.26); jaw.rotation.x = 0.5; g.add(jaw);
+  const legs = [], arms = [];
+  [-0.14, 0.14].forEach(x => { const p = new THREE.Group(); p.position.set(x, 0.82, 0); const l = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.82, 0.15), rag); l.position.y = -0.41; p.add(l); g.add(p); legs.push(p); });
+  [-0.34, 0.34].forEach(x => {
+    const p = new THREE.Group(); p.position.set(x, 1.52, 0.04);
+    const a = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.66, 0.1), skin); a.position.y = -0.33; p.add(a);
+    const hand = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.08), bone); hand.position.y = -0.7; p.add(hand);
+    p.rotation.x = -1.3; g.add(p); arms.push(p);
+  });
+  g.userData.legs = legs; g.userData.arms = arms;
+  g.userData.flash = skin; g.userData.baseEm = 0x0d1207;
+  return g;
+}
 function makeMob(kind, x, z, r) {
   const D = MOB_DEF[kind];
-  const g = kind === 'husk' ? buildHusk() : kind === 'spitter' ? buildSpitter() : buildWisp();
-  g.position.set(x, 0, z);
+  const g = kind === 'husk' ? buildHusk() : kind === 'spitter' ? buildSpitter() : kind === 'zombie' ? buildZombie() : buildWisp();
+  g.position.set(x, kind === 'zombie' ? -1.5 : 0, z);
   const scale = 1 + (progress.cycle || 0) * 0.28;
   const mob = {
     kind, realm: r, g, hp: D.hp * scale, max: D.hp * scale, alive: true,
     atk: 1 + Math.random(), hit: 0, fall: 0, ph: Math.random() * 6,
-    spd: D.spd, r: D.r, t: 1.5 + Math.random() * 2, ox: 0, oz: 0, ang: Math.random() * 6.283
+    spd: D.spd, r: D.r, t: 1.5 + Math.random() * 2, ox: 0, oz: 0, ang: Math.random() * 6.283,
+    rise: kind === 'zombie' ? HORDE_RISE : 0, lunged: 0
   };
   g.traverse(o => { if (o.isMesh) o.userData.mob = mob; });
   mobLayer.add(g); mobs.push(mob);
@@ -93,7 +150,7 @@ function makeMob(kind, x, z, r) {
 function spawnMobs(n) {
   for (let i = mobs.length - 1; i >= 0; i--) if (mobs[i].realm === n) { mobLayer.remove(mobs[i].g); mobs.splice(i, 1); }
   for (const [kind, lx, lz] of SPAWNS[n]) makeMob(kind, REALM_X[n] + lx, lz, n);
-  waveDone[n] = false;
+  waveDone[n] = false; resetHorde();
   for (const s of mobShots) { s.life = 0; s.m.visible = false; }
 }
 function clampToRealm(x, z, n) {
@@ -115,11 +172,17 @@ function mobMove(mob, dx, dz) {
   if (mob.realm === 1 && Math.abs(nx) < 3.7 && nz < -8.8 && nz > -15.2) nz = nz > -12 ? -8.8 : -15.2;
   g.position.x = nx; g.position.z = nz;
 }
-function hurtMob(mob, d) {
+function hurtMob(mob, d, head) {
   if (!mob.alive) return;
+  if (head && mob.kind === 'zombie') d = mob.hp + 1;   // a headshot puts a walker down for good
   mob.hp -= d; mob.hit = 0.14;
-  if (mob.hp > 0) return;
+  if (mob.hp > 0) {
+    if (mob.kind === 'zombie') gorePuff(mob.g.position.x, 1.3, mob.g.position.z, 3, 0x4a1010, 1.8, 1.6);
+    return;
+  }
   mob.alive = false; mob.fall = 0; kills++;
+  gorePuff(mob.g.position.x, 1.15, mob.g.position.z, mob.kind === 'zombie' ? 15 : 7,
+    mob.kind === 'zombie' ? 0x4a1010 : 0x30201a, 3.4, 3.6);
   spawnShards(mob.g.position.x, 1.1, mob.g.position.z, MOB_DEF[mob.kind].shards);
   sweepTone(mob.kind === 'wisp' ? 900 : 380, 110, 0.3, 0.45, 'triangle');
 }
@@ -167,14 +230,31 @@ function updateMobs(dt) {
       continue;
     }
     g.visible = true;
+    if (mob.rise > 0) {
+      mob.rise = Math.max(0, mob.rise - dt);
+      const k = 1 - mob.rise / HORDE_RISE;
+      g.position.y = -1.5 + 1.5 * k;
+      g.rotation.z = Math.sin(k * 9) * 0.12 * (1 - k);
+      if (mob.rise <= 0) {
+        g.position.y = 0; g.rotation.z = 0;
+        gorePuff(g.position.x, 0.25, g.position.z, 9, 0x3a2a16, 2.2, 2.6);
+        sweepTone(140, 60, 0.4, 0.3, 'triangle');
+      }
+      continue;
+    }
     mob.hit = Math.max(0, mob.hit - dt); mob.atk = Math.max(0, mob.atk - dt);
     const dx = pxReal - g.position.x, dz = pzReal - g.position.z, dist = Math.hypot(dx, dz) || 0.001;
     const D = MOB_DEF[mob.kind];
     g.rotation.y = Math.atan2(dx, dz);
     let moving = 0;
     if (D.style === 'melee') {
-      if (dist < 38 && dist > 1.25) { mobMove(mob, dx / dist * mob.spd * dt, dz / dist * mob.spd * dt); moving = 1; }
-      if (dist < 1.5 && mob.atk <= 0 && !dead) { mob.atk = 1.25; hurt(D.dmg); }
+      const sp = (mob.kind === 'zombie' && dist < 5) ? mob.spd * 2.3 : mob.spd;
+      if (dist < 38 && dist > 1.25) { mobMove(mob, dx / dist * sp * dt, dz / dist * sp * dt); moving = 1; }
+      if (dist < 1.5 && mob.atk <= 0 && !dead) {
+        mob.atk = mob.kind === 'zombie' ? 1.6 : 1.25;
+        hurt(D.dmg);
+        if (mob.kind === 'zombie') { gorePuff(g.position.x, 1.4, g.position.z, 2, 0x4a1010, 1.2, 1.2); sweepTone(200, 60, 0.3, 0.3, 'square'); }
+      }
     } else if (D.style === 'range') {
       if (dist < 8) mobMove(mob, -dx / dist * mob.spd * dt, -dz / dist * mob.spd * dt);
       else if (dist > 15 && dist < 45) mobMove(mob, dx / dist * mob.spd * dt, dz / dist * mob.spd * dt);
@@ -198,7 +278,15 @@ function updateMobs(dt) {
     }
     // animation
     if (g.userData.flash) g.userData.flash.emissive.setHex(mob.hit > 0 ? 0x772200 : g.userData.baseEm);
-    if (mob.kind === 'husk') {
+    if (mob.kind === 'zombie') {
+      mob.ph += dt * (moving ? 3.6 : 1);
+      const sw = Math.sin(mob.ph) * (moving ? 0.44 : 0.05);
+      g.userData.legs[0].rotation.x = sw; g.userData.legs[1].rotation.x = -sw;
+      g.userData.arms[0].rotation.x = -1.3 + Math.sin(mob.ph * 0.8) * 0.09;
+      g.userData.arms[1].rotation.x = -1.3 - Math.sin(mob.ph * 0.8) * 0.09;
+      g.rotation.z = Math.sin(mob.ph * 0.55) * 0.075;
+      g.position.y = Math.abs(Math.sin(mob.ph * 0.9)) * 0.05;
+    } else if (mob.kind === 'husk') {
       mob.ph += dt * (moving ? 7 : 1);
       const sw = Math.sin(mob.ph) * (moving ? 0.55 : 0.05);
       g.userData.legs[0].rotation.x = sw; g.userData.legs[1].rotation.x = -sw;
@@ -214,7 +302,8 @@ function updateMobs(dt) {
   }
 }
 function spawnWave(n) {
-  const kinds = n === 4 ? ['wisp', 'wisp'] : n === 2 ? ['spitter', 'husk', 'husk'] : n === 3 ? ['husk', 'husk', 'spitter'] : ['husk', 'husk', 'husk'];
+  const kinds = n === 4 ? ['wisp', 'wisp', 'zombie'] : n === 2 ? ['spitter', 'husk', 'husk', 'zombie']
+    : n === 3 ? ['husk', 'husk', 'spitter', 'zombie'] : ['husk', 'husk', 'husk', 'zombie'];
   kinds.forEach((k, i) => {
     const a = Math.random() * 6.283, r = 12 + Math.random() * 5;
     const mob = makeMob(k, camera.position.x + Math.sin(a) * r, camera.position.z + Math.cos(a) * r, n);

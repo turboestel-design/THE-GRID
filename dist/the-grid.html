@@ -34,7 +34,8 @@ canvas{display:block;touch-action:none}
 .logo:before{content:attr(data-text);position:absolute;left:0;right:0;top:0;color:var(--blood);opacity:.5;
   text-indent:.22em;clip-path:inset(46% -2% 44% -2%);transform:translateX(3px);animation:flicker 7s infinite}
 @keyframes flicker{0%,92%,100%{opacity:.5}93%{opacity:.1}94%{opacity:.7}95%{opacity:.05}97%{opacity:.55}}
-.tagline{margin:14px 0 40px;font-size:clamp(9px,1.6vw,11px);letter-spacing:.52em;color:#8a8073;
+.dlcBadge{display:inline-block;margin:-24px 0 30px;padding:4px 10px 3px;border:1px solid #5a1a12;color:#c4553c;font-size:9px;letter-spacing:.42em;text-transform:uppercase;text-indent:.42em}
+.tagline{margin:14px 0 26px;font-size:clamp(9px,1.6vw,11px);letter-spacing:.52em;color:#8a8073;
   text-transform:uppercase;text-indent:.52em}
 
 .nav{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
@@ -135,6 +136,9 @@ canvas{display:block;touch-action:none}
 #ammoRow{max-width:150px}
 #obj{position:fixed;left:14px;top:calc(env(safe-area-inset-top,0px) + 38px);display:none;align-items:center;gap:8px;color:var(--bone);font-size:12px;letter-spacing:2px;opacity:.85;pointer-events:none;text-shadow:0 1px 4px #000;z-index:4}
 #objArrow{display:inline-block;font-size:18px;color:#c9a24a}
+#hordeTag{position:fixed;left:14px;top:calc(env(safe-area-inset-top,0px) + 60px);display:none;color:#b06a4a;font-size:11px;letter-spacing:3px;pointer-events:none;text-shadow:0 1px 4px #000;z-index:4;animation:hordePulse 1.6s ease-in-out infinite}
+#hordeTag b{color:#e88a5a;font-weight:700}
+@keyframes hordePulse{0%,100%{opacity:.65}50%{opacity:1}}
 #cross.hit{width:14px;height:14px;margin:-7px;background:transparent;border:2px solid #e84a3a}
 #cross.hit.head{border-color:#ffd36b}
 body.nograin #grain{display:none !important}
@@ -187,6 +191,7 @@ body.lefty #swapBtn{right:auto;left:192px}
 <div id="hurt"></div><div id="fade"></div><div id="stats"></div><div id="msg"></div><div id="cross"></div>
 <div id="cap"></div><div id="fps"></div>
 <div id="obj"><span id="objArrow">▲</span><span id="objText"></span></div>
+<div id="hordeTag">THE DEAD <b id="hordeNum">0</b></div>
 <div id="ammoBox"><div id="ammoLabel">ROUNDS</div><div id="ammoNum">0</div><div id="ammoRow"></div></div>
 <div id="bossBar"><div id="bossName">THE TALL MAN</div><div id="bossTrack"><div id="bossGhost"></div><div id="bossFill"></div><div id="bossSeg"></div></div></div>
 <button id="fireBtn" aria-label="Fire">FIRE</button>
@@ -208,6 +213,7 @@ body.lefty #swapBtn{right:auto;left:192px}
       <div class="brand">
         <h1 id="menuTitle" data-text="THE GRID" class="logo">THE GRID</h1>
         <p id="menuSub" class="tagline">DO NOT STOP WALKING</p>
+        <span class="dlcBadge">Zombie DLC</span>
       </div>
       <nav class="nav" id="nav">
         <button id="resume" class="navBtn primary">ENTER THE GRID</button>
@@ -228,7 +234,7 @@ body.lefty #swapBtn{right:auto;left:192px}
           <dt>Kills</dt><dd id="statKills">0</dd>
           <dt>Cycle</dt><dd id="statCycle">1</dd>
         </dl>
-        <div class="cardFoot"><span id="saveMeta">NO SAVE</span><span class="ver">V0.3</span></div>
+        <div class="cardFoot"><span id="saveMeta">NO SAVE</span><span class="ver">V0.4</span></div>
         <button id="wipe" class="wipeBtn" hidden>Erase save</button>
       </div>
     </aside>
@@ -1249,17 +1255,48 @@ function cyc(){ return 1 + (progress.cycle || 0) * 0.35; }
 const MOB_DEF = {
   husk:    {hp: 3, spd: 2.15, dmg: 10, r: 0.45, shards: 1, style: 'melee',  name: 'HUSK'},
   spitter: {hp: 2, spd: 1.45, dmg: 10, r: 0.50, shards: 1, style: 'range',  name: 'SPITTER'},
-  wisp:    {hp: 2, spd: 3.60, dmg: 9,  r: 0.40, shards: 2, style: 'dash',   name: 'WISP'}
+  wisp:    {hp: 2, spd: 3.60, dmg: 9,  r: 0.40, shards: 2, style: 'dash',   name: 'WISP'},
+  zombie:  {hp: 5, spd: 1.00, dmg: 15, r: 0.50, shards: 3, style: 'melee',  name: 'ZOMBIE'}
 };
 // [kind, local x, local z] per realm
 const SPAWNS = {
-  1: [['husk', -18, -6], ['husk', 16, -14], ['husk', -22, 18], ['husk', 24, 22], ['husk', -8, 30], ['husk', 6, -32]],
+  1: [['husk', -18, -6], ['husk', 16, -14], ['husk', -22, 18], ['husk', 24, 22], ['husk', -8, 30], ['husk', 6, -32],
+      ['zombie', 30, -24], ['zombie', -30, -26]],
   2: [['spitter', 14, -6], ['spitter', -16, 4], ['husk', 22, 18], ['husk', -20, -18], ['spitter', 4, -26], ['husk', -4, 30]],
-  3: [['husk', 18, -10], ['husk', -18, 12], ['spitter', 26, 6], ['husk', -24, -14]],
-  4: [['wisp', 10, 8], ['wisp', -10, 8], ['wisp', 0, -10], ['wisp', 12, -8]]
+  3: [['husk', 18, -10], ['husk', -18, 12], ['spitter', 26, 6], ['husk', -24, -14], ['zombie', 8, 26], ['zombie', -30, 0]],
+  4: [['wisp', 10, 8], ['wisp', -10, 8], ['wisp', 0, -10], ['wisp', 12, -8], ['zombie', -14, -6], ['zombie', 16, 4]]
 };
 const mobs = [];
 const waveDone = {1: false, 2: false, 3: false, 4: false};
+
+// ---- The horde: the dead claw out of the ground on a timer -------------------
+const HORDE_FIRST = 34, HORDE_EVERY = 42, HORDE_CAP = 7, HORDE_RISE = 1.6;
+let hordeT = HORDE_FIRST, hordeN = 0;
+function hordeAlive() {
+  let n = 0;
+  for (const m of mobs) if (m.alive && m.kind === 'zombie' && m.realm === realm) n++;
+  return n;
+}
+function updateHorde(dt) {
+  const tag = document.getElementById('hordeTag'), num = document.getElementById('hordeNum');
+  if (heaven || dead || teleporting || paused) { if (tag) tag.style.display = 'none'; return; }
+  const alive = hordeAlive();
+  if (tag) { tag.style.display = alive ? 'block' : 'none'; if (num) num.textContent = alive; }
+  if (alive >= HORDE_CAP) return;
+  hordeT -= dt;
+  if (hordeT > 0) return;
+  hordeT = HORDE_EVERY;
+  hordeN++;
+  const pack = Math.min(2 + hordeN, 5);
+  for (let i = 0; i < pack; i++) {
+    const a = Math.random() * 6.283, r = 8 + Math.random() * 6;
+    const c = clampToRealm(camera.position.x + Math.sin(a) * r, camera.position.z + Math.cos(a) * r, realm);
+    makeMob('zombie', c[0], c[1], realm);
+  }
+  say('HORDE ' + hordeN + '  \u00b7  THE GROUND MOVES', 2800);
+  sweepTone(90, 38, 1.1, 0.5, 'sawtooth');
+}
+function resetHorde() { hordeT = HORDE_FIRST; hordeN = 0; }
 
 function buildHusk() {
   const g = new THREE.Group();
@@ -1306,15 +1343,41 @@ function buildWisp() {
   g.userData.core = core; g.userData.ring = ring;
   return g;
 }
+function buildZombie() {
+  const g = new THREE.Group();
+  const skin = new THREE.MeshStandardMaterial({color: 0x6a7a52, roughness: 1, emissive: 0x0d1207});
+  const rag = new THREE.MeshStandardMaterial({color: 0x2b2419, roughness: 1});
+  const bone = new THREE.MeshStandardMaterial({color: 0xb8ad90, roughness: 1});
+  const eye = new THREE.MeshBasicMaterial({color: 0x9fe85a});
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.8, 0.3), rag); torso.position.y = 1.2; torso.rotation.x = 0.16; g.add(torso);
+  const ribs = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.34, 0.06), bone); ribs.position.set(0, 1.26, 0.16); ribs.rotation.x = 0.16; g.add(ribs);
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.12), skin); neck.position.set(0.02, 1.63, 0.1); g.add(neck);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.3, 0.28), skin);
+  head.position.set(0.03, 1.82, 0.14); head.rotation.z = 0.24; head.userData.head = true; g.add(head);
+  [-0.05, 0.05].forEach(x => { const e = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.03), eye); e.position.set(x + 0.03, 1.84, 0.29); g.add(e); });
+  const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.06, 0.1), bone); jaw.position.set(0.03, 1.72, 0.26); jaw.rotation.x = 0.5; g.add(jaw);
+  const legs = [], arms = [];
+  [-0.14, 0.14].forEach(x => { const p = new THREE.Group(); p.position.set(x, 0.82, 0); const l = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.82, 0.15), rag); l.position.y = -0.41; p.add(l); g.add(p); legs.push(p); });
+  [-0.34, 0.34].forEach(x => {
+    const p = new THREE.Group(); p.position.set(x, 1.52, 0.04);
+    const a = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.66, 0.1), skin); a.position.y = -0.33; p.add(a);
+    const hand = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.08), bone); hand.position.y = -0.7; p.add(hand);
+    p.rotation.x = -1.3; g.add(p); arms.push(p);
+  });
+  g.userData.legs = legs; g.userData.arms = arms;
+  g.userData.flash = skin; g.userData.baseEm = 0x0d1207;
+  return g;
+}
 function makeMob(kind, x, z, r) {
   const D = MOB_DEF[kind];
-  const g = kind === 'husk' ? buildHusk() : kind === 'spitter' ? buildSpitter() : buildWisp();
-  g.position.set(x, 0, z);
+  const g = kind === 'husk' ? buildHusk() : kind === 'spitter' ? buildSpitter() : kind === 'zombie' ? buildZombie() : buildWisp();
+  g.position.set(x, kind === 'zombie' ? -1.5 : 0, z);
   const scale = 1 + (progress.cycle || 0) * 0.28;
   const mob = {
     kind, realm: r, g, hp: D.hp * scale, max: D.hp * scale, alive: true,
     atk: 1 + Math.random(), hit: 0, fall: 0, ph: Math.random() * 6,
-    spd: D.spd, r: D.r, t: 1.5 + Math.random() * 2, ox: 0, oz: 0, ang: Math.random() * 6.283
+    spd: D.spd, r: D.r, t: 1.5 + Math.random() * 2, ox: 0, oz: 0, ang: Math.random() * 6.283,
+    rise: kind === 'zombie' ? HORDE_RISE : 0, lunged: 0
   };
   g.traverse(o => { if (o.isMesh) o.userData.mob = mob; });
   mobLayer.add(g); mobs.push(mob);
@@ -1323,7 +1386,7 @@ function makeMob(kind, x, z, r) {
 function spawnMobs(n) {
   for (let i = mobs.length - 1; i >= 0; i--) if (mobs[i].realm === n) { mobLayer.remove(mobs[i].g); mobs.splice(i, 1); }
   for (const [kind, lx, lz] of SPAWNS[n]) makeMob(kind, REALM_X[n] + lx, lz, n);
-  waveDone[n] = false;
+  waveDone[n] = false; resetHorde();
   for (const s of mobShots) { s.life = 0; s.m.visible = false; }
 }
 function clampToRealm(x, z, n) {
@@ -1345,11 +1408,17 @@ function mobMove(mob, dx, dz) {
   if (mob.realm === 1 && Math.abs(nx) < 3.7 && nz < -8.8 && nz > -15.2) nz = nz > -12 ? -8.8 : -15.2;
   g.position.x = nx; g.position.z = nz;
 }
-function hurtMob(mob, d) {
+function hurtMob(mob, d, head) {
   if (!mob.alive) return;
+  if (head && mob.kind === 'zombie') d = mob.hp + 1;   // a headshot puts a walker down for good
   mob.hp -= d; mob.hit = 0.14;
-  if (mob.hp > 0) return;
+  if (mob.hp > 0) {
+    if (mob.kind === 'zombie') gorePuff(mob.g.position.x, 1.3, mob.g.position.z, 3, 0x4a1010, 1.8, 1.6);
+    return;
+  }
   mob.alive = false; mob.fall = 0; kills++;
+  gorePuff(mob.g.position.x, 1.15, mob.g.position.z, mob.kind === 'zombie' ? 15 : 7,
+    mob.kind === 'zombie' ? 0x4a1010 : 0x30201a, 3.4, 3.6);
   spawnShards(mob.g.position.x, 1.1, mob.g.position.z, MOB_DEF[mob.kind].shards);
   sweepTone(mob.kind === 'wisp' ? 900 : 380, 110, 0.3, 0.45, 'triangle');
 }
@@ -1397,14 +1466,31 @@ function updateMobs(dt) {
       continue;
     }
     g.visible = true;
+    if (mob.rise > 0) {
+      mob.rise = Math.max(0, mob.rise - dt);
+      const k = 1 - mob.rise / HORDE_RISE;
+      g.position.y = -1.5 + 1.5 * k;
+      g.rotation.z = Math.sin(k * 9) * 0.12 * (1 - k);
+      if (mob.rise <= 0) {
+        g.position.y = 0; g.rotation.z = 0;
+        gorePuff(g.position.x, 0.25, g.position.z, 9, 0x3a2a16, 2.2, 2.6);
+        sweepTone(140, 60, 0.4, 0.3, 'triangle');
+      }
+      continue;
+    }
     mob.hit = Math.max(0, mob.hit - dt); mob.atk = Math.max(0, mob.atk - dt);
     const dx = pxReal - g.position.x, dz = pzReal - g.position.z, dist = Math.hypot(dx, dz) || 0.001;
     const D = MOB_DEF[mob.kind];
     g.rotation.y = Math.atan2(dx, dz);
     let moving = 0;
     if (D.style === 'melee') {
-      if (dist < 38 && dist > 1.25) { mobMove(mob, dx / dist * mob.spd * dt, dz / dist * mob.spd * dt); moving = 1; }
-      if (dist < 1.5 && mob.atk <= 0 && !dead) { mob.atk = 1.25; hurt(D.dmg); }
+      const sp = (mob.kind === 'zombie' && dist < 5) ? mob.spd * 2.3 : mob.spd;
+      if (dist < 38 && dist > 1.25) { mobMove(mob, dx / dist * sp * dt, dz / dist * sp * dt); moving = 1; }
+      if (dist < 1.5 && mob.atk <= 0 && !dead) {
+        mob.atk = mob.kind === 'zombie' ? 1.6 : 1.25;
+        hurt(D.dmg);
+        if (mob.kind === 'zombie') { gorePuff(g.position.x, 1.4, g.position.z, 2, 0x4a1010, 1.2, 1.2); sweepTone(200, 60, 0.3, 0.3, 'square'); }
+      }
     } else if (D.style === 'range') {
       if (dist < 8) mobMove(mob, -dx / dist * mob.spd * dt, -dz / dist * mob.spd * dt);
       else if (dist > 15 && dist < 45) mobMove(mob, dx / dist * mob.spd * dt, dz / dist * mob.spd * dt);
@@ -1428,7 +1514,15 @@ function updateMobs(dt) {
     }
     // animation
     if (g.userData.flash) g.userData.flash.emissive.setHex(mob.hit > 0 ? 0x772200 : g.userData.baseEm);
-    if (mob.kind === 'husk') {
+    if (mob.kind === 'zombie') {
+      mob.ph += dt * (moving ? 3.6 : 1);
+      const sw = Math.sin(mob.ph) * (moving ? 0.44 : 0.05);
+      g.userData.legs[0].rotation.x = sw; g.userData.legs[1].rotation.x = -sw;
+      g.userData.arms[0].rotation.x = -1.3 + Math.sin(mob.ph * 0.8) * 0.09;
+      g.userData.arms[1].rotation.x = -1.3 - Math.sin(mob.ph * 0.8) * 0.09;
+      g.rotation.z = Math.sin(mob.ph * 0.55) * 0.075;
+      g.position.y = Math.abs(Math.sin(mob.ph * 0.9)) * 0.05;
+    } else if (mob.kind === 'husk') {
       mob.ph += dt * (moving ? 7 : 1);
       const sw = Math.sin(mob.ph) * (moving ? 0.55 : 0.05);
       g.userData.legs[0].rotation.x = sw; g.userData.legs[1].rotation.x = -sw;
@@ -1444,7 +1538,8 @@ function updateMobs(dt) {
   }
 }
 function spawnWave(n) {
-  const kinds = n === 4 ? ['wisp', 'wisp'] : n === 2 ? ['spitter', 'husk', 'husk'] : n === 3 ? ['husk', 'husk', 'spitter'] : ['husk', 'husk', 'husk'];
+  const kinds = n === 4 ? ['wisp', 'wisp', 'zombie'] : n === 2 ? ['spitter', 'husk', 'husk', 'zombie']
+    : n === 3 ? ['husk', 'husk', 'spitter', 'zombie'] : ['husk', 'husk', 'husk', 'zombie'];
   kinds.forEach((k, i) => {
     const a = Math.random() * 6.283, r = 12 + Math.random() * 5;
     const mob = makeMob(k, camera.position.x + Math.sin(a) * r, camera.position.z + Math.cos(a) * r, n);
@@ -1689,6 +1784,57 @@ function initActTwo() {
 
 </script>
 <script>
+/* THE GRID — Gore: blood, dirt and bone that comes apart when the dead fall.
+   Classic script: every file shares one global scope, loaded in the order used by
+   index.html. Splitting this file cannot change behaviour. */
+// ============================================================================
+//  GORE — a fixed pool of little cubes. Nothing is created or destroyed while
+//  playing; a "puff" just recycles the oldest ones, so a busy horde costs nothing.
+// ============================================================================
+const goreLayer = new THREE.Group(); scene.add(goreLayer);
+const gorePool = [];
+const goreGeo = new THREE.BoxGeometry(1, 1, 1);
+for (let i = 0; i < 96; i++) {
+  const m = new THREE.Mesh(goreGeo, new THREE.MeshBasicMaterial({color: 0x4a1010}));
+  m.visible = false;
+  goreLayer.add(m);
+  gorePool.push({m, vx: 0, vy: 0, vz: 0, life: 0, spin: 0});
+}
+let goreNext = 0;
+
+function gorePuff(x, y, z, n, color, spread, up) {
+  const sp = spread || 3, u = up || 3;
+  for (let i = 0; i < n; i++) {
+    const p = gorePool[goreNext++ % gorePool.length];
+    p.m.scale.setScalar(0.05 + Math.random() * 0.13);
+    p.m.material.color.setHex(color);
+    p.m.position.set(x, y, z);
+    p.m.rotation.set(Math.random() * 6, Math.random() * 6, Math.random() * 6);
+    p.vx = (Math.random() - 0.5) * sp;
+    p.vz = (Math.random() - 0.5) * sp;
+    p.vy = u * (0.45 + Math.random());
+    p.life = 0.9 + Math.random() * 0.8;
+    p.spin = (Math.random() - 0.5) * 11;
+    p.m.visible = true;
+  }
+}
+
+function updateGore(dt) {
+  for (const p of gorePool) {
+    if (p.life <= 0) continue;
+    p.life -= dt;
+    if (p.life <= 0) { p.m.visible = false; continue; }
+    p.vy -= 9.8 * dt;
+    p.m.position.x += p.vx * dt;
+    p.m.position.y += p.vy * dt;
+    p.m.position.z += p.vz * dt;
+    if (p.m.position.y < 0.05) { p.m.position.y = 0.05; p.vy *= -0.3; p.vx *= 0.55; p.vz *= 0.55; p.spin *= 0.5; }
+    p.m.rotation.x += p.spin * dt;
+    p.m.rotation.z += p.spin * 0.7 * dt;
+  }
+}
+</script>
+<script>
 /* THE GRID — Shooting resolution, boss health bar, portals, realm switching and teleporting.
    Classic script: every file shares one global scope, loaded in the order used by
    index.html. Splitting this file cannot change behaviour. */
@@ -1712,7 +1858,7 @@ function shoot(){
     if (!hit) continue;
     const o = hit.object.userData, d = (o.head ? W.head : W.dmg) * (1 + up.damage * 0.15);
     if (o.man || o.beast || o.hound || o.boss || o.mob) hitMark(o.head);
-    if (o.man) hurtMan(d); else if (o.beast) hurtBeast(d); else if (o.hound) hurtHound(o.hound, d); else if (o.boss) hurtKing(o.head ? d : d*0.7); else if (o.mob) hurtMob(o.mob, d);
+    if (o.man) hurtMan(d); else if (o.beast) hurtBeast(d); else if (o.hound) hurtHound(o.hound, d); else if (o.boss) hurtKing(o.head ? d : d*0.7); else if (o.mob) hurtMob(o.mob, d, o.head);
   }
 }
 document.addEventListener('keydown', e => {
@@ -2516,6 +2662,7 @@ function loop(){
   updateMan(dt); updateHeaven(dt); updateBars(dt); updateBeast(dt); updateRealm2(dt); updatePortals(dt);
   updateHounds(dt); updateKing(dt); updateWorlds(dt); updatePickups(dt);
   updateMobs(dt); updateMobShots(dt); updateShards(dt); updateForge(dt); updateLoreItems(dt); updateWaves();
+  updateHorde(dt); updateGore(dt);
   if (firing && WEAPONS[cur].auto) shoot();
   updateQoL(dt);
   const rc = settings.recoil ? 1 : 0; gunView.position.z = -0.45 + recoil*0.1*rc; gunView.rotation.x = recoil*0.25*rc;

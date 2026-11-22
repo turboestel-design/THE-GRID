@@ -69,6 +69,16 @@ run('lore:read', 'for (const g of loreItems) readLore(g.userData.i); [loreFound,
 run('interact:scan', 'camera.position.set(-6, 1.65, 2); scanInteractors(); [nearLore, !!nearForge]');
 run('save:roundtrip', 'saveAll(); [JSON.parse(localStorage.getItem(SKEY)).progress.shards, JSON.parse(localStorage.getItem(SKEY)).progress.up.damage]');
 
+// 4b. the dead: walkers that climb out of the ground, headshots and the horde
+run('dead:kind', 'setRealm(1); spawnMobs(1); paused = false; [MOB_DEF.zombie.hp, MOB_DEF.zombie.name, mobs.filter(m => m.kind === "zombie").length]');
+run('dead:rise', '(() => { const z = mobs.find(m => m.kind === "zombie"); for (let i = 0; i < 110; i++) updateMobs(0.016); return [z.rise <= 0, z.g.position.y > -0.2]; })()');
+run('dead:body', '(() => { const z = mobs.find(m => m.kind === "zombie" && m.alive); hurtMob(z, 1, false); return z.alive; })()');
+run('dead:headshot', '(() => { const z = mobs.find(m => m.kind === "zombie" && m.alive); hurtMob(z, 1, true); return z.alive; })()');
+run('dead:gore', 'gorePool.filter(g => g.life > 0).length');
+run('dead:horde', '(() => { hordeT = 0; updateHorde(0.016); return [hordeN, document.getElementById("hordeTag").style.display, document.getElementById("hordeNum").textContent]; })()');
+run('dead:hordeCap', '(() => { for (let i = 0; i < 40; i++) { hordeT = 0; updateHorde(0.016); } return hordeAlive() <= HORDE_CAP + 2; })()');
+run('dead:realmReset', 'setRealm(2); [hordeN, hordeT]');
+
 // 5. death + heaven + respawn paths
 for (const r of [1, 2, 3, 4]) {
   run(`death:realm${r}`, `enterRealmByIndex(${r}); health = maxHp; die(); [deathRealm, dead]`);
@@ -86,5 +96,5 @@ if (errors.length) {
   for (const e of [...new Set(errors)]) console.log(' -', e);
   process.exitCode = 1;
 } else {
-  console.log('PASS — 4 realms, 3 weapons, 3 enemy types, forge, lore, shards, checkpoint death, NG+ all OK');
+  console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, forge, lore, shards, checkpoint death, NG+ all OK');
 }

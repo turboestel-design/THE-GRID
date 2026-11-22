@@ -21,7 +21,7 @@ function shoot(){
     if (!hit) continue;
     const o = hit.object.userData, d = (o.head ? W.head : W.dmg) * (1 + up.damage * 0.15);
     if (o.man || o.beast || o.hound || o.boss || o.mob) hitMark(o.head);
-    if (o.man) hurtMan(d); else if (o.beast) hurtBeast(d); else if (o.hound) hurtHound(o.hound, d); else if (o.boss) hurtKing(o.head ? d : d*0.7); else if (o.mob) hurtMob(o.mob, d);
+    if (o.man) hurtMan(d); else if (o.beast) hurtBeast(d); else if (o.hound) hurtHound(o.hound, d); else if (o.boss) hurtKing(o.head ? d : d*0.7); else if (o.mob) hurtMob(o.mob, d, o.head);
   }
 }
 document.addEventListener('keydown', e => {

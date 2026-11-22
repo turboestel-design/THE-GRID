@@ -86,6 +86,7 @@ function loop(){
   updateMan(dt); updateHeaven(dt); updateBars(dt); updateBeast(dt); updateRealm2(dt); updatePortals(dt);
   updateHounds(dt); updateKing(dt); updateWorlds(dt); updatePickups(dt);
   updateMobs(dt); updateMobShots(dt); updateShards(dt); updateForge(dt); updateLoreItems(dt); updateWaves();
+  updateHorde(dt); updateGore(dt);
   if (firing && WEAPONS[cur].auto) shoot();
   updateQoL(dt);
   const rc = settings.recoil ? 1 : 0; gunView.position.z = -0.45 + recoil*0.1*rc; gunView.rotation.x = recoil*0.25*rc;

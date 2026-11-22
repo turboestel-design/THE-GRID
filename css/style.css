@@ -27,7 +27,8 @@ canvas{display:block;touch-action:none}
 .logo:before{content:attr(data-text);position:absolute;left:0;right:0;top:0;color:var(--blood);opacity:.5;
   text-indent:.22em;clip-path:inset(46% -2% 44% -2%);transform:translateX(3px);animation:flicker 7s infinite}
 @keyframes flicker{0%,92%,100%{opacity:.5}93%{opacity:.1}94%{opacity:.7}95%{opacity:.05}97%{opacity:.55}}
-.tagline{margin:14px 0 40px;font-size:clamp(9px,1.6vw,11px);letter-spacing:.52em;color:#8a8073;
+.dlcBadge{display:inline-block;margin:-24px 0 30px;padding:4px 10px 3px;border:1px solid #5a1a12;color:#c4553c;font-size:9px;letter-spacing:.42em;text-transform:uppercase;text-indent:.42em}
+.tagline{margin:14px 0 26px;font-size:clamp(9px,1.6vw,11px);letter-spacing:.52em;color:#8a8073;
   text-transform:uppercase;text-indent:.52em}
 
 .nav{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
@@ -128,6 +129,9 @@ canvas{display:block;touch-action:none}
 #ammoRow{max-width:150px}
 #obj{position:fixed;left:14px;top:calc(env(safe-area-inset-top,0px) + 38px);display:none;align-items:center;gap:8px;color:var(--bone);font-size:12px;letter-spacing:2px;opacity:.85;pointer-events:none;text-shadow:0 1px 4px #000;z-index:4}
 #objArrow{display:inline-block;font-size:18px;color:#c9a24a}
+#hordeTag{position:fixed;left:14px;top:calc(env(safe-area-inset-top,0px) + 60px);display:none;color:#b06a4a;font-size:11px;letter-spacing:3px;pointer-events:none;text-shadow:0 1px 4px #000;z-index:4;animation:hordePulse 1.6s ease-in-out infinite}
+#hordeTag b{color:#e88a5a;font-weight:700}
+@keyframes hordePulse{0%,100%{opacity:.65}50%{opacity:1}}
 #cross.hit{width:14px;height:14px;margin:-7px;background:transparent;border:2px solid #e84a3a}
 #cross.hit.head{border-color:#ffd36b}
 body.nograin #grain{display:none !important}
