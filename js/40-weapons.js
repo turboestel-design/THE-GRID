@@ -57,6 +57,12 @@ function gunshot(t){
   og.gain.setValueAtTime(1.2, n); og.gain.exponentialRampToValueAtTime(0.001, n + P[6] + 0.02);
   o.connect(og); og.connect(master); o.start(n); o.stop(n + P[6] + 0.05);
 }
-function colliders(){ return realm === 2 ? shroomPos : realm === 3 ? rockPos : realm === 4 ? pillarPos : realm === 5 ? gravePos : treePos; }
+function colliders(){
+  if (realm === 2) return shroomPos;
+  if (realm === 3) return rockPos;
+  if (realm === 4) return pillarPos;
+  if (realm === 5) return gravePos;
+  return treePos.concat(homeColliders());
+}
 function pushC(nx, nz, list, e){ for (const t of list) { const ox = nx - t[0], oz = nz - t[1], r = t[2] + e, d2 = ox*ox + oz*oz; if (d2 < r*r) { const d = Math.sqrt(d2) || 0.001; nx = t[0] + ox/d*r; nz = t[1] + oz/d*r; } } return [nx, nz]; }
 

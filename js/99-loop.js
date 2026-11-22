@@ -119,7 +119,8 @@ function loop(){
       const ox = nx - t[0], oz = nz - t[1], r = t[2] + 0.35, d2 = ox*ox + oz*oz;
       if (d2 < r*r) { const d = Math.sqrt(d2) || 0.001; nx = t[0] + ox/d*r; nz = t[1] + oz/d*r; }
     }
-    const boxes = realm > 1 ? [] : doorAngle < 0.9 ? solids.concat([doorBox]) : solids;
+    const tableSolid = (typeof interiorLv === 'function' && interiorLv() < 2) ? [TABLE_BOX] : [];
+    const boxes = realm > 1 ? [] : (doorAngle < 0.9 ? solids.concat([doorBox]) : solids).concat(tableSolid);
     for (const b of boxes) {
       const cx = Math.max(b[0], Math.min(nx, b[2])), cz = Math.max(b[1], Math.min(nz, b[3]));
       const ox = nx - cx, oz = nz - cz, d2 = ox*ox + oz*oz, r = 0.32;

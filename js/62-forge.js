@@ -9,6 +9,34 @@ const UPGRADES = [
 ];
 // ---- The house: ten levels, a steeper price every time ----------------------
 const HOUSE_MAX = 10;
+// The cabin is the reward for finishing the game, not a shop you find on the way.
+function homeUnlocked() {
+  return !!(progress.cleared || (progress.max || 1) >= 4 || (progress.cycle || 0) > 0);
+}
+// Everything bought for the cabin is solid. Built lazily and cached, because
+// colliders() runs on every movement frame.
+let houseColCache = null, houseColKey = '';
+function homeColliders() {
+  const h = houseLv(), i = interiorLv();
+  const key = h + ':' + i;
+  if (key === houseColKey && houseColCache) return houseColCache;
+  const out = [];
+  if (h >= 4) {
+    for (let k = 0; k < 9; k++) { const x = -6 + k * 1.5; if (Math.abs(x) < 0.5) continue; out.push([x, -6.4, 0.22]); }
+    for (const cx of [-5.2, -2.6, 1.4, 5.2]) {
+      for (let t = -1; t <= 1; t++) out.push([cx + t * 0.72, -6.4, 0.3]);
+    }
+  }
+  if (h >= 6) { out.push([-1.5, -8.5, 0.55], [1.5, -8.5, 0.55]); }          // sandbags
+  if (i >= 2) { out.push([0, -12.1, 0.92], [-0.95, -12.1, 0.34], [0.95, -12.1, 0.34]); }
+  if (i >= 3) { out.push([0, -14.55, 0.95]); }                                // fireplace
+  if (i >= 4) { out.push([-2.6, -13.3, 0.75]); }                              // bed
+  if (i >= 5) { out.push([3.12, -12.4, 0.72]); }                              // bookshelf
+  if (i >= 7) { out.push([2.7, -10.45, 0.7], [-2.9, -10.1, 0.36]); }          // crates, barrel
+  if (i >= 8) { out.push([-2.1, -11.2, 0.45], [-1.35, -12.0, 0.34]); }        // chair, side table
+  houseColCache = out; houseColKey = key;
+  return out;
+}
 function houseLv() { return Math.min(HOUSE_MAX, (progress && progress.house) || 0); }
 function houseCost(l) { return 8 + l * 7 + l * l * 3; }              // 8, 18, 34, 56, 84, 118, 158, 204, 256, 314
 function houseBonus() { return houseLv() * 8; }
@@ -63,6 +91,7 @@ const hsGlow = (c, o) => new THREE.MeshBasicMaterial({color: c, transparent: tru
   const wood = hsMat();
   for (let i = 0; i < 9; i++) {
     const x = -6 + i * 1.5;
+    if (Math.abs(x) < 0.5) continue;
     const p = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.15, 0.16), wood);
     p.position.set(x, 0.58, -6.4); p.rotation.z = (Math.random() - .5) * 0.1; g.add(p);
   }
@@ -329,6 +358,7 @@ const candleGlow = () => new THREE.MeshBasicMaterial({color: 0xffc070, fog: fals
 function interiorVisual() {
   const lvl = interiorLv();
   for (const s of interiorStages) s.g.visible = lvl >= s.lvl;
+  coffeeTable.visible = lvl < 2;      // the room's own table gives way to the bought one
 }
 function interiorAnimate(dt) {
   const lvl = interiorLv();
@@ -401,6 +431,7 @@ function buildForgeUI() {
     row.append(b, c); box.appendChild(row);
   }
   if (realm === 1) {
+    const open = homeUnlocked();
     const lvl = houseLv(), maxed = lvl >= HOUSE_MAX, cost = houseCost(lvl);
     const head = document.createElement('div');
     head.className = 'houseHead';
@@ -408,8 +439,10 @@ function buildForgeUI() {
     const row = document.createElement('div'); row.className = 'row';
     const b = document.createElement('button');
     b.innerHTML = 'YOUR CABIN <span class="lvl">' + '\u25a0'.repeat(Math.max(0, lvl)) + '\u25a1'.repeat(Math.max(0, HOUSE_MAX - lvl))
-      + '</span><span class="desc">+8 max health \u00b7 heals you inside \u00b7 every level changes how it looks</span>';
-    b.disabled = maxed || shards < cost;
+      + '</span><span class="desc">' + (open
+        ? '+8 max health \u00b7 heals you inside \u00b7 every level changes how it looks'
+        : 'clear all four worlds first') + '</span>';
+    b.disabled = !open || maxed || shards < cost;
     b.addEventListener('click', () => {
       const live = houseLv(), c = houseCost(live);
       if (live >= HOUSE_MAX || shards < c) return;
@@ -421,7 +454,7 @@ function buildForgeUI() {
       buildForgeUI();
     });
     const c = document.createElement('div'); c.className = 'cost';
-    c.textContent = maxed ? 'MAX' : cost + '\u25c6';
+    c.textContent = !open ? 'LOCKED' : maxed ? 'MAX' : cost + '\u25c6';
     row.append(b, c);
     box.append(head, row);
 
@@ -432,8 +465,10 @@ function buildForgeUI() {
     const rowI = document.createElement('div'); rowI.className = 'row';
     const bI = document.createElement('button');
     bI.innerHTML = 'FURNISH IT <span class="lvl">' + '\u25a0'.repeat(Math.max(0, lvlI)) + '\u25a1'.repeat(Math.max(0, INTERIOR_MAX - lvlI))
-      + '</span><span class="desc">nothing but comfort \u00b7 every level puts something in the room</span>';
-    bI.disabled = maxedI || shards < costI;
+      + '</span><span class="desc">' + (open
+        ? 'nothing but comfort \u00b7 every level puts something in the room'
+        : 'clear all four worlds first') + '</span>';
+    bI.disabled = !open || maxedI || shards < costI;
     bI.addEventListener('click', () => {
       const live = interiorLv(), c = interiorCost(live);
       if (live >= INTERIOR_MAX || shards < c) return;
@@ -445,7 +480,7 @@ function buildForgeUI() {
       buildForgeUI();
     });
     const cI = document.createElement('div'); cI.className = 'cost';
-    cI.textContent = maxedI ? 'MAX' : costI + '\u25c6';
+    cI.textContent = !open ? 'LOCKED' : maxedI ? 'MAX' : costI + '\u25c6';
     rowI.append(bI, cI);
     box.append(headI, rowI);
   }

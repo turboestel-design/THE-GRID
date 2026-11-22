@@ -72,6 +72,16 @@ for (const [name, enter] of realms) {
 run('forge:open', 'paused = false; shards = 99; openForge(); [paused, forgeOpen]');
 run('forge:buy', 'document.querySelectorAll("#forgeRows button").forEach(b => { b.click(); b.click(); }); [up.damage, up.vitality, up.swift, maxHp, shards]');
 run('forge:close', 'closeForge(); forgeOpen');
+run('home:locked', 'progress.max = 1; progress.cleared = false; progress.cycle = 0; setRealm(1); shards = 9999; buildForgeUI(); '
+  + '(() => { const b = [...document.querySelectorAll("#forgeRows button")].find(x => x.textContent.includes("CABIN")); '
+  + 'return [homeUnlocked(), b.disabled, document.querySelectorAll("#forgeRows .cost")[3].textContent]; })()');
+run('home:unlock', 'progress.cleared = true; buildForgeUI(); '
+  + '(() => { const b = [...document.querySelectorAll("#forgeRows button")].find(x => x.textContent.includes("CABIN")); return b.disabled; })()');
+run('home:table', '(() => { progress.interior = 1; interiorVisual(); const a = coffeeTable.visible; '
+  + 'progress.interior = 2; interiorVisual(); return [a, coffeeTable.visible]; })()');
+run('home:hitboxes', '(() => { progress.house = 6; progress.interior = 8; realm = 1; '
+  + 'return [homeColliders().length, colliders().length > treePos.length]; })()');
+run('home:gate-gap', 'homeColliders().filter(c => Math.abs(c[0]) < 0.5 && c[1] === -6.4).length');
 run('house:costs', '[0, 1, 4, 9].map(houseCost)');
 run('house:buy', '(() => { setRealm(1); paused = false; shards = 2000; openForge(); '
   + 'const b = [...document.querySelectorAll("#forgeRows button")].find(x => x.textContent.includes("CABIN")); '
@@ -137,5 +147,5 @@ if (errors.length) {
   for (const e of [...new Set(errors)]) console.log(' -', e);
   process.exitCode = 1;
 } else {
-  console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, the Congregation, the Zombie Dimension, house upgrades, forge, lore, shards, checkpoint death, NG+ all OK');
+  console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, the Congregation, the Zombie Dimension, house upgrades, interior, house hitboxes, forge, lore, shards, checkpoint death, NG+ all OK');
 }

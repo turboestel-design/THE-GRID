@@ -45,14 +45,16 @@ const doorPivot = new THREE.Group(); doorPivot.position.set(-0.65, 0, Z0); scene
 woodBox(doorPivot, 1.3, 2.1, 0.07, new THREE.MeshStandardMaterial({map: woodTex, color: 0xb0a090, roughness: 1}), 0.65, 1.05, 0);
 const doorKnob = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.14), new THREE.MeshStandardMaterial({color: 0x111111, metalness: 0.6, roughness: 0.6}));
 doorKnob.position.set(1.15, 1.05, 0); doorPivot.add(doorKnob);
-// Small coffee table
+// Small coffee table — hidden once the bought furniture arrives
 const TX = 0.9, TZ = -12.3;
-woodBox(scene, 1.0, 0.06, 0.55, wallMat, TX, 0.45, TZ);
-[[-0.44, -0.22], [0.44, -0.22], [-0.44, 0.22], [0.44, 0.22]].forEach(([lx, lz]) => woodBox(scene, 0.06, 0.42, 0.06, wallMat, TX + lx, 0.21, TZ + lz));
+const coffeeTable = new THREE.Group(); scene.add(coffeeTable);
+woodBox(coffeeTable, 1.0, 0.06, 0.55, wallMat, TX, 0.45, TZ);
+[[-0.44, -0.22], [0.44, -0.22], [-0.44, 0.22], [0.44, 0.22]].forEach(([lx, lz]) => woodBox(coffeeTable, 0.06, 0.42, 0.06, wallMat, TX + lx, 0.21, TZ + lz));
+const TABLE_BOX = [TX-0.5, TZ-0.28, TX+0.5, TZ+0.28];
 // Solid boxes: [minX, minZ, maxX, maxZ]
 const solids = [
   [-3.6, -15.1, 3.6, -14.9], [-3.6, -15.1, -3.4, -8.9], [3.4, -15.1, 3.6, -8.9],
-  [-3.6, -9.1, -0.65, -8.9], [0.65, -9.1, 3.6, -8.9], [TX-0.5, TZ-0.28, TX+0.5, TZ+0.28]
+  [-3.6, -9.1, -0.65, -8.9], [0.65, -9.1, 3.6, -8.9]
 ];
 const doorBox = [-0.65, -9.1, 0.65, -8.9];
 let doorOpen = false, doorAngle = 0, nearDoor = false, action = null;
