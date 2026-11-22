@@ -25,12 +25,14 @@ function woodBox(parent, w, h, d, mat, x, y, z){
   const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); parent.add(m); return m;
 }
 const H = 3, Z0 = -9, Z1 = -15;
-woodBox(scene, 7.2, H, 0.2, wallMat, 0, H/2, Z1);
-woodBox(scene, 0.2, H, 6.2, wallMat, -3.5, H/2, -12);
-woodBox(scene, 0.2, H, 6.2, wallMat, 3.5, H/2, -12);
-woodBox(scene, 2.95, H, 0.2, wallMat, -2.125, H/2, Z0);
-woodBox(scene, 2.95, H, 0.2, wallMat, 2.125, H/2, Z0);
-woodBox(scene, 1.3, 0.9, 0.2, wallMat, 0, 2.55, Z0);
+const wallMeshes = [
+  woodBox(scene, 7.2, H, 0.2, wallMat, 0, H/2, Z1),
+  woodBox(scene, 0.2, H, 6.2, wallMat, -3.5, H/2, -12),
+  woodBox(scene, 0.2, H, 6.2, wallMat, 3.5, H/2, -12),
+  woodBox(scene, 2.95, H, 0.2, wallMat, -2.125, H/2, Z0),
+  woodBox(scene, 2.95, H, 0.2, wallMat, 2.125, H/2, Z0),
+  woodBox(scene, 1.3, 0.9, 0.2, wallMat, 0, 2.55, Z0)
+];
 // Floor
 const floorTex = woodTex.clone(); floorTex.needsUpdate = true; floorTex.repeat.set(3, 3);
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(6.8, 5.8), new THREE.MeshStandardMaterial({map: floorTex, color: 0xaaaaaa, roughness: 1}));

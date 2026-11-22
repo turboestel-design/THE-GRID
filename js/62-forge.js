@@ -41,6 +41,35 @@ function homeBoxes() {
   homeBoxCache = b; homeBoxKey = key;
   return b;
 }
+// the cabin shell, plus the door leaf while it is shut
+function wallsNow() { return doorAngle < 0.9 ? solids.concat([doorBox]) : solids.slice(); }
+// everything a walker has to go around: walls, the shut door, and the furniture
+function homeSolidBoxes() { return (typeof homeBoxes === 'function' ? homeBoxes() : []).concat(wallsNow()); }
+// closest-point ejection of a circle of radius r out of one box; null when clear
+function pushOutBox(x, z, r, b) {
+  const cx = Math.max(b[0], Math.min(x, b[2])), cz = Math.max(b[1], Math.min(z, b[3]));
+  const ox = x - cx, oz = z - cz, d2 = ox * ox + oz * oz;
+  if (d2 >= r * r) return null;
+  if (d2 > 1e-6) { const d = Math.sqrt(d2); return [cx + ox / d * r, cz + oz / d * r]; }
+  const l = x - b[0], rr = b[2] - x, tp = z - b[1], bt = b[3] - z, m = Math.min(l, rr, tp, bt);
+  return m === l ? [b[0] - r, z] : m === rr ? [b[2] + r, z] : m === tp ? [x, b[1] - r] : [x, b[3] + r];
+}
+// does the flat segment a→b cross a wall? (2D; walls run floor to ceiling)
+function segHitsBox(ax, az, bx, bz, b) {
+  const dx = bx - ax, dz = bz - az;
+  let t0 = 0, t1 = 1;
+  if (Math.abs(dx) < 1e-9) { if (ax < b[0] || ax > b[2]) return false; }
+  else { let ta = (b[0] - ax) / dx, tb = (b[2] - ax) / dx; if (ta > tb) { const t = ta; ta = tb; tb = t; }
+    t0 = Math.max(t0, ta); t1 = Math.min(t1, tb); if (t0 > t1) return false; }
+  if (Math.abs(dz) < 1e-9) { if (az < b[1] || az > b[3]) return false; }
+  else { let ta = (b[1] - az) / dz, tb = (b[3] - az) / dz; if (ta > tb) { const t = ta; ta = tb; tb = t; }
+    t0 = Math.max(t0, ta); t1 = Math.min(t1, tb); if (t0 > t1) return false; }
+  return true;
+}
+function wallBetween(ax, az, bx, bz) {
+  for (const b of wallsNow()) if (segHitsBox(ax, az, bx, bz, b)) return true;
+  return false;
+}
 function houseLv() { return Math.min(HOUSE_MAX, (progress && progress.house) || 0); }
 function houseCost(l) { return 8 + l * 7 + l * l * 3; }              // 8, 18, 34, 56, 84, 118, 158, 204, 256, 314
 function houseBonus() { return houseLv() * 8; }

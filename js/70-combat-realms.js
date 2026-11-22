@@ -4,7 +4,7 @@
 // ---- Shooting, switching, health bar, portals, realms (these replace the earlier versions) ----
 function targetsFor(){
   if (realm === 5) return [mobLayer, lordLayer];
-  const base = realm === 2 ? [beast, shroomStems, shroomCaps] : realm === 3 ? [...hounds.map(h => h.g), rocks] : realm === 4 ? [king, pillars] : [man, trunks];
+  const base = realm === 2 ? [beast, shroomStems, shroomCaps] : realm === 3 ? [...hounds.map(h => h.g), rocks] : realm === 4 ? [king, pillars] : realm === 1 ? [man, trunks, ...wallMeshes] : [man, trunks];
   return base.concat([mobLayer, lordLayer]);
 }
 function shoot(){

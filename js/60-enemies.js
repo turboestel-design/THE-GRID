@@ -167,8 +167,12 @@ function updateHordeLord(dt) {
   lord.ph += dt * (1.1 + (dist < 20 ? 1.3 : 0));
   if (dist > 3.4) {
     const c = clampToRealm(g.position.x + dx / dist * 1.6 * dt, g.position.z + dz / dist * 1.6 * dt, lord.realm);
-    g.position.x = c[0]; g.position.z = c[1];
-  } else if (lord.atk <= 0 && !dead) {
+    let lx = c[0], lz = c[1];
+    if (lord.realm === 1 && typeof wallsNow === 'function') {
+      for (const b of wallsNow()) { const r = pushOutBox(lx, lz, 0.7, b); if (r) { lx = r[0]; lz = r[1]; } }
+    }
+    g.position.x = lx; g.position.z = lz;
+  } else if (lord.atk <= 0 && !dead && !wallBetween(g.position.x, g.position.z, camera.position.x, camera.position.z)) {
     lord.atk = 2.4; hurt(LORD_DMG);
     gorePuff(g.position.x, 1.0, g.position.z, 12, 0x3a1010, 3.6, 3.2);
   }
@@ -290,20 +294,11 @@ function mobMove(mob, dx, dz) {
     const ox = nx - t[0], oz = nz - t[1], r = t[2] + mob.r, d2 = ox * ox + oz * oz;
     if (d2 < r * r) { const d = Math.sqrt(d2) || 0.001; nx = t[0] + ox / d * r; nz = t[1] + oz / d * r; }
   }
-  if (mob.realm === 1 && typeof homeBoxes === 'function') {
-    for (const b of homeBoxes()) {
-      const bx = Math.max(b[0], Math.min(nx, b[2])), bz = Math.max(b[1], Math.min(nz, b[3]));
-      const ox = nx - bx, oz = nz - bz, d2 = ox * ox + oz * oz, rr = mob.r;
-      if (d2 < rr * rr) {
-        if (d2 > 1e-6) { const d = Math.sqrt(d2); nx = bx + ox / d * rr; nz = bz + oz / d * rr; }
-        else { const l = nx - b[0], r = b[2] - nx, tp = nz - b[1], bt = b[3] - nz, m = Math.min(l, r, tp, bt);
-          if (m === l) nx = b[0] - rr; else if (m === r) nx = b[2] + rr; else if (m === tp) nz = b[1] - rr; else nz = b[3] + rr; }
-      }
-    }
+  if (mob.realm === 1 && typeof homeSolidBoxes === 'function') {
+    for (const b of homeSolidBoxes()) { const r = pushOutBox(nx, nz, mob.r, b); if (r) { nx = r[0]; nz = r[1]; } }
   }
   const c = clampToRealm(nx, nz, mob.realm);
   nx = c[0]; nz = c[1];
-  if (mob.realm === 1 && Math.abs(nx) < 3.7 && nz < -8.8 && nz > -15.2) nz = nz > -12 ? -8.8 : -15.2;
   g.position.x = nx; g.position.z = nz;
 }
 function hurtMob(mob, d, head) {
@@ -333,14 +328,17 @@ function fireMobShot(from, dmg) {
   const d = Math.hypot(tx, ty, tz) || 1, sp = 13;
   s.m.position.copy(from); s.m.visible = true;
   s.vx = tx / d * sp; s.vy = ty / d * sp; s.vz = tz / d * sp;
-  s.life = 4; s.dmg = dmg * (1 + (progress.cycle || 0) * 0.2);
+  s.life = 4; s.dmg = dmg * (1 + (progress.cycle || 0) * 0.2); s.realm = realm;
   sweepTone(320, 180, 0.18, 0.35, 'square');
 }
 function updateMobShots(dt) {
   for (const s of mobShots) {
     if (s.life <= 0) continue;
     s.life -= dt;
+    const ox2 = s.m.position.x, oz2 = s.m.position.z;
     s.m.position.x += s.vx * dt; s.m.position.y += s.vy * dt; s.m.position.z += s.vz * dt;
+    if (s.realm === 1 && typeof wallBetween === 'function'
+      && wallBetween(ox2, oz2, s.m.position.x, s.m.position.z)) { s.life = 0; s.m.visible = false; continue; }
     if (s.m.position.y < 0.1 || s.life <= 0) { s.life = 0; s.m.visible = false; continue; }
     if (!dead && !heaven && Math.hypot(s.m.position.x - camera.position.x, s.m.position.z - camera.position.z) < 0.55
       && Math.abs(s.m.position.y - (camera.position.y - 0.4)) < 1.1) {
@@ -384,7 +382,7 @@ function updateMobs(dt) {
     if (D.style === 'melee') {
       const sp = (mob.kind === 'zombie' && dist < 5) ? mob.spd * 2.3 : mob.spd;
       if (dist < 38 && dist > 1.25) { mobMove(mob, dx / dist * sp * dt, dz / dist * sp * dt); moving = 1; }
-      if (dist < 1.5 && mob.atk <= 0 && !dead) {
+      if (dist < 1.5 && mob.atk <= 0 && !dead && !wallBetween(g.position.x, g.position.z, pxReal, pzReal)) {
         mob.atk = mob.kind === 'zombie' ? 1.6 : 1.25;
         hurt(D.dmg);
         if (mob.kind === 'zombie') { gorePuff(g.position.x, 1.4, g.position.z, 2, 0x4a1010, 1.2, 1.2); sweepTone(200, 60, 0.3, 0.3, 'square'); }
@@ -392,7 +390,7 @@ function updateMobs(dt) {
     } else if (D.style === 'range') {
       if (dist < 8) mobMove(mob, -dx / dist * mob.spd * dt, -dz / dist * mob.spd * dt);
       else if (dist > 15 && dist < 45) mobMove(mob, dx / dist * mob.spd * dt, dz / dist * mob.spd * dt);
-      if (mob.atk <= 0 && dist < 26 && !dead) {
+      if (mob.atk <= 0 && dist < 26 && !dead && !wallBetween(g.position.x, g.position.z, pxReal, pzReal)) {
         mob.atk = 2.4 + Math.random();
         const from = new THREE.Vector3(g.position.x, 1.35, g.position.z);
         fireMobShot(from, D.dmg);

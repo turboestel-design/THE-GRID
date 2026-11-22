@@ -87,6 +87,18 @@ run('home:no-ghost-wall', '(() => { progress.house = 6; const hit = () => homeBo
   + 'progress.interior = 1; const empty = hit(); progress.interior = 2; return [empty, hit()]; })()');
 run('home:mob-fence', '(() => { setRealm(1); spawnMobs(1); progress.house = 4; const z = mobs.find(m => m.kind === "zombie"); z.rise = 0; '
   + 'z.g.position.set(3, 0, -5.2); for (let i = 0; i < 20; i++) mobMove(z, 0, -0.15); return z.g.position.z > -6.0; })()');
+run('wall:los', '(() => { setRealm(1); doorOpen = false; doorAngle = 0; const shut = wallBetween(0, -8.3, 0, -9.7); '
+  + 'doorOpen = true; doorAngle = 1.75; const open = wallBetween(0, -8.3, 0, -9.7); doorOpen = false; doorAngle = 0; return [shut, open]; })()');
+run('wall:melee', '(() => { setRealm(1); paused = false; dead = false; heaven = false; settings.god = false; mobs.length = 0; spawnMobs(1); '
+  + 'const z = mobs.find(m => m.kind === "zombie"); z.rise = 0; z.g.position.set(0, 0, -8.3); z.atk = 0; camera.position.set(0, 1.65, -9.7); '
+  + 'health = 100; updateMobs(0.05); const thruWall = health; doorOpen = true; doorAngle = 1.75; z.atk = 0; camera.position.set(0, 1.65, -9.4); '
+  + 'updateMobs(0.05); const thruDoor = health < 100; doorOpen = false; doorAngle = 0; health = 100; return [thruWall, thruDoor]; })()');
+run('wall:spit', '(() => { mobs.length = 0; spawnMobs(2); const sp = mobs.find(m => m.kind === "spitter"); if (!sp) return true; '
+  + 'sp.rise = 0; sp.g.position.set(0, 0.2, -8.4); sp.atk = 0; camera.position.set(0, 1.65, -12); '
+  + 'mobShots.forEach(s => { s.life = 0; }); updateMobs(0.05); return mobShots.filter(s => s.life > 0).length; })()');
+run('wall:shoot', '(() => { camera.position.set(0, 1.65, -9.6); camera.lookAt(0, 1.6, -20); camera.updateMatrixWorld(); '
+  + 'const r = new THREE.Raycaster(); r.setFromCamera({x: 0, y: 0}, camera); const h = r.intersectObjects(targetsFor(), true)[0]; '
+  + 'return h ? h.object.geometry.type : null; })()');
 run('house:costs', '[0, 1, 4, 9].map(houseCost)');
 run('house:buy', '(() => { setRealm(1); paused = false; shards = 2000; openForge(); '
   + 'const b = [...document.querySelectorAll("#forgeRows button")].find(x => x.textContent.includes("CABIN")); '
@@ -170,5 +182,5 @@ if (errors.length) {
   for (const e of [...new Set(errors)]) console.log(' -', e);
   process.exitCode = 1;
 } else {
-  console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, the Congregation, the Zombie Dimension, house upgrades, interior, sitting and lying, house hitboxes, forge, lore, shards, checkpoint death, NG+ all OK');
+  console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, the Congregation, the Zombie Dimension, house upgrades, interior, sitting and lying, house hitboxes, walls stop the dead, forge, lore, shards, checkpoint death, NG+ all OK');
 }
