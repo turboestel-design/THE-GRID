@@ -241,6 +241,10 @@ run('save:wipe', '(() => { shards = 500; kills = 40; owned.rifle = true; ammo = 
 run('save:wipe-settings', '(() => { shards = 640; settings.infShards = true; settings.god = true; settings.diff = "hard"; wipeProgress(); '
   + 'const a = [shards, settings.infShards, settings.god, settings.diff]; for (let i = 0; i < 5; i++) updateQoL(0.016); '
   + 'return [a, shards]; })()');
+run('save:start-over', '(() => { shards = 700; kills = 30; up.damage = 2; progress.house = 5; progress.interior = 4; progress.cleared = true; '
+  + 'settings.infShards = true; hasGun = true; owned.pistol = true; const b = document.getElementById("wipe2"); '
+  + 'b.click(); b.click(); const saved = JSON.parse(localStorage.getItem("grid-walker-save") || "{}"); '
+  + 'return [shards, kills, progress.house, progress.interior, up.damage, settings.infShards, realm, hasGun, !!gunPickup.parent, dimUnlocked(), saved.settings && saved.settings.infShards]; })()');
 run('save:wipe-gun', '(() => { wipeProgress(); return [gunView.visible, !!gunPickup.parent, crossEl.style.display]; })()');
 
 if (errors.length) {

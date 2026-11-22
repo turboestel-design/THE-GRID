@@ -60,7 +60,7 @@ function menuMeta() {
   const el = document.getElementById('saveMeta');
   if (el) el.textContent = saved ? 'SAVE FOUND' : 'NO SAVE';
   const w = document.getElementById('wipe');
-  if (w) { w.hidden = !saved; if (!w.classList.contains('arm')) w.textContent = 'Erase save'; }
+  if (w) { w.hidden = false; }
 }
 
 // ---- keyboard selection over the main menu ----
@@ -182,20 +182,27 @@ NAV_IDS.forEach(id => {
   b.addEventListener('focus', sync);
 });
 
-// erase the save: first click arms it, second click wipes and reloads
-const wipeBtn = document.getElementById('wipe');
-if (wipeBtn) wipeBtn.addEventListener('click', () => {
-  if (!wipeBtn.classList.contains('arm')) {
-    wipeBtn.classList.add('arm');
-    wipeBtn.textContent = 'Click again to erase';
-    return;
-  }
-  try { localStorage.removeItem(SKEY); } catch (e) {}
-  // if the reload is blocked, the running game still has to be a new game
-  wipeProgress();
-  wipeBtn.textContent = 'SAVE ERASED';
-  try { location.reload(); } catch (e) {}
-});
+// erase the save: first click arms it, second click resets the game on the spot
+function armWipe(btn) {
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    if (!btn.classList.contains('arm')) {
+      btn.classList.add('arm');
+      btn.textContent = 'Click again to start over';
+      return;
+    }
+    btn.classList.remove('arm');
+    btn.blur();
+    try { localStorage.removeItem(SKEY); } catch (e) {}
+    wipeProgress();
+    saveAll();
+    btn.textContent = 'ERASED';
+    setTimeout(() => { btn.textContent = 'Start over \u2014 erase save'; }, 1600);
+    if (started) { closePanels(); resumeGame(); } else { closePanels(); refreshMenu(); }
+  });
+}
+armWipe(document.getElementById('wipe'));
+armWipe(document.getElementById('wipe2'));
 
 // Losing focus pauses on its own, so you never come back to a death screen you
 // did not see.

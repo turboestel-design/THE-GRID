@@ -55,18 +55,28 @@ function wipeProgress() {
   if (typeof applySettings === 'function') applySettings();
   if (typeof buildSettingsUI === 'function') buildSettingsUI();
   progress = {max: 1, owned: {pistol: false, shotgun: false, rifle: false}, cycle: 0, lore: {}};
-  shards = 0; kills = 0; hasGun = false; ammo = 0;
+  shards = 0; kills = 0; hasGun = false; ammo = 0; loreFound = 0; runTime = 0;
   for (const k in owned) owned[k] = false;
   for (const k in store) store[k] = 0;
   up.damage = up.vitality = up.swift = 0;
-  if (typeof applyUpgrades === 'function') applyUpgrades();
   if (typeof dropDimGear === 'function') dropDimGear();
-  if (realm === 5 && typeof resetDimension === 'function') resetDimension();
+  if (typeof resetDimension === 'function') resetDimension();
+  if (typeof applyUpgrades === 'function') applyUpgrades();
+  // the house and its furniture go back to bare planks
+  if (typeof houseVisual === 'function') houseVisual();
+  if (typeof interiorVisual === 'function') interiorVisual();
+  // the gun goes back to the cabin table, the view model and crosshair away
   if (typeof gunView !== 'undefined') gunView.visible = false;
   if (typeof gunPickup !== 'undefined' && !gunPickup.parent) { gunPickup.visible = true; scene.add(gunPickup); }
   if (typeof crossEl !== 'undefined') crossEl.style.display = 'none';
-  if (typeof maxHp !== 'undefined') health = maxHp;
+  // back to the tree line, in world one, with the Tall Man out there
+  heaven = false; dead = false; won = false;
+  if (typeof enterRealmByIndex === 'function') enterRealmByIndex(1);
+  camera.position.set(0, EYE, 5); yaw = 0; pitch = 0; jumpH = 0; vy = 0; camGround = 0; landDip = 0;
+  health = maxHp;
+  if (typeof refreshMenu === 'function') refreshMenu();
   updateStats();
+  saveAll();          // write the clean save now; no reload needed for this to stick
 }
 function hitMark(head){
   crossEl.classList.add('hit'); crossEl.classList.toggle('head', !!head);
