@@ -60,7 +60,7 @@ function menuMeta() {
   const el = document.getElementById('saveMeta');
   if (el) el.textContent = saved ? 'SAVE FOUND' : 'NO SAVE';
   const w = document.getElementById('wipe');
-  if (w) { w.hidden = !saved || started; w.classList.remove('arm'); w.textContent = 'Erase save'; }
+  if (w) { w.hidden = !saved; if (!w.classList.contains('arm')) w.textContent = 'Erase save'; }
 }
 
 // ---- keyboard selection over the main menu ----

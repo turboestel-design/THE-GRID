@@ -48,6 +48,12 @@ function restoreProgress(){
 // Erasing the save has to erase the running game with it: shards to nothing, the
 // gun back on the table, the upgrades gone, the dimension shut again.
 function wipeProgress() {
+  // settings live in the same save, so erasing it puts them back to default too —
+  // that includes the playtesting switches, or infinite shards would refill them
+  // on the very next frame and it would look like nothing happened
+  if (typeof DEF !== 'undefined') Object.assign(settings, DEF);
+  if (typeof applySettings === 'function') applySettings();
+  if (typeof buildSettingsUI === 'function') buildSettingsUI();
   progress = {max: 1, owned: {pistol: false, shotgun: false, rifle: false}, cycle: 0, lore: {}};
   shards = 0; kills = 0; hasGun = false; ammo = 0;
   for (const k in owned) owned[k] = false;
