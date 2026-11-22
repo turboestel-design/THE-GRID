@@ -98,9 +98,11 @@ function loop(){
     renderer.render(scene, camera); return;
   }
 
+  updateRest(dt);
   let fx = (keys.KeyD||keys.ArrowRight?1:0) - (keys.KeyA||keys.ArrowLeft?1:0);
   let fz = (keys.KeyW||keys.ArrowUp?1:0) - (keys.KeyS||keys.ArrowDown?1:0);
   if (Math.hypot(joy.x, joy.y) > 0.15) { fx += joy.x; fz -= joy.y; }
+  if (resting) { fx = 0; fz = 0; }
   const len = Math.hypot(fx, fz);
   if (len > 1) { fx /= len; fz /= len; }
   const moving = len > 0.01;
@@ -141,7 +143,7 @@ function loop(){
     }
   }
   // Jump
-  if (keys.Space && jumpH === 0 && vy === 0) { vy = 5.2; grunt(); }
+  if (keys.Space && jumpH === 0 && vy === 0 && !resting) { vy = 5.2; grunt(); }
   if (vy !== 0 || jumpH > 0) {
     vy -= 14*dt; jumpH += vy*dt;
     if (jumpH <= 0) { jumpH = 0; vy = 0; landDip = 0.14; step(true); }
@@ -152,6 +154,11 @@ function loop(){
   camGround += (groundTarget - camGround) * Math.min(1, dt*14);
   camera.position.y = EYE + camGround + jumpH + bobY - landDip;
   camera.rotation.set(pitch, yaw, moving ? Math.sin(bobT*0.5) * 0.008 * bobScale : 0);
+  if (resting) {
+    camera.position.set(resting.x, resting.y + Math.sin(time * 1.1) * 0.006, resting.z);
+    camera.rotation.z = 0;
+    if (resting.kind === 'bed') camera.rotation.x = Math.max(pitch, -0.9);
+  }
   torch.position.x = 0.25 + (moving ? Math.sin(bobT*0.5) * 0.03 : 0);
   renderer.render(scene, camera);
 }

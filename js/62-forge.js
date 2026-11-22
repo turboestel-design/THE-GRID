@@ -380,6 +380,42 @@ function interiorAnimate(dt) {
 }
 function applyInterior() { interiorVisual(); }
 
+// ---- Sitting on the chairs and lying on the bed ------------------------------
+let resting = null;
+function sitDown(kind) {
+  if (kind === 'chair') {
+    const right = camera.position.x > 0;
+    resting = {
+      kind: 'chair', x: right ? 0.95 : -0.95, z: -12.1, y: 1.12,
+      yaw: right ? Math.PI / 2 : -Math.PI / 2, pitch: -0.05,
+      stand: {x: right ? 1.85 : -1.85, z: -11.5}
+    };
+    say('YOU SIT. IT IS QUIET IN HERE.', 1800);
+  } else {
+    resting = {
+      kind: 'bed', x: -2.6, z: -13.15, y: 0.62,
+      yaw: Math.PI, pitch: 0.16,
+      stand: {x: -1.55, z: -13.2}
+    };
+    say('YOU LIE DOWN. JUST FOR A MINUTE.', 2200);
+  }
+  yaw = resting.yaw; pitch = resting.pitch;
+  jumpH = 0; vy = 0; landDip = 0;
+}
+function standUp() {
+  if (!resting) return;
+  const s = resting.stand;
+  resting = null;
+  camera.position.set(s.x, EYE, s.z);
+  pitch = 0;
+  jumpH = 0; vy = 0; landDip = 0;
+  clickSound();
+}
+function updateRest(dt) {
+  if (!resting) return;
+  if (keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.Space) standUp();
+}
+
 function applyHouse() { applyUpgrades(); houseVisual(); interiorVisual(); }
 function updateHouse(dt) {
   if (realm === 1 && !heaven) { houseAnimate(dt); interiorAnimate(dt); }

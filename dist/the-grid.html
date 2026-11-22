@@ -470,8 +470,14 @@ function updateDoor(dt){
   const gunNear = !hasGun && Math.hypot(camera.position.x - TX, camera.position.z - TZ) < 1.8;
   const doorNear = Math.hypot(camera.position.x, camera.position.z - Z0) < 2.4;
   const gateNear = Math.hypot(camera.position.x - HX, camera.position.z + 25) < 3.2;
+  const inside = interiorLv ? interiorLv() : 0;
+  const bedNear = inside >= 4 && Math.hypot(camera.position.x + 2.6, camera.position.z + 13.3) < 1.75;
+  const chairNear = inside >= 2 && (Math.hypot(camera.position.x + 0.95, camera.position.z + 12.1) < 0.95
+    || Math.hypot(camera.position.x - 0.95, camera.position.z + 12.1) < 0.95);
   if (!paused && !dead && !heaven) scanInteractors(); else { nearLore = -1; nearForge = null; }
-  action = (paused || dead) ? null : heaven ? (gateNear ? 'gate' : null) : gunNear ? 'gun' : doorNear ? 'door' : nearLore >= 0 ? 'lore' : nearForge ? 'forge' : (realm === 5 && nearRift) ? 'rift' : null;
+  action = (paused || dead) ? null : heaven ? (gateNear ? 'gate' : null) : (typeof resting !== 'undefined' && resting) ? 'rise'
+    : gunNear ? 'gun' : doorNear ? 'door' : nearLore >= 0 ? 'lore' : nearForge ? 'forge'
+    : bedNear ? 'bed' : chairNear ? 'chair' : (realm === 5 && nearRift) ? 'rift' : null;
   nearDoor = action === 'door';
   prompt.style.display = action ? 'block' : 'none';
   if (action) {
@@ -482,6 +488,9 @@ function updateDoor(dt){
       action === 'lore' ? 'READ' :
       action === 'forge' ? 'THE FORGE' :
       action === 'rift' ? 'LEAVE THE DIMENSION' :
+      action === 'rise' ? 'GET UP' :
+      action === 'bed' ? 'LIE DOWN' :
+      action === 'chair' ? 'SIT' :
       (doorOpen ? 'CLOSE' : 'OPEN') + ' DOOR');
   }
 }
@@ -873,7 +882,7 @@ const muzzle = new THREE.PointLight(0xffcc88, 0, 12); muzzle.position.set(0.2, -
 const ray = new THREE.Raycaster();
 
 fireBtn.addEventListener('pointerdown', e => { e.preventDefault(); shoot(); });
-function useAction(){ if (action === 'gun') pickGun(); else if (action === 'door') toggleDoor(); else if (action === 'gate') exitHeaven(); else if (action === 'lore') readLore(nearLore); else if (action === 'forge') openForge(); else if (action === 'rift') leaveDimension(); }
+function useAction(){ if (action === 'gun') pickGun(); else if (action === 'door') toggleDoor(); else if (action === 'gate') exitHeaven(); else if (action === 'lore') readLore(nearLore); else if (action === 'forge') openForge(); else if (action === 'rift') leaveDimension(); else if (action === 'bed') sitDown('bed'); else if (action === 'chair') sitDown('chair'); else if (action === 'rise') standUp(); }
 
 function clickSound(){
   if (!ac) return;
@@ -2311,6 +2320,42 @@ function interiorAnimate(dt) {
 }
 function applyInterior() { interiorVisual(); }
 
+// ---- Sitting on the chairs and lying on the bed ------------------------------
+let resting = null;
+function sitDown(kind) {
+  if (kind === 'chair') {
+    const right = camera.position.x > 0;
+    resting = {
+      kind: 'chair', x: right ? 0.95 : -0.95, z: -12.1, y: 1.12,
+      yaw: right ? Math.PI / 2 : -Math.PI / 2, pitch: -0.05,
+      stand: {x: right ? 1.85 : -1.85, z: -11.5}
+    };
+    say('YOU SIT. IT IS QUIET IN HERE.', 1800);
+  } else {
+    resting = {
+      kind: 'bed', x: -2.6, z: -13.15, y: 0.62,
+      yaw: Math.PI, pitch: 0.16,
+      stand: {x: -1.55, z: -13.2}
+    };
+    say('YOU LIE DOWN. JUST FOR A MINUTE.', 2200);
+  }
+  yaw = resting.yaw; pitch = resting.pitch;
+  jumpH = 0; vy = 0; landDip = 0;
+}
+function standUp() {
+  if (!resting) return;
+  const s = resting.stand;
+  resting = null;
+  camera.position.set(s.x, EYE, s.z);
+  pitch = 0;
+  jumpH = 0; vy = 0; landDip = 0;
+  clickSound();
+}
+function updateRest(dt) {
+  if (!resting) return;
+  if (keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.Space) standUp();
+}
+
 function applyHouse() { applyUpgrades(); houseVisual(); interiorVisual(); }
 function updateHouse(dt) {
   if (realm === 1 && !heaven) { houseAnimate(dt); interiorAnimate(dt); }
@@ -3535,9 +3580,11 @@ function loop(){
     renderer.render(scene, camera); return;
   }
 
+  updateRest(dt);
   let fx = (keys.KeyD||keys.ArrowRight?1:0) - (keys.KeyA||keys.ArrowLeft?1:0);
   let fz = (keys.KeyW||keys.ArrowUp?1:0) - (keys.KeyS||keys.ArrowDown?1:0);
   if (Math.hypot(joy.x, joy.y) > 0.15) { fx += joy.x; fz -= joy.y; }
+  if (resting) { fx = 0; fz = 0; }
   const len = Math.hypot(fx, fz);
   if (len > 1) { fx /= len; fz /= len; }
   const moving = len > 0.01;
@@ -3578,7 +3625,7 @@ function loop(){
     }
   }
   // Jump
-  if (keys.Space && jumpH === 0 && vy === 0) { vy = 5.2; grunt(); }
+  if (keys.Space && jumpH === 0 && vy === 0 && !resting) { vy = 5.2; grunt(); }
   if (vy !== 0 || jumpH > 0) {
     vy -= 14*dt; jumpH += vy*dt;
     if (jumpH <= 0) { jumpH = 0; vy = 0; landDip = 0.14; step(true); }
@@ -3589,6 +3636,11 @@ function loop(){
   camGround += (groundTarget - camGround) * Math.min(1, dt*14);
   camera.position.y = EYE + camGround + jumpH + bobY - landDip;
   camera.rotation.set(pitch, yaw, moving ? Math.sin(bobT*0.5) * 0.008 * bobScale : 0);
+  if (resting) {
+    camera.position.set(resting.x, resting.y + Math.sin(time * 1.1) * 0.006, resting.z);
+    camera.rotation.z = 0;
+    if (resting.kind === 'bed') camera.rotation.x = Math.max(pitch, -0.9);
+  }
   torch.position.x = 0.25 + (moving ? Math.sin(bobT*0.5) * 0.03 : 0);
   renderer.render(scene, camera);
 }

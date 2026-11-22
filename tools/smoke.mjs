@@ -102,6 +102,15 @@ run('interior:buy', '(() => { progress.interior = 0; paused = false; shards = 20
   + 'const b = [...document.querySelectorAll("#forgeRows button")].find(x => x.textContent.includes("FURNISH")); '
   + 'b.click(); return [progress.interior, shards]; })()');
 run('interior:animate', '(() => { for (let l = 0; l <= 10; l++) { progress.interior = l; interiorVisual(); for (let i = 0; i < 4; i++) interiorAnimate(0.05); } return true; })()');
+run('rest:sit', '(() => { progress.interior = 10; interiorVisual(); setRealm(1); paused = false; dead = false; heaven = false; '
+  + 'camera.position.set(-0.95, 1.65, -11.6); updateDoor(0.016); const a = action; useAction(); '
+  + 'return [a, resting && resting.kind, prompt.textContent]; })()');
+run('rest:locked', 'for (let i = 0; i < 3; i++) loop(); [+camera.position.x.toFixed(2), +camera.position.y.toFixed(2), +camera.position.z.toFixed(2)]');
+run('rest:stand', 'keys.KeyW = true; loop(); keys.KeyW = false; [resting === null, +camera.position.y.toFixed(2)]');
+run('rest:bed', '(() => { camera.position.set(-2.6, 1.65, -11.9); updateDoor(0.016); const a = action; useAction(); '
+  + 'const kind = resting && resting.kind; for (let i = 0; i < 3; i++) loop(); const y = +camera.position.y.toFixed(2); '
+  + 'standUp(); return [a, kind, y, resting === null]; })()');
+run('rest:gated', '(() => { progress.interior = 1; camera.position.set(-0.95, 1.65, -11.6); updateDoor(0.016); return action; })()');
 run('warp:world1', '(() => { buildWarp(); return [...document.querySelectorAll("#warp button")].some(b => b.textContent.indexOf("World 1") === 0); })()');
 run('lore:read', 'for (const g of loreItems) readLore(g.userData.i); [loreFound, Object.keys(progress.lore).length]');
 run('interact:scan', 'camera.position.set(-6, 1.65, 2); scanInteractors(); [nearLore, !!nearForge]');
@@ -152,5 +161,5 @@ if (errors.length) {
   for (const e of [...new Set(errors)]) console.log(' -', e);
   process.exitCode = 1;
 } else {
-  console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, the Congregation, the Zombie Dimension, house upgrades, interior, house hitboxes, forge, lore, shards, checkpoint death, NG+ all OK');
+  console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, the Congregation, the Zombie Dimension, house upgrades, interior, sitting and lying, house hitboxes, forge, lore, shards, checkpoint death, NG+ all OK');
 }

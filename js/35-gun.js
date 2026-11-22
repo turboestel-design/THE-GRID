@@ -17,7 +17,7 @@ const muzzle = new THREE.PointLight(0xffcc88, 0, 12); muzzle.position.set(0.2, -
 const ray = new THREE.Raycaster();
 
 fireBtn.addEventListener('pointerdown', e => { e.preventDefault(); shoot(); });
-function useAction(){ if (action === 'gun') pickGun(); else if (action === 'door') toggleDoor(); else if (action === 'gate') exitHeaven(); else if (action === 'lore') readLore(nearLore); else if (action === 'forge') openForge(); else if (action === 'rift') leaveDimension(); }
+function useAction(){ if (action === 'gun') pickGun(); else if (action === 'door') toggleDoor(); else if (action === 'gate') exitHeaven(); else if (action === 'lore') readLore(nearLore); else if (action === 'forge') openForge(); else if (action === 'rift') leaveDimension(); else if (action === 'bed') sitDown('bed'); else if (action === 'chair') sitDown('chair'); else if (action === 'rise') standUp(); }
 
 function clickSound(){
   if (!ac) return;
