@@ -70,7 +70,8 @@ function rumble(ms, s){
 }
 function respawnHere(){
   dead = false; health = maxHp; jumpH = 0; vy = 0; camGround = 0; landDip = 0; yaw = 0; pitch = 0; camera.rotation.z = 0;
-  enterRealmByIndex(Math.max(1, Math.min(4, deathRealm || realm)));
+  const dr = deathRealm || realm;
+  if (dr === 5) { resetDimension(); enterRealmByIndex(1); } else enterRealmByIndex(Math.max(1, Math.min(4, dr)));
   fadeEl.style.transition = 'opacity 1s'; fadeEl.style.opacity = '0'; fadeEl.textContent = '';
   say('YOU WAKE WHERE YOU FELL', 2500);
 }

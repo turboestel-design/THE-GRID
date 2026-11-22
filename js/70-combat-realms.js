@@ -3,6 +3,7 @@
    index.html. Splitting this file cannot change behaviour. */
 // ---- Shooting, switching, health bar, portals, realms (these replace the earlier versions) ----
 function targetsFor(){
+  if (realm === 5) return [mobLayer, lordLayer];
   const base = realm === 2 ? [beast, shroomStems, shroomCaps] : realm === 3 ? [...hounds.map(h => h.g), rocks] : realm === 4 ? [king, pillars] : [man, trunks];
   return base.concat([mobLayer, lordLayer]);
 }
@@ -44,6 +45,7 @@ function bossInfo(){
     return {name: 'CINDER HOUNDS', alive: live.length > 0, hp, max: hounds.length * 3 * cyc(), pos: (live[0] || hounds[0]).g.position};
   }
   if (realm === 4) return {name: 'THE HOLLOW KING', alive: kingAlive, hp: Math.max(0, kingHp), max: 45 * cyc(), pos: king.position};
+  if (realm === 5) return {name: 'THE ZOMBIE DIMENSION', alive: false, hp: 0, max: 1, pos: camera.position};
   return {name: 'THE TALL MAN', alive: manAlive, hp: Math.max(0, manHp), max: 8 * cyc(), pos: man.position};
 }
 function updateBars(dt){
@@ -93,14 +95,16 @@ function setRealm(n){
   realm = n;
   realm2.visible = sporeMesh.visible = planetG.visible = (n === 2);
   realm3.visible = ashMesh.visible = emberMesh.visible = (n === 3);
-  realm4.visible = (n === 4); stars.visible = (n === 2 || n === 4); sunG.visible = (n === 3 || n === 4);
+  realm4.visible = (n === 4); dim.visible = (n === 5);
+  stars.visible = (n === 2 || n === 4 || n === 5); sunG.visible = (n === 3 || n === 4);
   glowLight.intensity = n === 2 ? 1.6 : n === 4 ? 1.0 : 0;
   portalA.visible = portalB.visible = portalC.visible = false;
   if (n !== 2) beast.visible = false;
   hounds.forEach(h => { h.g.visible = (n === 3); }); king.visible = (n === 4); man.visible = (n === 1);
   (n === 4 ? king : beast).add(beastLight); beastLight.position.set(0, n === 4 ? 5.5 : 2, 0.5); beastLight.intensity = 0;
   document.getElementById('grain').style.display = n === 2 ? 'none' : 'block';
-  if (n === 2) { scene.background.setHex(0x090514); scene.fog.color.setHex(0x0b0618); scene.fog.density = 0.032; ambient.color.setHex(0x6a4aa8); ambient.intensity = 0.9; moon.color.setHex(0x5a4aa0); moon.intensity = 0.35; }
+  if (n === 5) { scene.background.setHex(0x120409); scene.fog.color.setHex(0x180610); scene.fog.density = 0.05; ambient.color.setHex(0x9a4a58); ambient.intensity = 0.72; moon.color.setHex(0xff4a4a); moon.intensity = 1.0; }
+  else if (n === 2) { scene.background.setHex(0x090514); scene.fog.color.setHex(0x0b0618); scene.fog.density = 0.032; ambient.color.setHex(0x6a4aa8); ambient.intensity = 0.9; moon.color.setHex(0x5a4aa0); moon.intensity = 0.35; }
   else if (n === 3) { scene.background.setHex(0x7a2c12); scene.fog.color.setHex(0x7a2c12); scene.fog.density = 0.02; ambient.color.setHex(0xff9060); ambient.intensity = 0.8; moon.color.setHex(0xff7a3a); moon.intensity = 1.1; }
   else if (n === 4) { scene.background.setHex(0x030208); scene.fog.color.setHex(0x050310); scene.fog.density = 0.012; ambient.color.setHex(0x7a6ac0); ambient.intensity = 0.7; moon.color.setHex(0xd8c8ff); moon.intensity = 0.6; }
   else { ambient.color.setHex(0x2a3a44); moon.color.setHex(0x6f8fb0); }

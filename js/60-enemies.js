@@ -11,8 +11,8 @@ const mobLayer = new THREE.Group(), shardLayer = new THREE.Group(), lordLayer = 
 const loreLayer = new THREE.Group(), forgeLayer = new THREE.Group();
 scene.add(mobLayer, shardLayer, loreLayer, forgeLayer, lordLayer);
 
-const REALM_X = {1: 0, 2: RX, 3: AX, 4: BX};
-const REALM_NAME = {1: 'THE DEAD FOREST', 2: 'THE HOLLOW GLOW', 3: 'THE ASHEN WASTE', 4: 'THE ECLIPSE'};
+const REALM_X = {1: 0, 2: RX, 3: AX, 4: BX, 5: ZX};
+const REALM_NAME = {1: 'THE DEAD FOREST', 2: 'THE HOLLOW GLOW', 3: 'THE ASHEN WASTE', 4: 'THE ECLIPSE', 5: 'THE ZOMBIE DIMENSION'};
 
 // ---- Enemies -----------------------------------------------------------------
 function cyc(){ return 1 + (progress.cycle || 0) * 0.35; }
@@ -28,7 +28,8 @@ const SPAWNS = {
       ['zombie', 30, -24], ['zombie', -30, -26]],
   2: [['spitter', 14, -6], ['spitter', -16, 4], ['husk', 22, 18], ['husk', -20, -18], ['spitter', 4, -26], ['husk', -4, 30]],
   3: [['husk', 18, -10], ['husk', -18, 12], ['spitter', 26, 6], ['husk', -24, -14], ['zombie', 8, 26], ['zombie', -30, 0]],
-  4: [['wisp', 10, 8], ['wisp', -10, 8], ['wisp', 0, -10], ['wisp', 12, -8], ['zombie', -14, -6], ['zombie', 16, 4]]
+  4: [['wisp', 10, 8], ['wisp', -10, 8], ['wisp', 0, -10], ['wisp', 12, -8], ['zombie', -14, -6], ['zombie', 16, 4]],
+  5: []
 };
 const mobs = [];
 const waveDone = {1: false, 2: false, 3: false, 4: false};
@@ -43,6 +44,7 @@ function hordeAlive() {
 }
 function updateHorde(dt) {
   const tag = document.getElementById('hordeTag'), num = document.getElementById('hordeNum');
+  if (realm === 5) { if (tag) tag.style.display = 'none'; return; }
   if (heaven || dead || teleporting || paused) { if (tag) tag.style.display = 'none'; return; }
   const alive = hordeAlive();
   if (tag) { tag.style.display = alive ? 'block' : 'none'; if (num) num.textContent = alive; }
@@ -277,6 +279,7 @@ function clampToRealm(x, z, n) {
   if (n === 1) return [Math.max(-68, Math.min(68, x)), Math.max(-68, Math.min(68, z))];
   if (n === 2) return [Math.max(RX - 72, Math.min(RX + 72, x)), Math.max(-72, Math.min(72, z))];
   if (n === 3) return [Math.max(AX - 78, Math.min(AX + 78, x)), Math.max(-78, Math.min(78, z))];
+  if (n === 5) return [Math.max(ZX - 48, Math.min(ZX + 48, x)), Math.max(-48, Math.min(48, z))];
   const dx = x - BX, d = Math.hypot(dx, z) || 0.001, lim = 25.5;
   return d > lim ? [BX + dx / d * lim, z / d * lim] : [x, z];
 }

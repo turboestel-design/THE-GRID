@@ -25,7 +25,7 @@ function loadAll(){
 }
 
 function toggleMute(){ muted = !muted; applySettings(); say(muted ? 'MUTED' : 'SOUND ON', 1200); }
-function recordProgress(){ progress.max = Math.max(progress.max, realm); for (const k in owned) if (owned[k]) progress.owned[k] = true; saveAll(); buildWarp(); }
+function recordProgress(){ progress.max = Math.max(progress.max, Math.min(4, realm)); for (const k in owned) if (owned[k]) progress.owned[k] = true; saveAll(); buildWarp(); }
 function buildWarp(){
   const w = document.getElementById('warp'); w.innerHTML = '';
   for (let n = 2; n <= 4; n++) {
@@ -51,6 +51,7 @@ function hitMark(head){
 }
 function objective(){
   if (heaven) return {t: 'CLIMB THE STAIRS TO THE GATE', x: HX, z: -25};
+  if (realm === 5) return {t: 'WAVE ' + dimWave + '  \u00b7  HOLD THE DIMENSION', x: ZX, z: 14};
   if (realm === 1) {
     if (!hasGun) return {t: 'FIND THE GUN IN THE HOUSE', x: TX, z: TZ};
     if (manAlive) return {t: 'KILL THE TALL MAN', x: man.position.x, z: man.position.z};

@@ -62,7 +62,7 @@ function menuMeta() {
 }
 
 // ---- keyboard selection over the main menu ----
-const NAV_IDS = ['resume', 'navHow', 'navStatus', 'navWorlds', 'navSettings', 'navCredits'];
+const NAV_IDS = ['resume', 'navHow', 'navStatus', 'navDim', 'navWorlds', 'navSettings', 'navCredits'];
 let navSel = 0;
 function navBtns() {
   return NAV_IDS.map(id => document.getElementById(id)).filter(b => b && !b.hidden);
@@ -116,6 +116,11 @@ function resumeGame() {
 document.getElementById('resume').addEventListener('click', resumeGame);
 document.getElementById('navHow').addEventListener('click', () => openPanel('panelHow'));
 document.getElementById('navStatus').addEventListener('click', () => openPanel('panelStatus'));
+document.getElementById('navDim').addEventListener('click', () => {
+  resumeGame();
+  if (!hasGun) pickGun();
+  setTimeout(enterDimension, 80);
+});
 document.getElementById('navWorlds').addEventListener('click', () => openPanel('panelWorlds'));
 document.getElementById('navSettings').addEventListener('click', () => openPanel('panelSettings'));
 document.getElementById('navCredits').addEventListener('click', () => openPanel('panelCredits'));

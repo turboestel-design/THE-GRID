@@ -68,7 +68,7 @@ function updateDoor(dt){
   const doorNear = Math.hypot(camera.position.x, camera.position.z - Z0) < 2.4;
   const gateNear = Math.hypot(camera.position.x - HX, camera.position.z + 25) < 3.2;
   if (!paused && !dead && !heaven) scanInteractors(); else { nearLore = -1; nearForge = null; }
-  action = (paused || dead) ? null : heaven ? (gateNear ? 'gate' : null) : gunNear ? 'gun' : doorNear ? 'door' : nearLore >= 0 ? 'lore' : nearForge ? 'forge' : null;
+  action = (paused || dead) ? null : heaven ? (gateNear ? 'gate' : null) : gunNear ? 'gun' : doorNear ? 'door' : nearLore >= 0 ? 'lore' : nearForge ? 'forge' : (realm === 5 && nearRift) ? 'rift' : null;
   nearDoor = action === 'door';
   prompt.style.display = action ? 'block' : 'none';
   if (action) {
@@ -78,6 +78,7 @@ function updateDoor(dt){
       action === 'gate' ? 'GO BACK' :
       action === 'lore' ? 'READ' :
       action === 'forge' ? 'THE FORGE' :
+      action === 'rift' ? 'LEAVE THE DIMENSION' :
       (doorOpen ? 'CLOSE' : 'OPEN') + ' DOOR');
   }
 }

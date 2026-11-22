@@ -91,6 +91,13 @@ run('lord:summon', '(() => { const z0 = mobs.filter(m => m.kind === "zombie").le
 run('lord:damage', '(() => { const h0 = lord.hp; hurtLord(5); return h0 - lord.hp; })()');
 run('lord:kill', '(() => { hurtLord(9999); return [lord.alive, bossInfo().name]; })()');
 run('lord:fade', '(() => { for (let i = 0; i < 130; i++) updateHordeLord(0.016); return [lord === null, lordLayer.children.length]; })()');
+run('dim:realm', 'setRealm(5); [realm, dim.visible, REALM_NAME[5]]');
+run('dim:wave', '(() => { dimActive = true; dimWave = 0; dimWaveT = 0; updateDimension(0.016); return [dimWave, mobs.filter(m => m.realm === 5).length]; })()');
+run('dim:objective', 'objective().t');
+run('dim:rift', '(() => { camera.position.set(ZX, 1.65, 14); paused = false; dead = false; heaven = false; updateDimension(0.016); updateDoor(0.016); return [nearRift, action]; })()');
+run('dim:clamp', 'clampToRealm(ZX + 999, 999, 5)');
+run('dim:bossbar', 'bossInfo().name');
+run('dim:leave', '(() => { resetDimension(); setRealm(1); return [realm, dim.visible, dimActive]; })()');
 
 // 5. death + heaven + respawn paths
 for (const r of [1, 2, 3, 4]) {
@@ -109,5 +116,5 @@ if (errors.length) {
   for (const e of [...new Set(errors)]) console.log(' -', e);
   process.exitCode = 1;
 } else {
-  console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, the Congregation, forge, lore, shards, checkpoint death, NG+ all OK');
+  console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, the Congregation, the Zombie Dimension, forge, lore, shards, checkpoint death, NG+ all OK');
 }
