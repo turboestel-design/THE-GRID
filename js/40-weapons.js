@@ -44,7 +44,7 @@ function pickGun(){
   if (isTouch) fireBtn.style.display = 'block';
   clickSound(); setTimeout(clickSound, 160); say('PISTOL EQUIPPED  ·  14 ROUNDS', 3000); updateStats();
 }
-function hurt(d){ if (teleporting || settings.god) return; health -= d*(DMG[settings.diff] || 1); lastHurt = time; hurtFlash = settings.reduceFlash ? 0.4 : 1; rumble(250, 0.8); ouch(); updateStats(); if (health <= 0 && !dead) die(); }
+function hurt(d){ if (teleporting || settings.god) return; if (typeof hurtMarker === 'function') hurtMarker(); health -= d*(DMG[settings.diff] || 1); lastHurt = time; hurtFlash = settings.reduceFlash ? 0.4 : 1; rumble(250, 0.8); ouch(); updateStats(); if (health <= 0 && !dead) die(); }
 function gunshot(t){
   if (!ac || !whiteBuf) return;
   const P = {pistol: [5000, 400, 0.3, 1.8, 140, 40, 0.18], shotgun: [3500, 180, 0.55, 2.6, 110, 30, 0.3], rifle: [7000, 900, 0.14, 1.3, 180, 70, 0.09]}[t || 'pistol'];

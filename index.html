@@ -16,6 +16,7 @@
 <div id="cap"></div><div id="fps"></div>
 <div id="obj"><span id="objArrow">▲</span><span id="objText"></span></div>
 <div id="hordeTag">THE DEAD <b id="hordeNum">0</b></div>
+<div id="dmgDir"></div>
 <div id="ammoBox"><div id="ammoLabel">ROUNDS</div><div id="ammoNum">0</div><div id="ammoRow"></div></div>
 <div id="bossBar"><div id="bossName">THE TALL MAN</div><div id="bossTrack"><div id="bossGhost"></div><div id="bossFill"></div><div id="bossSeg"></div></div></div>
 <button id="fireBtn" aria-label="Fire">FIRE</button>
@@ -42,6 +43,7 @@
       <nav class="nav" id="nav">
         <button id="resume" class="navBtn primary">ENTER THE GRID</button>
         <button id="navHow" class="navBtn">How to play</button>
+        <button id="navStatus" class="navBtn">Status</button>
         <button id="navWorlds" class="navBtn">Worlds</button>
         <button id="navSettings" class="navBtn">Settings</button>
         <button id="navCredits" class="navBtn">Credits</button>
@@ -103,6 +105,11 @@
       <p class="note">Death is not the end. You keep every shard, every lore fragment and every upgrade — go back to the forge and spend them.</p>
       <p class="note">Each world ends with something that wants you dead. The tether nodes are the only way forward.</p>
     </div>
+  </section>
+
+  <section class="panel" id="panelStatus">
+    <header><h2>Status</h2><button class="panelClose" aria-label="Close">&#10005;</button></header>
+    <div class="panelBody" id="statusBody"></div>
   </section>
 
   <section class="panel" id="panelCredits">

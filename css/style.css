@@ -131,6 +131,17 @@ canvas{display:block;touch-action:none}
 #objArrow{display:inline-block;font-size:18px;color:#c9a24a}
 #hordeTag{position:fixed;left:14px;top:calc(env(safe-area-inset-top,0px) + 60px);display:none;color:#b06a4a;font-size:11px;letter-spacing:3px;pointer-events:none;text-shadow:0 1px 4px #000;z-index:4;animation:hordePulse 1.6s ease-in-out infinite}
 #hordeTag b{color:#e88a5a;font-weight:700}
+#dmgDir{position:fixed;left:50%;top:50%;width:230px;height:230px;margin:-115px 0 0 -115px;border-radius:50%;
+  border-top:3px solid #e04030;opacity:0;pointer-events:none;z-index:6;filter:blur(1.2px);
+  -webkit-mask-image:radial-gradient(circle,transparent 60%,#000 72%);mask-image:radial-gradient(circle,transparent 60%,#000 72%);
+  transition:opacity .32s ease-out}
+.statusHead{margin:20px 0 2px;font-size:9px;letter-spacing:.34em;color:var(--blood);text-transform:uppercase}
+.statusHead:first-child{margin-top:0}
+.statusRow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:6px 0;border-bottom:1px solid #14100c}
+.statusRow span{color:#8a8073;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.statusRow b{color:#dbcdb4;font-weight:400;letter-spacing:.1em}
+.statusBar{height:5px;background:#120e0b;border:1px solid #2a1c14;margin:7px 0 3px}
+.statusBar i{display:block;height:100%;background:var(--blood);transition:width .3s}
 @keyframes hordePulse{0%,100%{opacity:.65}50%{opacity:1}}
 #cross.hit{width:14px;height:14px;margin:-7px;background:transparent;border:2px solid #e84a3a}
 #cross.hit.head{border-color:#ffd36b}

@@ -26,6 +26,13 @@ run('menu:navEnter', 'closePanels(); selectNav(1); '
 run('menu:navEscape', 'document.dispatchEvent(new window.KeyboardEvent("keydown",{code:"Escape"})); anyPanelOpen()');
 run('menu:wipeArm', 'document.getElementById("wipe").click(); '
   + '[document.getElementById("wipe").classList.contains("arm"), document.getElementById("wipe").textContent]');
+run('qol:status', 'setPaused(true); health = 55; owned.shotgun = true; store.shotgun = 5; openPanel("panelStatus"); '
+  + '(() => { const t = document.getElementById("statusBody").textContent; return [t.includes("SHOTGUN"), t.includes("55 / "), t.includes("Kills")]; })()');
+run('qol:escResume', 'closePanels(); document.dispatchEvent(new window.KeyboardEvent("keydown",{code:"Escape"})); paused');
+run('qol:escPause', 'document.dispatchEvent(new window.KeyboardEvent("keydown",{code:"Escape"})); paused');
+run('qol:dmgDir', 'setRealm(1); spawnMobs(1); health = 100; (() => { for (const m of mobs) m.g.position.set(0, 0, 0); hurt(5); '
+  + 'const el = document.getElementById("dmgDir"); return [el.style.opacity !== "0", el.style.transform.indexOf("rotate") === 0]; })()');
+run('qol:blur', 'setPaused(false); window.dispatchEvent(new window.Event("blur")); paused');
 run('menu:backIn', 'document.getElementById("resume").click(); paused');
 
 // 1. probe

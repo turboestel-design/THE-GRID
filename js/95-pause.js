@@ -3,7 +3,7 @@
    index.html. Splitting this file cannot change behaviour. */
 // ---- Menu ----
 const menu = document.getElementById('menu');
-const PANELS = ['panelWorlds', 'panelSettings', 'panelCredits', 'panelHow'];
+const PANELS = ['panelWorlds', 'panelSettings', 'panelCredits', 'panelHow', 'panelStatus'];
 let started = false;                       // true once the player has entered the game
 
 function closePanels() {
@@ -14,7 +14,36 @@ function anyPanelOpen() {
 }
 function openPanel(id) {
   closePanels();
+  if (id === 'panelStatus') buildStatus();
   document.getElementById(id).classList.add('open');
+}
+
+// ---- Status: everything you are carrying, in one screen ---------------------
+function buildStatus() {
+  const el = document.getElementById('statusBody');
+  if (!el) return;
+  const hp = Math.max(0, Math.round(health)), hpMax = Math.round(maxHp) || 100;
+  const loreN = progress.lore ? Object.keys(progress.lore).length : 0;
+  const where = REALM_NAME[realm] || 'THE GRID';
+  const wpn = Object.keys(WEAPONS).filter(k => owned[k]).map(k => {
+    const a = k === cur ? ammo : (store[k] || 0);
+    return '<div class="statusRow"><span>' + WEAPONS[k].name + '</span><b>' + a + ' / ' + WEAPONS[k].max + '</b></div>';
+  }).join('') || '<div class="statusRow"><span>Unarmed</span><b>&mdash;</b></div>';
+  el.innerHTML =
+    '<div class="statusHead">Vitals</div>'
+    + '<div class="statusRow"><span>Health</span><b>' + hp + ' / ' + hpMax + '</b></div>'
+    + '<div class="statusBar"><i style="width:' + Math.min(100, hp / hpMax * 100).toFixed(0) + '%"></i></div>'
+    + '<div class="statusRow"><span>Standing in</span><b>' + where + '</b></div>'
+    + '<div class="statusHead">Weapons</div>' + wpn
+    + '<div class="statusHead">Carried</div>'
+    + '<div class="statusRow"><span>Shards</span><b>' + shards + '</b></div>'
+    + '<div class="statusRow"><span>Kills</span><b>' + kills + '</b></div>'
+    + '<div class="statusRow"><span>Lore</span><b>' + loreN + '/12</b></div>'
+    + '<div class="statusRow"><span>Cycle</span><b>' + (1 + (progress.cycle || 0)) + '</b></div>'
+    + '<div class="statusHead">Forge</div>'
+    + '<div class="statusRow"><span>Damage</span><b>+' + (up.damage || 0) + '</b></div>'
+    + '<div class="statusRow"><span>Vitality</span><b>+' + (up.vitality || 0) + '</b></div>'
+    + '<div class="statusRow"><span>Swiftness</span><b>+' + (up.swift || 0) + '</b></div>';
 }
 
 function menuMeta() {
@@ -33,7 +62,7 @@ function menuMeta() {
 }
 
 // ---- keyboard selection over the main menu ----
-const NAV_IDS = ['resume', 'navHow', 'navWorlds', 'navSettings', 'navCredits'];
+const NAV_IDS = ['resume', 'navHow', 'navStatus', 'navWorlds', 'navSettings', 'navCredits'];
 let navSel = 0;
 function navBtns() {
   return NAV_IDS.map(id => document.getElementById(id)).filter(b => b && !b.hidden);
@@ -76,15 +105,17 @@ function setPaused(p) {
   }
 }
 
-document.getElementById('resume').addEventListener('click', () => {
+function resumeGame() {
   const first = !started;
   started = true;
   startAudio();
   setPaused(false);
   if (first) { camera.position.set(0, EYE, 5); yaw = 0; pitch = 0; }
   if (!isTouch && cv.requestPointerLock) cv.requestPointerLock();
-});
+}
+document.getElementById('resume').addEventListener('click', resumeGame);
 document.getElementById('navHow').addEventListener('click', () => openPanel('panelHow'));
+document.getElementById('navStatus').addEventListener('click', () => openPanel('panelStatus'));
 document.getElementById('navWorlds').addEventListener('click', () => openPanel('panelWorlds'));
 document.getElementById('navSettings').addEventListener('click', () => openPanel('panelSettings'));
 document.getElementById('navCredits').addEventListener('click', () => openPanel('panelCredits'));
@@ -96,9 +127,17 @@ document.getElementById('pauseBtn').addEventListener('click', () => setPaused(tr
 
 // keyboard: arrows move the selection, Enter confirms, Escape backs out of a panel
 document.addEventListener('keydown', e => {
-  if (!paused) return;
+  if (!paused) {
+    if (e.code === 'Escape' && started && !forgeOpen && !endingUp) { setPaused(true); e.preventDefault(); }
+    return;
+  }
   const open = anyPanelOpen();
-  if (e.code === 'Escape' && open) { closePanels(); e.preventDefault(); return; }
+  if (e.code === 'Escape') {
+    if (open) closePanels();
+    else if (started) resumeGame();
+    e.preventDefault();
+    return;
+  }
   if (open) return;
   if (e.code === 'ArrowDown') { selectNav(navSel + 1); e.preventDefault(); return; }
   if (e.code === 'ArrowUp') { selectNav(navSel - 1); e.preventDefault(); return; }
@@ -129,6 +168,15 @@ if (wipeBtn) wipeBtn.addEventListener('click', () => {
   try { localStorage.removeItem(SKEY); } catch (e) {}
   wipeBtn.textContent = 'SAVE ERASED';
   try { location.reload(); } catch (e) {}
+});
+
+// Losing focus pauses on its own, so you never come back to a death screen you
+// did not see.
+addEventListener('blur', () => {
+  if (started && !paused && !forgeOpen && !endingUp) setPaused(true);
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && started && !paused && !forgeOpen && !endingUp) setPaused(true);
 });
 
 const jb = document.getElementById('jumpBtn');

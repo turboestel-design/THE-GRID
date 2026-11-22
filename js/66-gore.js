@@ -47,3 +47,30 @@ function updateGore(dt) {
     p.m.rotation.z += p.spin * 0.7 * dt;
   }
 }
+
+// ---- Damage direction: an arc that flashes toward whatever hurt you ---------
+function nearestThreat() {
+  if (typeof mobs === 'undefined' || typeof camera === 'undefined') return null;
+  let bx = 0, bz = 0, bd = 1e9;
+  for (const m of mobs) {
+    if (!m.alive || m.realm !== realm) continue;
+    const d = Math.hypot(m.g.position.x - camera.position.x, m.g.position.z - camera.position.z);
+    if (d < bd) { bd = d; bx = m.g.position.x; bz = m.g.position.z; }
+  }
+  if (typeof lord !== 'undefined' && lord && lord.alive && lord.realm === realm) {
+    const d = Math.hypot(lord.g.position.x - camera.position.x, lord.g.position.z - camera.position.z);
+    if (d < bd) { bd = d; bx = lord.g.position.x; bz = lord.g.position.z; }
+  }
+  return bd < 34 ? {x: bx, z: bz} : null;
+}
+function hurtMarker() {
+  const el = document.getElementById('dmgDir');
+  if (!el) return;
+  const t = nearestThreat();
+  if (!t) { el.style.opacity = '0'; return; }
+  const dx = t.x - camera.position.x, dz = t.z - camera.position.z;
+  el.style.transform = 'rotate(' + ((Math.atan2(dx, -dz) + yaw) * 180 / Math.PI).toFixed(0) + 'deg)';
+  el.style.opacity = '0.95';
+  clearTimeout(hurtMarker.t);
+  hurtMarker.t = setTimeout(() => { el.style.opacity = '0'; }, 380);
+}
