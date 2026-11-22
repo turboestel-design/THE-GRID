@@ -202,6 +202,17 @@ run('dim:grenade', '(() => { setRealm(5); paused = false; dead = false; mobs.len
 run('dim:nuke', '(() => { mobs.length = 0; for (let i = 0; i < 4; i++) { const m = makeMob("zombie", ZX + i, 22, 5); m.rise = 0; } '
   + 'dimGear.bomb = 1; detonateNuke(); return [dimGear.bomb, mobs.filter(m => m.alive).length]; })()');
 run('dim:fatigue', '[1, 5, 10, 20].map(r => { dimWave = r; return +dimFatigue().toFixed(2); })');
+run('dim:locked', '(() => { progress.cleared = false; progress.cycle = 0; settings.dimOpen = false; refreshMenu(); '
+  + 'const dis = document.getElementById("navDim").disabled; const was = realm; enterDimension(); '
+  + 'return [dimUnlocked(), dis, realm === was]; })()');
+run('dim:unlock', '(() => { progress.cleared = true; const a = dimUnlocked(); progress.cleared = false; '
+  + 'settings.dimOpen = true; const b = dimUnlocked(); settings.dimOpen = false; progress.cycle = 1; const c = dimUnlocked(); '
+  + 'progress.cycle = 0; refreshMenu(); return [a, b, c, document.getElementById("navDim").disabled]; })()');
+run('dim:saved-unlock', '(() => { const keep = progress.cleared; progress.cleared = true; saveAll(); '
+  + 'const d = JSON.parse(localStorage.getItem("grid-walker-save") || "{}"); progress.cleared = keep; '
+  + 'localStorage.removeItem("grid-walker-save"); return !!d.progress && !!d.progress.cleared; })()');
+run('dim:settings-row', '(() => { buildSettingsUI(); return document.getElementById("settingsBox").textContent.toUpperCase().includes("UNLOCK THE ZOMBIE DIMENSION"); })()');
+run('menu:return-to-start', '(() => { heaven = false; setRealm(3); document.getElementById("reset").click(); return [realm, +camera.position.x.toFixed(1), +camera.position.z.toFixed(1)]; })()');
 run('dim:reset-items', '(() => { items.filter(i => i.group === dim).forEach(i => { i.cd = 0; i.g.visible = false; }); resetItems(dim); '
   + 'return items.filter(i => i.group === dim && i.g.visible).length; })()');
 run('dim:hud', '(() => { updateDimension(0.016); return [dimRoundEl.style.display, dimRoundNum.textContent, dimLeftEl.textContent]; })()');

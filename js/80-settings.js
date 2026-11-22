@@ -8,6 +8,7 @@ const SCHEMA = [
     ['god', 'check', 'Invincible', null, false],
     ['infAmmo', 'check', 'Infinite ammo', null, false],
     ['infShards', 'check', 'Infinite shards (playtesting)', null, false],
+    ['dimOpen', 'check', 'Unlock the Zombie Dimension (playtesting)', null, false],
     ['aimAssist', 'check', 'Aim assist', null, false],
     ['autoDoor', 'check', 'Auto-open the house door', null, false],
     ['autoGun', 'check', 'Auto-pickup the gun', null, false],
@@ -105,7 +106,7 @@ function buildSettingsUI(){
       const l = document.createElement('label');
       if (type === 'check') {
         const i = document.createElement('input'); i.type = 'checkbox'; i.checked = !!settings[key]; l.className = 'chk';
-        i.addEventListener('input', () => { settings[key] = i.checked; applySettings(); saveAll(); });
+        i.addEventListener('input', () => { settings[key] = i.checked; applySettings(); saveAll(); if (typeof refreshMenu === 'function') refreshMenu(); });
         l.append(i, ' ' + label.toUpperCase()); d.appendChild(l);
       } else if (type === 'range') {
         const v = document.createElement('span'), i = document.createElement('input'); i.type = 'range'; i.min = opt[0]; i.max = opt[1]; i.step = opt[2]; i.value = settings[key]; v.textContent = settings[key];

@@ -93,6 +93,13 @@ function refreshMenu() {
     s.textContent = 'DO NOT STOP WALKING';
     r.textContent = progress.owned.pistol ? 'CONTINUE' : 'ENTER THE GRID';
   }
+  const nd = document.getElementById('navDim');
+  if (nd) {
+    const open = typeof dimUnlocked === 'function' ? dimUnlocked() : true;
+    nd.disabled = !open;
+    nd.textContent = open ? 'Zombie dimension' : 'Zombie dimension — locked';
+    nd.title = open ? '' : 'Clear all four worlds first';
+  }
   menuMeta();
   markSel();
 }
@@ -119,6 +126,7 @@ document.getElementById('resume').addEventListener('click', resumeGame);
 document.getElementById('navHow').addEventListener('click', () => openPanel('panelHow'));
 document.getElementById('navStatus').addEventListener('click', () => openPanel('panelStatus'));
 document.getElementById('navDim').addEventListener('click', () => {
+  if (typeof dimUnlocked === 'function' && !dimUnlocked()) { say('CLEAR ALL FOUR WORLDS FIRST', 2600); return; }
   resumeGame();
   if (!hasGun) pickGun();
   setTimeout(enterDimension, 80);
@@ -128,7 +136,11 @@ document.getElementById('navSettings').addEventListener('click', () => openPanel
 document.getElementById('navCredits').addEventListener('click', () => openPanel('panelCredits'));
 document.querySelectorAll('.panelClose').forEach(b => b.addEventListener('click', closePanels));
 
-document.getElementById('reset').addEventListener('click', () => { enterRealmByIndex(heaven ? 1 : Math.max(1, realm)); yaw = 0; pitch = 0; });
+document.getElementById('reset').addEventListener('click', () => {
+  if (realm === 5 && typeof resetDimension === 'function') resetDimension();
+  heaven = false; enterRealmByIndex(1);
+  camera.position.set(0, EYE, 5); yaw = 0; pitch = 0;
+});
 document.getElementById('sens').addEventListener('input', e => { sens = parseFloat(e.target.value); });
 document.getElementById('pauseBtn').addEventListener('click', () => setPaused(true));
 // if anything leaves the cursor loose mid-game, clicking the world takes it back
@@ -179,6 +191,10 @@ if (wipeBtn) wipeBtn.addEventListener('click', () => {
     return;
   }
   try { localStorage.removeItem(SKEY); } catch (e) {}
+  // if the reload is blocked, the running game still has to be a new game
+  progress = {max: 1, owned: {pistol: false, shotgun: false, rifle: false}, cycle: 0, lore: {}};
+  shards = 0; kills = 0; hasGun = false; up.damage = up.vitality = up.swift = 0;
+  if (realm === 5 && typeof resetDimension === 'function') resetDimension();
   wipeBtn.textContent = 'SAVE ERASED';
   try { location.reload(); } catch (e) {}
 });

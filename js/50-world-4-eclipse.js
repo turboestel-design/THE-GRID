@@ -103,6 +103,7 @@ function ending(){
   teleporting = true; endingUp = true; clearKeys(); joyReset(); firing = false;
   if (document.pointerLockElement) document.exitPointerLock();
   progress.cleared = true;
+  saveAll();
   const prev = progress.cycle || 0;
   const mins = Math.floor(runTime / 60), secs = Math.floor(runTime % 60);
   const loreN = progress.lore ? Object.keys(progress.lore).length : 0;

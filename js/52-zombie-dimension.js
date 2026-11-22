@@ -240,8 +240,13 @@ function clearDimensionMobs() {
 }
 function resetDimension() { dimActive = false; dimWave = 0; dimWaveT = 0; dimCleared = true; clearDimensionMobs(); if (typeof dropDimGear === 'function') dropDimGear(); }
 
+// you have to finish the four worlds before the fifth will open
+function dimUnlocked() {
+  return !!(progress.cleared || (progress.cycle || 0) > 0 || settings.dimOpen);
+}
 function enterDimension() {
   if (teleporting) return;
+  if (!dimUnlocked()) { say('THE DIMENSION IS SHUT  \u00b7  CLEAR ALL FOUR WORLDS FIRST', 3000); sweepTone(160, 60, 0.4, 0.3, 'square'); return; }
   teleporting = true; portalSound();
   fadeEl.style.transition = 'opacity .9s'; fadeEl.style.background = '#2a0408'; fadeEl.textContent = ''; fadeEl.style.opacity = '1';
   setTimeout(() => {

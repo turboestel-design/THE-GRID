@@ -37,6 +37,9 @@ canvas{display:block;touch-action:none}
   transition:color .18s,letter-spacing .22s;text-indent:.4em}
 .navBtn:before{content:"";position:absolute;left:0;top:50%;width:8px;height:1px;background:#3a1512;
   transition:width .24s ease,background .2s}
+.navBtn:disabled{opacity:.34;cursor:not-allowed;letter-spacing:.2em}
+.navBtn:disabled:before{width:8px;background:#241a16}
+.navBtn:disabled:hover{color:inherit;letter-spacing:.2em}
 .navBtn:hover,.navBtn:focus-visible,.navBtn.sel{color:#eadfc8;outline:none;letter-spacing:.46em}
 .navBtn:hover:before,.navBtn:focus-visible:before,.navBtn.sel:before{width:18px;background:var(--blood)}
 .navBtn.primary{font-size:17px;letter-spacing:.44em;color:#cbbca3;padding:13px 0 13px 26px}
