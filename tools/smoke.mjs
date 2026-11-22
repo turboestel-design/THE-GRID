@@ -78,6 +78,12 @@ run('dead:gore', 'gorePool.filter(g => g.life > 0).length');
 run('dead:horde', '(() => { hordeT = 0; updateHorde(0.016); return [hordeN, document.getElementById("hordeTag").style.display, document.getElementById("hordeNum").textContent]; })()');
 run('dead:hordeCap', '(() => { for (let i = 0; i < 40; i++) { hordeT = 0; updateHorde(0.016); } return hordeAlive() <= HORDE_CAP + 2; })()');
 run('dead:realmReset', 'setRealm(2); [hordeN, hordeT]');
+run('lord:spawn', 'setRealm(1); spawnMobs(1); paused = false; (() => { const l = spawnLord(1); return [!!l, l.alive, Math.round(l.hp)]; })()');
+run('lord:bar', 'bossInfo().name');
+run('lord:summon', '(() => { const z0 = mobs.filter(m => m.kind === "zombie").length; lord.summon = 0; updateHordeLord(0.016); return mobs.filter(m => m.kind === "zombie").length > z0; })()');
+run('lord:damage', '(() => { const h0 = lord.hp; hurtLord(5); return h0 - lord.hp; })()');
+run('lord:kill', '(() => { hurtLord(9999); return [lord.alive, bossInfo().name]; })()');
+run('lord:fade', '(() => { for (let i = 0; i < 130; i++) updateHordeLord(0.016); return [lord === null, lordLayer.children.length]; })()');
 
 // 5. death + heaven + respawn paths
 for (const r of [1, 2, 3, 4]) {
@@ -96,5 +102,5 @@ if (errors.length) {
   for (const e of [...new Set(errors)]) console.log(' -', e);
   process.exitCode = 1;
 } else {
-  console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, forge, lore, shards, checkpoint death, NG+ all OK');
+  console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, the Congregation, forge, lore, shards, checkpoint death, NG+ all OK');
 }

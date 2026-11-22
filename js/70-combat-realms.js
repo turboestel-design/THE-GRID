@@ -4,7 +4,7 @@
 // ---- Shooting, switching, health bar, portals, realms (these replace the earlier versions) ----
 function targetsFor(){
   const base = realm === 2 ? [beast, shroomStems, shroomCaps] : realm === 3 ? [...hounds.map(h => h.g), rocks] : realm === 4 ? [king, pillars] : [man, trunks];
-  return base.concat([mobLayer]);
+  return base.concat([mobLayer, lordLayer]);
 }
 function shoot(){
   if (!hasGun || paused || dead || heaven || teleporting || shootCd > 0) return;
@@ -16,12 +16,12 @@ function shoot(){
     const sx = (Math.random() - .5)*2*W.spread, sy = (Math.random() - .5)*2*W.spread;
     ray.setFromCamera({x: sx, y: sy}, camera);
     let hit = ray.intersectObjects(tg, true)[0];
-    const isT = h => h && (h.object.userData.man || h.object.userData.beast || h.object.userData.hound || h.object.userData.boss || h.object.userData.mob);
+    const isT = h => h && (h.object.userData.man || h.object.userData.beast || h.object.userData.hound || h.object.userData.boss || h.object.userData.mob || h.object.userData.lord);
     if (settings.aimAssist && !isT(hit)) for (const a of [[0.03, 0], [-0.03, 0], [0, 0.04], [0, -0.04]]) { ray.setFromCamera({x: sx + a[0], y: sy + a[1]}, camera); const h2 = ray.intersectObjects(tg, true)[0]; if (isT(h2)) { hit = h2; break; } }
     if (!hit) continue;
     const o = hit.object.userData, d = (o.head ? W.head : W.dmg) * (1 + up.damage * 0.15);
-    if (o.man || o.beast || o.hound || o.boss || o.mob) hitMark(o.head);
-    if (o.man) hurtMan(d); else if (o.beast) hurtBeast(d); else if (o.hound) hurtHound(o.hound, d); else if (o.boss) hurtKing(o.head ? d : d*0.7); else if (o.mob) hurtMob(o.mob, d, o.head);
+    if (o.man || o.beast || o.hound || o.boss || o.mob || o.lord) hitMark(o.head);
+    if (o.man) hurtMan(d); else if (o.beast) hurtBeast(d); else if (o.hound) hurtHound(o.hound, d); else if (o.boss) hurtKing(o.head ? d : d*0.7); else if (o.mob) hurtMob(o.mob, d, o.head); else if (o.lord) hurtLord(d);
   }
 }
 document.addEventListener('keydown', e => {
@@ -37,6 +37,7 @@ fireBtn.addEventListener('pointerdown', () => { firing = true; });
 swapBtn.addEventListener('pointerdown', e => { e.preventDefault(); cycleWeapon(); });
 let lastBar = '';
 function bossInfo(){
+  if (lord && lord.alive) return {name: LORD_NAME, alive: true, hp: Math.max(0, lord.hp), max: lord.max, pos: lord.g.position};
   if (realm === 2) return {name: 'THE BLOOM', alive: beastAlive, hp: Math.max(0, beastHp), max: 10 * cyc(), pos: beast.position};
   if (realm === 3) {
     const live = hounds.filter(h => h.alive); let hp = 0; live.forEach(h => { hp += Math.max(0, h.hp); });

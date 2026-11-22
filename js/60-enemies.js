@@ -7,9 +7,9 @@
 //  this exists, but with it they stop being empty boss arenas.
 // ============================================================================
 
-const mobLayer = new THREE.Group(), shardLayer = new THREE.Group();
+const mobLayer = new THREE.Group(), shardLayer = new THREE.Group(), lordLayer = new THREE.Group();
 const loreLayer = new THREE.Group(), forgeLayer = new THREE.Group();
-scene.add(mobLayer, shardLayer, loreLayer, forgeLayer);
+scene.add(mobLayer, shardLayer, loreLayer, forgeLayer, lordLayer);
 
 const REALM_X = {1: 0, 2: RX, 3: AX, 4: BX};
 const REALM_NAME = {1: 'THE DEAD FOREST', 2: 'THE HOLLOW GLOW', 3: 'THE ASHEN WASTE', 4: 'THE ECLIPSE'};
@@ -51,6 +51,7 @@ function updateHorde(dt) {
   if (hordeT > 0) return;
   hordeT = HORDE_EVERY;
   hordeN++;
+  if (hordeN % 3 === 0 && !lord) { spawnLord(realm); return; }
   const pack = Math.min(2 + hordeN, 5);
   for (let i = 0; i < pack; i++) {
     const a = Math.random() * 6.283, r = 8 + Math.random() * 6;
@@ -60,7 +61,126 @@ function updateHorde(dt) {
   say('HORDE ' + hordeN + '  \u00b7  THE GROUND MOVES', 2800);
   sweepTone(90, 38, 1.1, 0.5, 'sawtooth');
 }
-function resetHorde() { hordeT = HORDE_FIRST; hordeN = 0; }
+function resetHorde() {
+  hordeT = HORDE_FIRST; hordeN = 0;
+  if (lord) { lordLayer.remove(lord.g); lord = null; }
+}
+
+// ---- THE CONGREGATION: what a horde becomes when it gets big enough ----------
+const LORD_HP = 60, LORD_DMG = 26, LORD_NAME = 'THE CONGREGATION';
+let lord = null, lordRing = null;
+
+function buildLord() {
+  const g = new THREE.Group();
+  const flesh = new THREE.MeshStandardMaterial({color: 0x54613f, roughness: 1, emissive: 0x0d1207});
+  const rag = new THREE.MeshStandardMaterial({color: 0x231c12, roughness: 1});
+  const bone = new THREE.MeshStandardMaterial({color: 0xb0a488, roughness: 1});
+  const eye = new THREE.MeshBasicMaterial({color: 0xd6ff72});
+  const chest = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.4, 1.0), flesh); chest.position.y = 1.75; g.add(chest);
+  for (let i = 0; i < 5; i++) {
+    const a = i / 5 * 6.283, r = 0.62;
+    const t = new THREE.Mesh(new THREE.BoxGeometry(0.46, 1.05, 0.34), i % 2 ? rag : flesh);
+    t.position.set(Math.cos(a) * r, 1.35 + (i % 2 ? 0.14 : 0), Math.sin(a) * r * 0.8);
+    t.rotation.y = a; t.rotation.z = Math.cos(a) * 0.3; g.add(t);
+  }
+  const ribs = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.5, 0.16), bone); ribs.position.set(0, 1.85, 0.5); g.add(ribs);
+  // three heads, all looking at you
+  const heads = [];
+  [[-0.38, 0.28], [0.02, 0.42], [0.4, 0.24]].forEach(([hx, hz]) => {
+    const h = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.36, 0.34), flesh);
+    h.position.set(hx, 2.62, hz); h.rotation.z = hx * 0.5; heads.push(h); g.add(h);
+    const e = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.03), eye);
+    e.position.set(hx, 2.65, hz + 0.18); g.add(e);
+  });
+  const limbs = [];
+  [[-1.0, 1], [1.0, -1]].forEach(([ax, sgn]) => {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.1, 0.3), flesh);
+    arm.position.set(ax, 1.5, 0.1); arm.rotation.z = sgn * 0.22; g.add(arm); limbs.push(arm);
+  });
+  [-0.42, 0.42].forEach(x => {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.9, 0.36), rag);
+    leg.position.set(x, 0.45, 0); g.add(leg); limbs.push(leg);
+  });
+  g.userData.heads = heads;
+  g.scale.setScalar(1.22);
+  return g;
+}
+
+function spawnLord(r) {
+  if (lord) return lord;
+  const g = buildLord();
+  const a = Math.random() * 6.283;
+  const c = clampToRealm(camera.position.x + Math.sin(a) * 11, camera.position.z + Math.cos(a) * 11, r);
+  g.position.set(c[0], 0, c[1]);
+  const l = {g, realm: r, hp: LORD_HP * cyc(), max: LORD_HP * cyc(), alive: true, atk: 2.5, summon: 4, ph: 0, hit: 0, fall: 0};
+  g.traverse(o => { if (o.isMesh) o.userData.lord = l; });
+  lordLayer.add(g);
+  lord = l;
+  say(LORD_NAME + ' RISES', 3200);
+  sweepTone(70, 30, 1.6, 0.7, 'sawtooth');
+  return l;
+}
+
+function hurtLord(d) {
+  if (!lord || !lord.alive) return;
+  lord.hp -= d; lord.hit = 0.15;
+  gorePuff(lord.g.position.x, 2.2, lord.g.position.z, 3, 0x4a1010, 2, 2);
+  if (lord.hp > 0) return;
+  lord.alive = false; lord.fall = 0; kills++;
+  gorePuff(lord.g.position.x, 1.9, lord.g.position.z, 34, 0x4a1010, 6, 5);
+  spawnShards(lord.g.position.x, 1.4, lord.g.position.z, 25);
+  say(LORD_NAME + ' COMES APART', 3500);
+  sweepTone(220, 34, 1.4, 0.7, 'sawtooth');
+  hordeT = HORDE_EVERY * 1.5;
+}
+
+function updateHordeLord(dt) {
+  if (lordRing) {
+    lordRing.t -= dt;
+    if (lordRing.t <= 0) {
+      lordLayer.remove(lordRing.m); lordRing.m.geometry.dispose(); lordRing = null;
+    } else {
+      const k = 1 - lordRing.t / 0.6;
+      lordRing.m.scale.setScalar(1 + k * 5.5);
+      lordRing.m.material.opacity = 0.7 * (1 - k);
+    }
+  }
+  if (!lord) return;
+  const g = lord.g;
+  if (!lord.alive) {
+    lord.fall = Math.min(1, lord.fall + dt * 0.7);
+    g.rotation.x = -lord.fall * 1.35; g.position.y = -lord.fall * 0.7;
+    if (lord.fall >= 1) { lordLayer.remove(g); lord = null; }
+    return;
+  }
+  if (lord.realm !== realm) { g.visible = false; return; }
+  g.visible = true;
+  if (heaven || dead || teleporting || paused) return;
+  const dx = camera.position.x - g.position.x, dz = camera.position.z - g.position.z;
+  const dist = Math.hypot(dx, dz) || 0.001;
+  g.rotation.y = Math.atan2(dx, dz);
+  lord.hit = Math.max(0, lord.hit - dt);
+  lord.atk = Math.max(0, lord.atk - dt);
+  lord.summon = Math.max(0, lord.summon - dt);
+  lord.ph += dt * (1.1 + (dist < 20 ? 1.3 : 0));
+  if (dist > 3.4) {
+    const c = clampToRealm(g.position.x + dx / dist * 1.6 * dt, g.position.z + dz / dist * 1.6 * dt, lord.realm);
+    g.position.x = c[0]; g.position.z = c[1];
+  } else if (lord.atk <= 0 && !dead) {
+    lord.atk = 2.4; hurt(LORD_DMG);
+    gorePuff(g.position.x, 1.0, g.position.z, 12, 0x3a1010, 3.6, 3.2);
+  }
+  if (lord.summon <= 0) {
+    lord.summon = 9.5;
+    for (let i = 0; i < 2; i++) {
+      const a = Math.random() * 6.283;
+      makeMob('zombie', g.position.x + Math.sin(a) * 3, g.position.z + Math.cos(a) * 3, lord.realm);
+    }
+    say('IT CALLS THEM UP', 1600);
+  }
+  g.position.y = Math.abs(Math.sin(lord.ph * 2.6)) * 0.14;
+  g.rotation.z = Math.sin(lord.ph * 1.3) * 0.05;
+}
 
 function buildHusk() {
   const g = new THREE.Group();
