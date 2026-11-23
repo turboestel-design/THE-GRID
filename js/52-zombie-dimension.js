@@ -225,9 +225,13 @@ function tuneDimMob(m, round, runner) {
     m.runner = true;
     m.spd *= 1.8;
     m.g.scale.set(0.92, 1.04, 0.92);
-    const eyeM = new THREE.MeshBasicMaterial({color: 0xff3418});
+  }
+  {
+    // eyes in the fog: the only thing you see of them at forty metres
+    const eyeM = new THREE.MeshBasicMaterial({color: runner ? 0xff3418 : 0xd8200e});
+    const s = runner ? 0.048 : 0.036;
     [-0.13, 0.13].forEach(x => {
-      const e = new THREE.Mesh(new THREE.SphereGeometry(0.048, 6, 5), eyeM);
+      const e = new THREE.Mesh(new THREE.SphereGeometry(s, 6, 5), eyeM);
       e.position.set(x, 1.78, 0.22); m.g.add(e);
     });
   }
@@ -306,6 +310,7 @@ function spawnDimWave() {
     tuneDimMob(makeMob('spitter', c[0], c[1], 5), round, false);
   }
   dimWaveT = Math.max(3, 8 - round * 0.25);
+  if (typeof dimRoundFx === 'function') dimRoundFx();
   if (round % 5 === 0) { spawnLord(5); say('ROUND ' + round + '  ·  IT FOUND YOU', 3000); }
   else say('ROUND ' + round + '  ·  ' + (n + spits) + ' OF THEM' + (runners ? '  ·  THEY RUN' : ''), 2400);
   sweepTone(120, 50, 0.6, 0.4, 'square');
@@ -327,6 +332,7 @@ function updateDimension(dt) {
   rift.userData.veil.rotation.y += dt * 0.8;
   rift.userData.veil.material.opacity = 0.22 + Math.sin(time * 2.1) * 0.08;
   const alive = dimAlive();
+  if (typeof dimAtmos === 'function' && !paused && !dead) dimAtmos(dt);
   if (dimRoundEl) {
     dimRoundEl.style.display = dimActive ? 'block' : 'none';
     dimRoundNum.textContent = 'ROUND ' + Math.max(1, dimWave);

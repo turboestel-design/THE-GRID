@@ -52,6 +52,7 @@ js/
   57-dim-shop.js        the hut: dimension-only weapons, grenades, the bomb
   60-enemies.js         husks, spitters, wisps, zombies, the horde, the Congregation
   52-zombie-dimension.js the fifth place: graveyard, the arena cover, rounds, the rift home
+  53-dim-atmos.js       the dimension's weather: mist, embers, braziers, crows, the bell
   66-gore.js            the blood/dirt particle pool
   61-shards.js          shard currency
   62-forge.js           the Forge and its upgrades
