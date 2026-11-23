@@ -61,7 +61,7 @@ function updateHorde(dt) {
     makeMob('zombie', c[0], c[1], realm);
   }
   say('HORDE ' + hordeN + '  \u00b7  THE GROUND MOVES', 2800);
-  sweepTone(90, 38, 1.1, 0.5, 'sawtooth');
+  hordeGroans(5, 0.7);
 }
 function resetHorde() {
   hordeT = HORDE_FIRST; hordeN = 0;
@@ -120,7 +120,7 @@ function spawnLord(r) {
   lordLayer.add(g);
   lord = l;
   say(LORD_NAME + ' RISES', 3200);
-  sweepTone(70, 30, 1.6, 0.7, 'sawtooth');
+  lordRoar();
   return l;
 }
 
@@ -133,7 +133,7 @@ function hurtLord(d) {
   gorePuff(lord.g.position.x, 1.9, lord.g.position.z, 34, 0x4a1010, 6, 5);
   spawnShards(lord.g.position.x, 1.4, lord.g.position.z, 25);
   say(LORD_NAME + ' COMES APART', 3500);
-  sweepTone(220, 34, 1.4, 0.7, 'sawtooth');
+  zombieDeath(1.1, 0); hordeGroans(3, 0.5); sweepTone(220, 30, 1.4, 0.35, 'sawtooth');
   hordeT = HORDE_EVERY * 1.5;
 }
 
@@ -317,7 +317,10 @@ function hurtMob(mob, d, head) {
   gorePuff(mob.g.position.x, 1.15, mob.g.position.z, mob.kind === 'zombie' ? 15 : 7,
     mob.kind === 'zombie' ? 0x4a1010 : 0x30201a, 3.4, 3.6);
   spawnShards(mob.g.position.x, 1.1, mob.g.position.z, MOB_DEF[mob.kind].shards);
-  sweepTone(mob.kind === 'wisp' ? 900 : 380, 110, 0.3, 0.45, 'triangle');
+  const gv = volFor(mob.g.position.x, mob.g.position.z, 3), gp = panFor(mob.g.position.x, mob.g.position.z);
+  if (mob.kind === 'wisp') wispWhisper(0.9, gp);
+  else if (mob.kind === 'spitter') spitterHiss(gv, gp);
+  else zombieDeath(gv, gp);
 }
 const mobShots = [];
 const shotGeo = new THREE.SphereGeometry(0.17, 8, 6);
@@ -333,7 +336,7 @@ function fireMobShot(from, dmg) {
   s.m.position.copy(from); s.m.visible = true;
   s.vx = tx / d * sp; s.vy = ty / d * sp; s.vz = tz / d * sp;
   s.life = 4; s.dmg = dmg * (1 + (progress.cycle || 0) * 0.2); s.realm = realm;
-  sweepTone(320, 180, 0.18, 0.35, 'square');
+  spitterHiss(Math.max(0.25, volFor(from.x, from.z, 4)), panFor(from.x, from.z));
 }
 function updateMobShots(dt) {
   for (const s of mobShots) {
@@ -350,8 +353,20 @@ function updateMobShots(dt) {
     }
   }
 }
+let groanT = 2.5;
 function updateMobs(dt) {
   if (heaven || teleporting || dead) return;
+  // they never shut up: a groan from somewhere near you, panned and quieter with distance
+  groanT -= dt;
+  if (groanT <= 0) {
+    groanT = 1.4 + Math.random() * 3.0;
+    const live = mobs.filter(m => m.alive && m.realm === realm && m.rise <= 0);
+    if (live.length) {
+      const m = live[Math.floor(Math.random() * live.length)];
+      const v = volFor(m.g.position.x, m.g.position.z, 5);
+      if (v > 0.04) zombieGroan(v, panFor(m.g.position.x, m.g.position.z));
+    }
+  }
   const pxReal = camera.position.x, pzReal = camera.position.z;
   for (const mob of mobs) {
     const g = mob.g;
@@ -374,7 +389,7 @@ function updateMobs(dt) {
       if (mob.rise <= 0) {
         g.position.y = 0; g.rotation.z = 0;
         gorePuff(g.position.x, 0.25, g.position.z, 9, 0x3a2a16, 2.2, 2.6);
-        sweepTone(140, 60, 0.4, 0.3, 'triangle');
+        zombieGroan(volFor(g.position.x, g.position.z, 4), panFor(g.position.x, g.position.z), true);
       }
       continue;
     }
@@ -389,7 +404,7 @@ function updateMobs(dt) {
       if (dist < 1.5 && mob.atk <= 0 && !dead && !wallBetween(g.position.x, g.position.z, pxReal, pzReal)) {
         mob.atk = mob.kind === 'zombie' ? 1.6 : 1.25;
         hurt(mob.dmg || D.dmg);
-        if (mob.kind === 'zombie') { gorePuff(g.position.x, 1.4, g.position.z, 2, 0x4a1010, 1.2, 1.2); sweepTone(200, 60, 0.3, 0.3, 'square'); }
+        if (mob.kind === 'zombie') { gorePuff(g.position.x, 1.4, g.position.z, 2, 0x4a1010, 1.2, 1.2); zombieBite(1, panFor(g.position.x, g.position.z)); }
       }
     } else if (D.style === 'range') {
       if (dist < 8) mobMove(mob, -dx / dist * mob.spd * dt, -dz / dist * mob.spd * dt);

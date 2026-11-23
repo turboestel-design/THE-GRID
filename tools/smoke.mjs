@@ -257,6 +257,26 @@ run('save:wipe', '(() => { shards = 500; kills = 40; owned.rifle = true; ammo = 
 run('save:wipe-settings', '(() => { shards = 640; settings.infShards = true; settings.god = true; settings.diff = "hard"; wipeProgress(); '
   + 'const a = [shards, settings.infShards, settings.god, settings.diff]; for (let i = 0; i < 5; i++) updateQoL(0.016); '
   + 'return [a, shards]; })()');
+run('voice:throat', `(() => {
+  const param = () => ({ value: 0, setValueAtTime(){ return this; }, linearRampToValueAtTime(){ return this; }, exponentialRampToValueAtTime(){ return this; } });
+  const node = e => Object.assign({ connect(){ return this; }, start(){}, stop(){} }, e);
+  let made = 0;
+  const oldAc = ac, oldMaster = master, oldBuf = whiteBuf;
+  ac = { currentTime: 1, sampleRate: 48000, destination: node({}),
+    createOscillator: () => { made++; return node({ type: '', frequency: param() }); },
+    createGain: () => node({ gain: param() }), createBiquadFilter: () => node({ type: '', frequency: param(), Q: param() }),
+    createBufferSource: () => { made++; return node({ buffer: null, loop: false }); }, createStereoPanner: () => node({ pan: param() }) };
+  master = node({ gain: param() }); whiteBuf = { length: 1 };
+  const b0 = made; zombieGroan(0.9, 0); const groan = made - b0;
+  const b1 = made; zombieGroan(0, 0); const silent = made - b1;
+  const b2 = made; zombieDeath(0.9, 0); const death = made - b2;
+  const b3 = made; lordRoar(); const lord = made - b3;
+  ac = oldAc; master = oldMaster; whiteBuf = oldBuf;
+  return [groan > 8, silent, death > 8, lord > 20];
+})()`);
+run('voice:pan', '(() => { const y0 = yaw; camera.position.set(0, EYE, 0); yaw = 0; '
+  + 'const l = panFor(-10, 0), r = panFor(10, 0); yaw = Math.PI / 2; const spun = panFor(-10, 0); yaw = y0; '
+  + 'return [l, r, spun, volFor(3, 0, 5) > 0.9, volFor(90, 0, 5)]; })()');
 run('ui:hover-sound', `(() => {
   let n = 0;
   const osc = () => ({ type: '', frequency: { setValueAtTime(){}, exponentialRampToValueAtTime(){} }, connect(){}, start(){ n++; }, stop(){} });

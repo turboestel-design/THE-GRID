@@ -441,7 +441,6 @@ function dimWeather(dt) {
   dimMoanT -= dt;
   if (dimMoanT <= 0) {
     dimMoanT = 26 + Math.random() * 30;
-    const root = 55 + Math.random() * 25;
-    [1, 1.5, 2.02].forEach((m, i) => setTimeout(() => sweepTone(root * m, root * m * 0.94, 5.5, 0.075, 'sine'), i * 260));
+    if (typeof farMoan === 'function') farMoan();
   }
 }
