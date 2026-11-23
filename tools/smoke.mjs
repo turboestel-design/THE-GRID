@@ -241,6 +241,21 @@ run('save:wipe', '(() => { shards = 500; kills = 40; owned.rifle = true; ammo = 
 run('save:wipe-settings', '(() => { shards = 640; settings.infShards = true; settings.god = true; settings.diff = "hard"; wipeProgress(); '
   + 'const a = [shards, settings.infShards, settings.god, settings.diff]; for (let i = 0; i < 5; i++) updateQoL(0.016); '
   + 'return [a, shards]; })()');
+run('ui:hover-sound', `(() => {
+  let n = 0;
+  const osc = () => ({ type: '', frequency: { setValueAtTime(){}, exponentialRampToValueAtTime(){} }, connect(){}, start(){ n++; }, stop(){} });
+  const gain = () => ({ gain: { setValueAtTime(){}, linearRampToValueAtTime(){}, exponentialRampToValueAtTime(){} }, connect(){} });
+  const oldAc = ac, oldMaster = master;
+  ac = { currentTime: 0, createOscillator: osc, createGain: gain }; master = {};
+  settings.uiSound = true; hoverLast = null; hoverAt = 0;
+  document.getElementById('resume').dispatchEvent(new MouseEvent('pointerover', { bubbles: true }));
+  const on = n;
+  settings.uiSound = false; hoverLast = null; hoverAt = 0;
+  document.getElementById('navHow').dispatchEvent(new MouseEvent('pointerover', { bubbles: true }));
+  const off = n;
+  ac = oldAc; master = oldMaster; settings.uiSound = true;
+  return [on, off];
+})()`);
 run('save:start-over', '(() => { shards = 700; kills = 30; up.damage = 2; progress.house = 5; progress.interior = 4; progress.cleared = true; '
   + 'settings.infShards = true; hasGun = true; owned.pistol = true; const b = document.getElementById("wipe2"); '
   + 'b.click(); b.click(); const saved = JSON.parse(localStorage.getItem("grid-walker-save") || "{}"); '

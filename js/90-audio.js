@@ -93,3 +93,28 @@ function grunt(){
   }
 }
 
+
+// ---- Menu sound: a small tick under the cursor ---------------------------------
+function hoverSound(off) {
+  if (!ac || !settings.uiSound) return;
+  const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'square';
+  o.frequency.setValueAtTime(off ? 700 : 1500, t);
+  o.frequency.exponentialRampToValueAtTime(off ? 520 : 2000, t + 0.04);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(off ? 0.018 : 0.05, t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.075);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.09);
+}
+let hoverLast = null, hoverAt = 0;
+document.addEventListener('pointerover', e => {
+  const t = e.target;
+  const el = t && t.closest && t.closest('button, label, summary, a, .navBtn, .row, .chk, .card, .saveCard, .panelBody, .creds, .nav, .menuCol, #menuTitle, #menuSub');
+  if (!el || el === hoverLast) return;
+  hoverLast = el;
+  const now = performance.now();
+  if (now - hoverAt < 35) return;
+  hoverAt = now;
+  hoverSound(!!el.disabled);
+});
+document.addEventListener('pointerout', e => { if (!e.relatedTarget) hoverLast = null; });
