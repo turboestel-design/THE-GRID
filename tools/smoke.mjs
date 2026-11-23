@@ -158,6 +158,19 @@ run('dim:realm', 'setRealm(5); [realm, dim.visible, REALM_NAME[5]]');
 run('dim:wave', '(() => { dimActive = true; dimWave = 0; dimWaveT = 0; updateDimension(0.016); return [dimWave, mobs.filter(m => m.realm === 5).length]; })()');
 run('dim:atmos', '(() => { setRealm(5); paused = false; dead = false; for (let i = 0; i < 30; i++) dimAtmos(0.016); '
   + 'return [typeof dimFx, dimFx.braziers.length, dimFx.crows.length, dimFx.cracks.length, dimFx.mist.length, +scene.fog.density.toFixed(3)]; })()');
+run('dim:chapel', '(() => { setRealm(5); paused = false; dead = false; return [typeof dimChapel, dimChapel.candles.length, '
+  + 'dimBoxes.filter(b => b[2] > ZX - 33 && b[0] < ZX - 21 && b[3] > 30 && b[1] < 44).length]; })()');
+run('dim:chapel-aisle', `(() => {
+  const out = [];
+  for (let z = 30.2; z <= 38.4; z += 0.1) {
+    const x = ZX + DIM_CHAPEL_AT.x;
+    for (const b of dimBoxes) if (x > b[0] - 0.32 && x < b[2] + 0.32 && z > b[1] - 0.32 && z < b[3] + 0.32) { out.push(+z.toFixed(1)); break; }
+  }
+  return out.length ? out.slice(0, 3) : 'clear';
+})()`);
+run('dim:weather', '(() => { dimFlash = 0; dimPulse = 0; for (let i = 0; i < 20; i++) dimWeather(0.016); '
+  + 'const calm = [+moon.intensity.toFixed(2), +ambient.intensity.toFixed(2)]; dimBoltT = 0.001; dimWeather(0.016); '
+  + 'return [calm, moon.intensity > calm[0], dimWx.ash.position.x === camera.position.x]; })()');
 run('dim:round-fx', '(() => { clearDimensionMobs(); dimWave = 0; dimPulse = 0; spawnDimWave(); return [+dimPulse.toFixed(2), dimWave]; })()');
 run('dim:props', '[dimBoxes.length, dimBoxes.every(b => b[2] > b[0] && b[3] > b[1] && b[0] > ZX - 60 && b[0] < ZX + 60), dimMeshes.length > 20]');
 run('dim:rounds', '(() => { setRealm(5); dimActive = true; clearDimensionMobs(); dimWave = 0; spawnDimWave(); '

@@ -1259,6 +1259,8 @@ document.getElementById('endStay').addEventListener('click', () => {
 // ============================================================================
 const ZX = -3000;
 const DIM_HUT_AT = {x: 0, z: 33};        // the shop hut stands here; nothing grows in it
+const DIM_CHAPEL_AT = {x: -27, z: 37, w: 9, d: 11};  // the ruined chapel, built in 53
+const inChapel = (x, z, pad) => Math.abs(x - DIM_CHAPEL_AT.x) < DIM_CHAPEL_AT.w / 2 + 1 + pad && Math.abs(z - DIM_CHAPEL_AT.z) < DIM_CHAPEL_AT.d / 2 + 1 + pad;
 const dim = new THREE.Group(); dim.position.set(ZX, 0, 0); dim.visible = false; scene.add(dim);
 
 // ---- ground ----------------------------------------------------------------
@@ -1400,7 +1402,7 @@ stones.frustumCulled = false;
     do {
       const a = Math.random() * 6.283, r = 13 + Math.random() * 56;
       x = Math.sin(a) * r; z = Math.cos(a) * r; tries++;
-    } while ((Math.hypot(x, z - 14) < 5 || inDimProp(x, z, 1.3) || Math.hypot(x - DIM_HUT_AT.x, z - DIM_HUT_AT.z) < 4.6) && tries < 40);
+    } while ((Math.hypot(x, z - 14) < 5 || inDimProp(x, z, 1.3) || Math.hypot(x - DIM_HUT_AT.x, z - DIM_HUT_AT.z) < 4.6 || inChapel(x, z, 1.2)) && tries < 40);
     e.set((Math.random() - .5) * 0.28, Math.random() * 6.28, (Math.random() - .5) * 0.32, 'XYZ');
     q.setFromEuler(e);
     const s = 0.75 + Math.random() * 0.75;
@@ -1425,7 +1427,7 @@ dim.add(stones);
     q.setFromEuler(e);
     const s = 0.6 + Math.random() * 0.7;
     const tx = Math.sin(a) * r, tz = Math.cos(a) * r;
-    if (inDimProp(tx, tz, 1.6) || Math.hypot(tx - DIM_HUT_AT.x, tz - DIM_HUT_AT.z) < 5) { i--; continue; }
+    if (inDimProp(tx, tz, 1.6) || Math.hypot(tx - DIM_HUT_AT.x, tz - DIM_HUT_AT.z) < 5 || inChapel(tx, tz, 2)) { i--; continue; }
     trees.setMatrixAt(i, m4.compose(p.set(tx, 0, tz), q, sc.set(s, s * (0.7 + Math.random() * 0.8), s)));
   }
   trees.instanceMatrix.needsUpdate = true;
@@ -1539,6 +1541,7 @@ function dimSpawnPoint(minR, maxR) {
     const x = ZX + Math.sin(a) * r, z = 14 + Math.cos(a) * r;
     if (Math.hypot(x - ZX - DIM_HUT_AT.x, z - DIM_HUT_AT.z) < 6.5) continue;
     if (inDimProp(x - ZX, z, 1.8)) continue;
+    if (inChapel(x - ZX, z, 2)) continue;
     if (Math.hypot(x - camera.position.x, z - camera.position.z) < 6) continue;
     const c = clampToRealm(x, z, 5);
     return c;
@@ -1562,7 +1565,7 @@ function spawnDimWave() {
   }
   dimWaveT = Math.max(3, 8 - round * 0.25);
   if (typeof dimRoundFx === 'function') dimRoundFx();
-  if (round % 5 === 0) { spawnLord(5); say('ROUND ' + round + '  ·  IT FOUND YOU', 3000); }
+  if (round % 5 === 0) { if (typeof dimLordFx === 'function') dimLordFx(); spawnLord(5); say('ROUND ' + round + '  ·  IT FOUND YOU', 3000); }
   else say('ROUND ' + round + '  ·  ' + (n + spits) + ' OF THEM' + (runners ? '  ·  THEY RUN' : ''), 2400);
   sweepTone(120, 50, 0.6, 0.4, 'square');
 }
@@ -1583,7 +1586,7 @@ function updateDimension(dt) {
   rift.userData.veil.rotation.y += dt * 0.8;
   rift.userData.veil.material.opacity = 0.22 + Math.sin(time * 2.1) * 0.08;
   const alive = dimAlive();
-  if (typeof dimAtmos === 'function' && !paused && !dead) dimAtmos(dt);
+  if (typeof dimAtmos === 'function' && !paused && !dead) { dimAtmos(dt); if (typeof dimWeather === 'function') dimWeather(dt); }
   if (dimRoundEl) {
     dimRoundEl.style.display = dimActive ? 'block' : 'none';
     dimRoundNum.textContent = 'ROUND ' + Math.max(1, dimWave);
@@ -1794,10 +1797,11 @@ function dimRoundFx() {
 }
 function dimAtmos(dt) {
   if (realm !== 5) return;
-  // mist drifts
+  // mist drifts, and drifts faster when the wind gets up
+  const gust = 0.75 + Math.sin(time * 0.37) * 0.55;
   for (const l of dimFx.mist) {
-    l.tex.offset.x += l.spd * dt * 0.02;
-    l.tex.offset.y -= l.spd * dt * 0.013;
+    l.tex.offset.x += l.spd * dt * 0.02 * gust;
+    l.tex.offset.y -= l.spd * dt * 0.013 * gust;
   }
   // embers rise and wrap
   {
@@ -1833,12 +1837,6 @@ function dimAtmos(dt) {
   // the air gets thicker and redder the longer you last
   const deep = Math.min(1, Math.max(0, dimWave - 1) / 14);
   scene.fog.color.setRGB(0.165 + deep * 0.075, 0.039 + deep * 0.004, 0.086 - deep * 0.024);
-  // the round pulse fades
-  if (dimPulse > 0) {
-    dimPulse = Math.max(0, dimPulse - dt * 0.55);
-    scene.fog.density = 0.022 + dimPulse * 0.02;
-    moon.intensity = 1.7 + dimPulse * 1.5;
-  }
   // distant sounds so the quiet is never quite silent
   dimAmbT -= dt;
   if (dimAmbT <= 0) {
@@ -1851,6 +1849,211 @@ function dimAtmos(dt) {
   // the bell swings back after a toll
   const bell = dimFx.tower && dimFx.tower.userData.bell;
   if (bell && Math.abs(bell.rotation.z) > 0.002) bell.rotation.z *= Math.max(0, 1 - dt * 2.4);
+}
+
+// ============================================================================
+//  A RUINED CHAPEL — a landmark to hold, and the only roof out here
+// ============================================================================
+const dimChapel = (() => {
+  const C = DIM_CHAPEL_AT;
+  const W = C.w, D = C.d, H = 4.8, T = 0.5;
+  const xL = C.x - W / 2, xR = C.x + W / 2, zB = C.z + D / 2, zF = C.z - D / 2;
+  const stoneM = new THREE.MeshStandardMaterial({color: 0x38313e, roughness: 1, flatShading: true, emissive: 0x0d0812, emissiveIntensity: 1});
+  const darkM  = new THREE.MeshStandardMaterial({color: 0x241f2a, roughness: 1, flatShading: true, emissive: 0x090610, emissiveIntensity: 1});
+  const woodM  = new THREE.MeshStandardMaterial({color: 0x2a201c, roughness: 1, flatShading: true, emissive: 0x070404, emissiveIntensity: 1});
+  const box = (w, h, d, x, y, z, mat, ry) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    m.position.set(x, y, z); if (ry) m.rotation.z = ry;
+    dim.add(m); dimMeshes.push(m); return m;
+  };
+  const block = (w, h, d, x, y, z, mat) => {
+    const m = box(w, h, d, x, y, z, mat);
+    dimBoxes.push([ZX + x - w / 2, z - d / 2, ZX + x + w / 2, z + d / 2]);
+    return m;
+  };
+  // walls: back and sides whole, the front broken open either side of a doorway
+  block(W, H, T, C.x, H / 2, zB, stoneM);
+  block(T, H, D, xL, H / 2, C.z, stoneM);
+  block(T, H, D, xR, H / 2, C.z, stoneM);
+  block(3.0, H, T, xL + 1.5, H / 2, zF, stoneM);
+  block(3.0, H, T, xR - 1.5, H / 2, zF, stoneM);
+  // the front wall has lost its middle: two stumps either side of the way in
+  box(0.8, 1.1, T, C.x - 1.9, 0.55, zF, darkM);
+  box(0.8, 1.1, T, C.x + 1.9, 0.55, zF, darkM);
+  // buttresses, so it reads as a church from a distance
+  [-1, 1].forEach(s => {
+    [zF + 2.6, C.z, zB - 2.6].forEach(z => block(0.8, H * 0.8, 1.2, C.x + s * (W / 2 + 0.3), H * 0.4, z, darkM));
+  });
+  // a pitched roof, half of the far side fallen in
+  [[-1, 5.6], [1, 5.6]].forEach(([s, wz]) => {
+    const len = s < 0 ? 6.2 : 8.4;
+    const slab = box(6.0, 0.3, len, C.x + s * 2.3, H + 1.5, zB - len / 2 - 0.4, darkM);
+    slab.rotation.z = s < 0 ? 0.6 : -0.6;
+  });
+  // the ridge beam, and a cross that survived the roof
+  box(0.5, 0.35, 8.8, C.x, H + 2.9, zB - 4.0, woodM);
+  box(0.22, 1.5, 0.22, C.x, H + 3.7, zF + 0.5, woodM);
+  box(0.9, 0.22, 0.22, C.x, H + 3.9, zF + 0.5, woodM);
+  // the window: the only light inside, and it is the colour of the sky
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.2),
+    new THREE.MeshBasicMaterial({color: 0xb8324e, transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false}));
+  win.position.set(C.x, 2.5, zB - T / 2 - 0.02); win.rotation.y = Math.PI; dim.add(win);
+  [-1, 1].forEach(s => box(0.3, 3.8, 0.24, C.x + s * 1.35, 2.4, zB - T / 2, darkM));
+  box(3.2, 0.3, 0.24, C.x, 4.35, zB - T / 2, darkM);
+  // altar, candles, and a light that is almost nothing
+  block(2.6, 1.0, 0.9, C.x, 0.5, zB - 1.9, stoneM);
+  const candles = [];
+  [-0.8, 0, 0.8].forEach((dx, i) => {
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.3 + i * 0.08, 6),
+      new THREE.MeshStandardMaterial({color: 0xd8c8a8, emissive: 0x2a1e10}));
+    c.position.set(C.x + dx, 1.15 + i * 0.04, zB - 1.9); dim.add(c);
+    const f = new THREE.Mesh(new THREE.SphereGeometry(0.055, 6, 5), new THREE.MeshBasicMaterial({color: 0xffb060}));
+    f.position.set(C.x + dx, 1.34 + i * 0.08, zB - 1.9); dim.add(f);
+    candles.push(f);
+  });
+  const candleLight = new THREE.PointLight(0xffa24a, 0.9, 11, 1.7);
+  candleLight.position.set(C.x, 2.0, zB - 2.0); dim.add(candleLight);
+  // pews either side of a centre aisle, shove out of line by whatever came through
+  [[-3.0, 0.10], [-1.2, -0.06], [0.6, 0.16]].forEach(([dz, rot]) => {
+    [-2.25, 2.25].forEach(sx => {
+      const p = block(2.6, 0.5, 0.6, C.x + sx, 0.25, C.z + dz, woodM);
+      p.rotation.y = rot;
+      box(2.6, 0.9, 0.16, C.x + sx, 0.75, C.z + dz + 0.32, woodM).rotation.y = rot;
+    });
+  });
+  // rubble at the door and a fallen slab across the aisle
+  box(1.6, 0.4, 1.0, C.x - 1.4, 0.2, zF - 0.8, darkM).rotation.y = 0.3;
+  box(1.2, 0.35, 0.9, C.x + 1.6, 0.17, zF - 1.1, darkM).rotation.y = -0.5;
+  return {win, candles, candleLight, xL, xR, zF, zB, C};
+})();
+
+// ============================================================================
+//  WEATHER — ash that never stops, a moon with clouds over it, and lightning
+// ============================================================================
+const dimWx = (() => {
+  let seed = 90210;
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  const rr = (a, b) => a + rnd() * (b - a);
+
+  // ash: a box of it that travels with you
+  const N = 460, pos = new Float32Array(N * 3), vy = new Float32Array(N), ph = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    pos[i * 3] = rr(-24, 24); pos[i * 3 + 1] = rr(0, 26); pos[i * 3 + 2] = rr(-24, 24);
+    vy[i] = 0.7 + rnd() * 1.5; ph[i] = rnd() * 6.283;
+  }
+  const ashGeo = new THREE.BufferGeometry();
+  ashGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const ash = new THREE.Points(ashGeo, new THREE.PointsMaterial({
+    color: 0xcfc0c8, size: 0.07, transparent: true, opacity: 0.55, depthWrite: false, sizeAttenuation: true
+  }));
+  ash.frustumCulled = false;
+  dim.add(ash);
+
+  // clouds drifting across the moon
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+  const cx = c.getContext('2d');
+  for (let i = 0; i < 70; i++) {
+    const px = Math.random() * 256, py = Math.random() * 128, r = 16 + Math.random() * 44;
+    const g = cx.createRadialGradient(px, py, 0, px, py, r);
+    g.addColorStop(0, 'rgba(30,10,20,' + (0.5 + Math.random() * 0.5).toFixed(2) + ')');
+    g.addColorStop(1, 'rgba(30,10,20,0)');
+    cx.fillStyle = g; cx.beginPath(); cx.arc(px, py, r, 0, 6.3); cx.fill();
+  }
+  const ctex = new THREE.CanvasTexture(c); ctex.wrapS = ctex.wrapT = THREE.RepeatWrapping; ctex.repeat.set(2, 1);
+  const clouds = [];
+  for (let i = 0; i < 3; i++) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(70, 30),
+      new THREE.MeshBasicMaterial({map: ctex, transparent: true, opacity: 0.55, depthWrite: false, fog: false}));
+    m.position.set(rr(-30, 10), 26 + i * 6, -50 - i * 2);
+    dim.add(m); clouds.push({m, spd: rr(0.25, 0.8) * (i === 1 ? -1 : 1)});
+  }
+
+  // blood on the ground, still wet
+  const pools = [];
+  for (let i = 0; i < 8; i++) {
+    const a = rnd() * 6.283, r = rr(6, 40);
+    const x = Math.sin(a) * r, z = 14 + Math.cos(a) * r;
+    if (inDimProp(x, z, 1.5) || inChapel(x, z, 0.5)) continue;
+    const m = new THREE.Mesh(new THREE.CircleGeometry(rr(0.7, 2.2), 12),
+      new THREE.MeshBasicMaterial({color: 0x4a0810, transparent: true, opacity: 0.6, depthWrite: false}));
+    m.rotation.x = -Math.PI / 2; m.rotation.z = rnd() * 6.283;
+    m.position.set(x, 0.015, z); m.scale.set(1, rr(0.6, 1.2), 1);
+    dim.add(m); pools.push({m, base: 0.4 + rnd() * 0.3, ph: rnd() * 6.3});
+  }
+
+  // fallen slabs and toppled stones
+  {
+    const geo = new THREE.BoxGeometry(0.9, 0.16, 1.5);
+    const mat = new THREE.MeshStandardMaterial({color: 0x413b4a, roughness: 1, emissive: 0x100a12, emissiveIntensity: 0.8});
+    const slabs = new THREE.InstancedMesh(geo, mat, 22);
+    slabs.frustumCulled = false;
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), sc = new THREE.Vector3();
+    let n = 0, guard = 0;
+    while (n < 22 && guard++ < 400) {
+      const a = rnd() * 6.283, r = rr(6, 44);
+      const x = Math.sin(a) * r, z = 14 + Math.cos(a) * r;
+      if (inDimProp(x, z, 1.0) || inChapel(x, z, 1.0)) continue;
+      e.set(rr(-0.16, 0.16), rnd() * 6.283, rr(-0.2, 0.2), 'XYZ'); q.setFromEuler(e);
+      slabs.setMatrixAt(n++, m4.compose(p.set(x, rr(0.06, 0.14), z), q, sc.set(rr(0.8, 1.5), 1, rr(0.8, 1.4))));
+    }
+    slabs.count = n; slabs.instanceMatrix.needsUpdate = true;
+    dim.add(slabs);
+  }
+  return {ash, ashGeo, pos, vy, ph, N, clouds, pools};
+})();
+
+let dimFlash = 0, dimBoltT = 24, dimBoltQ = 0, dimMoanT = 0;
+function dimLordFx() {
+  dimPulse = 1.4;
+  dimFlash = 0.7;
+  sweepTone(58, 26, 3.4, 0.5, 'sawtooth');
+  sweepTone(116, 52, 3.0, 0.2, 'square');
+  thunder(1.4);
+}
+function dimWeather(dt) {
+  if (realm !== 5) return;
+  dimPulse = Math.max(0, dimPulse - dt * 0.55);
+  // lightning: three flashes in a row, and the thunder comes after it
+  dimBoltT -= dt;
+  if (dimBoltT <= 0) {
+    dimFlash = 1; dimBoltQ = 0.14; dimBoltT = 24 + Math.random() * 32;
+    thunder(0.5 + Math.random() * 2.2);
+    for (const c of dimFx.crows) c.y = Math.min(31, c.y + 5);
+  }
+  if (dimBoltQ > 0) { dimBoltQ -= dt; if (dimBoltQ <= 0) dimFlash = 0.85; }
+  dimFlash = Math.max(0, dimFlash - dt * 3.2);
+  const fl = dimFlash * dimFlash * (settings.reduceFlash ? 0.25 : 1);
+  moon.intensity = 1.7 + dimPulse * 1.4 + fl * 3.4;
+  ambient.intensity = 1.25 + dimPulse * 0.3 + fl * 2.6;
+  scene.fog.density = 0.022 + dimPulse * 0.02 + fl * 0.008 + Math.sin(time * 0.55) * 0.0012;  // it breathes
+  // ash keeps falling, and it blows sideways
+  {
+    const p = dimWx.pos, gust = 0.5 + Math.sin(time * 0.37) * 0.9;
+    for (let i = 0; i < dimWx.N; i++) {
+      const j = i * 3;
+      p[j + 1] -= dimWx.vy[i] * dt;
+      p[j] += Math.sin(time * 0.9 + dimWx.ph[i]) * dt * 0.6 + gust * dt * 0.5;
+      if (p[j + 1] < 0) { p[j + 1] = 26; p[j] = (Math.random() - 0.5) * 48; p[j + 2] = (Math.random() - 0.5) * 48; }
+      if (p[j] > 24) p[j] -= 48; else if (p[j] < -24) p[j] += 48;
+    }
+    dimWx.ashGeo.attributes.position.needsUpdate = true;
+    dimWx.ash.position.set(camera.position.x, 0, camera.position.z);
+  }
+  for (const c of dimWx.clouds) {
+    c.m.position.x += c.spd * dt;
+    if (c.m.position.x > 40) c.m.position.x = -46; else if (c.m.position.x < -46) c.m.position.x = 40;
+  }
+  for (const p of dimWx.pools) p.m.material.opacity = p.base * (0.85 + Math.sin(time * 0.9 + p.ph) * 0.15);
+  // candles gutter, the window breathes
+  dimChapel.candleLight.intensity = 0.75 + Math.sin(time * 11.3) * 0.12 + Math.sin(time * 5.1) * 0.08;
+  dimChapel.win.material.opacity = 0.3 + Math.sin(time * 1.3) * 0.1 + dimPulse * 0.3;
+  // now and then, the whole graveyard moans
+  dimMoanT -= dt;
+  if (dimMoanT <= 0) {
+    dimMoanT = 26 + Math.random() * 30;
+    const root = 55 + Math.random() * 25;
+    [1, 1.5, 2.02].forEach((m, i) => setTimeout(() => sweepTone(root * m, root * m * 0.94, 5.5, 0.075, 'sine'), i * 260));
+  }
 }
 </script>
 <script>

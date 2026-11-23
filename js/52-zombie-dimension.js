@@ -8,6 +8,8 @@
 // ============================================================================
 const ZX = -3000;
 const DIM_HUT_AT = {x: 0, z: 33};        // the shop hut stands here; nothing grows in it
+const DIM_CHAPEL_AT = {x: -27, z: 37, w: 9, d: 11};  // the ruined chapel, built in 53
+const inChapel = (x, z, pad) => Math.abs(x - DIM_CHAPEL_AT.x) < DIM_CHAPEL_AT.w / 2 + 1 + pad && Math.abs(z - DIM_CHAPEL_AT.z) < DIM_CHAPEL_AT.d / 2 + 1 + pad;
 const dim = new THREE.Group(); dim.position.set(ZX, 0, 0); dim.visible = false; scene.add(dim);
 
 // ---- ground ----------------------------------------------------------------
@@ -149,7 +151,7 @@ stones.frustumCulled = false;
     do {
       const a = Math.random() * 6.283, r = 13 + Math.random() * 56;
       x = Math.sin(a) * r; z = Math.cos(a) * r; tries++;
-    } while ((Math.hypot(x, z - 14) < 5 || inDimProp(x, z, 1.3) || Math.hypot(x - DIM_HUT_AT.x, z - DIM_HUT_AT.z) < 4.6) && tries < 40);
+    } while ((Math.hypot(x, z - 14) < 5 || inDimProp(x, z, 1.3) || Math.hypot(x - DIM_HUT_AT.x, z - DIM_HUT_AT.z) < 4.6 || inChapel(x, z, 1.2)) && tries < 40);
     e.set((Math.random() - .5) * 0.28, Math.random() * 6.28, (Math.random() - .5) * 0.32, 'XYZ');
     q.setFromEuler(e);
     const s = 0.75 + Math.random() * 0.75;
@@ -174,7 +176,7 @@ dim.add(stones);
     q.setFromEuler(e);
     const s = 0.6 + Math.random() * 0.7;
     const tx = Math.sin(a) * r, tz = Math.cos(a) * r;
-    if (inDimProp(tx, tz, 1.6) || Math.hypot(tx - DIM_HUT_AT.x, tz - DIM_HUT_AT.z) < 5) { i--; continue; }
+    if (inDimProp(tx, tz, 1.6) || Math.hypot(tx - DIM_HUT_AT.x, tz - DIM_HUT_AT.z) < 5 || inChapel(tx, tz, 2)) { i--; continue; }
     trees.setMatrixAt(i, m4.compose(p.set(tx, 0, tz), q, sc.set(s, s * (0.7 + Math.random() * 0.8), s)));
   }
   trees.instanceMatrix.needsUpdate = true;
@@ -288,6 +290,7 @@ function dimSpawnPoint(minR, maxR) {
     const x = ZX + Math.sin(a) * r, z = 14 + Math.cos(a) * r;
     if (Math.hypot(x - ZX - DIM_HUT_AT.x, z - DIM_HUT_AT.z) < 6.5) continue;
     if (inDimProp(x - ZX, z, 1.8)) continue;
+    if (inChapel(x - ZX, z, 2)) continue;
     if (Math.hypot(x - camera.position.x, z - camera.position.z) < 6) continue;
     const c = clampToRealm(x, z, 5);
     return c;
@@ -311,7 +314,7 @@ function spawnDimWave() {
   }
   dimWaveT = Math.max(3, 8 - round * 0.25);
   if (typeof dimRoundFx === 'function') dimRoundFx();
-  if (round % 5 === 0) { spawnLord(5); say('ROUND ' + round + '  ·  IT FOUND YOU', 3000); }
+  if (round % 5 === 0) { if (typeof dimLordFx === 'function') dimLordFx(); spawnLord(5); say('ROUND ' + round + '  ·  IT FOUND YOU', 3000); }
   else say('ROUND ' + round + '  ·  ' + (n + spits) + ' OF THEM' + (runners ? '  ·  THEY RUN' : ''), 2400);
   sweepTone(120, 50, 0.6, 0.4, 'square');
 }
@@ -332,7 +335,7 @@ function updateDimension(dt) {
   rift.userData.veil.rotation.y += dt * 0.8;
   rift.userData.veil.material.opacity = 0.22 + Math.sin(time * 2.1) * 0.08;
   const alive = dimAlive();
-  if (typeof dimAtmos === 'function' && !paused && !dead) dimAtmos(dt);
+  if (typeof dimAtmos === 'function' && !paused && !dead) { dimAtmos(dt); if (typeof dimWeather === 'function') dimWeather(dt); }
   if (dimRoundEl) {
     dimRoundEl.style.display = dimActive ? 'block' : 'none';
     dimRoundNum.textContent = 'ROUND ' + Math.max(1, dimWave);
