@@ -160,7 +160,8 @@ run('dim:atmos', '(() => { setRealm(5); paused = false; dead = false; for (let i
   + 'return [typeof dimFx, dimFx.braziers.length, dimFx.crows.length, dimFx.cracks.length, dimFx.mist.length, +scene.fog.density.toFixed(3)]; })()');
 run('dim:bestiary', `(() => {
   setRealm(5); paused = false; dead = false;
-  const kinds = ['crawler', 'hound', 'rattle', 'screamer', 'bloat', 'brute'];
+  const kinds = ['crawler', 'hound', 'rattle', 'screamer', 'bloat', 'brute',
+    'glow_echo', 'cinder_hound', 'tall_echo', 'king_echo', 'angel'];
   const built = kinds.filter(k => { try { const m = dimMakeMob(k, ZX + 30, 40); return m.alive && typeof m.tick === 'function'; } catch (e) { return false; } });
   return [kinds.length, built.length, Object.keys(MOB_DEF).length];
 })()`);
@@ -168,6 +169,40 @@ run('dim:crew', '(() => { const r = k => dimWaveCrew(k, 12); '
   + 'const early = r(1).every(k => k === "zombie"); '
   + 'const late = r(12); '
   + 'return [early, late.includes("brute"), late.filter(k => k === "brute").length <= 2, late.length]; })()');
+run('dim:gate', `(() => {
+  const guests = ['glow_echo', 'cinder_hound', 'tall_echo', 'king_echo', 'angel'];
+  const noneEarly = [1, 2, 3, 5, 7, 9, 10].every(r => dimWaveCrew(r, 18).every(k => !guests.includes(k)));
+  const eachAt = guests.every(k => dimWaveCrew(DIM_UNLOCK[k], 18).includes(k));
+  const cap = {tall_echo: 1, king_echo: 1, angel: 1, glow_echo: 2, cinder_hound: 2};
+  const capped = [14, 16, 18, 20, 22, 30].every(r => guests.every(k => dimWaveCrew(r, 18).filter(x => x === k).length <= cap[k]));
+  const order = guests.map(k => DIM_UNLOCK[k]).every((v, i, arr) => i === 0 || v > arr[i - 1]);
+  return [noneEarly, eachAt, capped, order];
+})()`);
+run('dim:guests', `(() => {
+  clearDimensionMobs(); setRealm(5); paused = false; dead = false;
+  const kinds = ['glow_echo', 'cinder_hound', 'tall_echo', 'king_echo', 'angel'];
+  const made = {}; let ok = 0;
+  for (const k of kinds) {
+    try {
+      const m = dimMakeMob(k, ZX + 30, 40); made[k] = m;
+      for (let i = 0; i < 5; i++) { dimAnimate(m, true, 0.016); m.tick(m, 0.016); }
+      if (m.alive && MOB_DEF[k].name) ok++;
+    } catch (e) { made[k] = null; }
+  }
+  return [kinds.length, ok, made.angel.g.position.y > 0.1, Math.abs(made.angel.g.userData.halo.rotation.z) > 0,
+    made.cinder_hound.g.userData.legs.length, made.tall_echo.g.userData.legs.length,
+    Math.abs(made.glow_echo.g.userData.ring.rotation.z) > 0];
+})()`);
+run('dim:angel-shot', `(() => {
+  clearDimensionMobs(); setRealm(5); paused = false; dead = false; health = 9999;
+  camera.position.set(ZX, 1.65, 14);
+  const a = dimMakeMob('angel', ZX + 4, 20); tuneDimMob(a, 18, false);
+  let seen = 0;
+  for (let i = 0; i < 420; i++) { updateMobs(1 / 60); updateMobShots(1 / 60);
+    seen = Math.max(seen, mobShots.filter(s => s.life > 0).length); }
+  const d = Math.hypot(a.g.position.x - camera.position.x, a.g.position.z - camera.position.z);
+  return [seen > 0, d > 5 && d < 11, MOB_DEF.angel.style];
+})()`);
 run('dim:brute-headshot', `(() => {
   clearDimensionMobs();
   const b = dimMakeMob('brute', ZX + 20, 30);

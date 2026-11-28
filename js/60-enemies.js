@@ -417,7 +417,9 @@ function updateMobs(dt) {
     } else if (D.style === 'range') {
       if (dist < 8) mobMove(mob, -dx / dist * mob.spd * dt, -dz / dist * mob.spd * dt);
       else if (dist > 15 && dist < 45) mobMove(mob, dx / dist * mob.spd * dt, dz / dist * mob.spd * dt);
-      if (mob.atk <= 0 && dist < 26 && !dead && !wallBetween(g.position.x, g.position.z, pxReal, pzReal)) {
+      // the angel's light sails over the low rubble the rest of them trip on
+      const clearShot = mob.kind === 'angel' || !wallBetween(g.position.x, g.position.z, pxReal, pzReal);
+      if (mob.atk <= 0 && dist < 26 && !dead && clearShot) {
         mob.atk = 2.4 + Math.random();
         const from = new THREE.Vector3(g.position.x, 1.35, g.position.z);
         fireMobShot(from, mob.dmg || D.dmg);

@@ -230,6 +230,8 @@ function tuneDimMob(m, round, runner) {
   }
   {
     // eyes in the fog: the only thing you see of them at forty metres
+    // (the angel brings its own, and they are gold)
+    if (m.kind === 'angel') return m;
     const eyeM = new THREE.MeshBasicMaterial({color: runner ? 0xff3418 : 0xd8200e});
     const s = runner ? 0.048 : 0.036;
     [-0.13, 0.13].forEach(x => {
@@ -309,7 +311,8 @@ function spawnDimWave() {
   crew.forEach(kind => {
     const c = dimSpawnPoint(11, 20);
     const m = dimMakeMob(kind, c[0], c[1]);
-    const canRun = kind !== 'brute' && kind !== 'bloat' && kind !== 'screamer';
+    const canRun = !['brute', 'bloat', 'screamer', 'tall_echo', 'glow_echo', 'king_echo', 'angel', 'cinder_hound'].includes(kind);
+    // a cinder hound is already the fastest thing in the room; it does not need a head start
     const isRunner = runnerLeft > 0 && canRun;
     if (isRunner) runnerLeft--;
     tuneDimMob(m, round, isRunner);
@@ -319,7 +322,11 @@ function spawnDimWave() {
     .map(k => tally[k] + ' ' + MOB_DEF[k].name + (tally[k] > 1 ? 'S' : '')).join('  \u00b7  ');
   dimWaveT = Math.max(3, 8 - round * 0.25);
   if (typeof dimRoundFx === 'function') dimRoundFx();
-  if (round % 5 === 0) { if (typeof dimLordFx === 'function') dimLordFx(); spawnLord(5); say('ROUND ' + round + '  ·  IT FOUND YOU', 3000); }
+  // the round something new turns up, it gets its own line before it starts trying to kill you
+  const fresh = [...new Set(crew.filter(k => DIM_UNLOCK[k] === round).map(k => MOB_DEF[k].name))];
+  const freshLine = fresh.length ? '  ·  ' + fresh.join(' & ') + (fresh.length > 1 ? ' HAVE ARRIVED' : ' HAS ARRIVED') : '';
+  if (round % 5 === 0) { if (typeof dimLordFx === 'function') dimLordFx(); spawnLord(5); say('ROUND ' + round + '  ·  IT FOUND YOU' + freshLine, 3400); }
+  else if (fresh.length) say('ROUND ' + round + freshLine, 3200);
   else say('ROUND ' + round + '  ·  ' + roster + (runners ? '  ·  THEY RUN' : ''), 2800);
   sweepTone(120, 50, 0.6, 0.4, 'square');
 }

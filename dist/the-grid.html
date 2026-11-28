@@ -1698,6 +1698,8 @@ function tuneDimMob(m, round, runner) {
   }
   {
     // eyes in the fog: the only thing you see of them at forty metres
+    // (the angel brings its own, and they are gold)
+    if (m.kind === 'angel') return m;
     const eyeM = new THREE.MeshBasicMaterial({color: runner ? 0xff3418 : 0xd8200e});
     const s = runner ? 0.048 : 0.036;
     [-0.13, 0.13].forEach(x => {
@@ -1777,7 +1779,8 @@ function spawnDimWave() {
   crew.forEach(kind => {
     const c = dimSpawnPoint(11, 20);
     const m = dimMakeMob(kind, c[0], c[1]);
-    const canRun = kind !== 'brute' && kind !== 'bloat' && kind !== 'screamer';
+    const canRun = !['brute', 'bloat', 'screamer', 'tall_echo', 'glow_echo', 'king_echo', 'angel', 'cinder_hound'].includes(kind);
+    // a cinder hound is already the fastest thing in the room; it does not need a head start
     const isRunner = runnerLeft > 0 && canRun;
     if (isRunner) runnerLeft--;
     tuneDimMob(m, round, isRunner);
@@ -1787,7 +1790,11 @@ function spawnDimWave() {
     .map(k => tally[k] + ' ' + MOB_DEF[k].name + (tally[k] > 1 ? 'S' : '')).join('  \u00b7  ');
   dimWaveT = Math.max(3, 8 - round * 0.25);
   if (typeof dimRoundFx === 'function') dimRoundFx();
-  if (round % 5 === 0) { if (typeof dimLordFx === 'function') dimLordFx(); spawnLord(5); say('ROUND ' + round + '  ·  IT FOUND YOU', 3000); }
+  // the round something new turns up, it gets its own line before it starts trying to kill you
+  const fresh = [...new Set(crew.filter(k => DIM_UNLOCK[k] === round).map(k => MOB_DEF[k].name))];
+  const freshLine = fresh.length ? '  ·  ' + fresh.join(' & ') + (fresh.length > 1 ? ' HAVE ARRIVED' : ' HAS ARRIVED') : '';
+  if (round % 5 === 0) { if (typeof dimLordFx === 'function') dimLordFx(); spawnLord(5); say('ROUND ' + round + '  ·  IT FOUND YOU' + freshLine, 3400); }
+  else if (fresh.length) say('ROUND ' + round + freshLine, 3200);
   else say('ROUND ' + round + '  ·  ' + roster + (runners ? '  ·  THEY RUN' : ''), 2800);
   sweepTone(120, 50, 0.6, 0.4, 'square');
 }
@@ -3060,7 +3067,9 @@ function updateMobs(dt) {
     } else if (D.style === 'range') {
       if (dist < 8) mobMove(mob, -dx / dist * mob.spd * dt, -dz / dist * mob.spd * dt);
       else if (dist > 15 && dist < 45) mobMove(mob, dx / dist * mob.spd * dt, dz / dist * mob.spd * dt);
-      if (mob.atk <= 0 && dist < 26 && !dead && !wallBetween(g.position.x, g.position.z, pxReal, pzReal)) {
+      // the angel's light sails over the low rubble the rest of them trip on
+      const clearShot = mob.kind === 'angel' || !wallBetween(g.position.x, g.position.z, pxReal, pzReal);
+      if (mob.atk <= 0 && dist < 26 && !dead && clearShot) {
         mob.atk = 2.4 + Math.random();
         const from = new THREE.Vector3(g.position.x, 1.35, g.position.z);
         fireMobShot(from, mob.dmg || D.dmg);
@@ -3962,11 +3971,195 @@ function buildRattle() {
 }
 
 // ============================================================================
+//  THE TALL ECHO — world one, nine feet of it, and it does not hurry
+// ============================================================================
+function buildEchoTall() {
+  const g = new THREE.Group();
+  const black = new THREE.MeshStandardMaterial({color: 0x0b0a10, roughness: 1, emissive: 0x06040a});
+  const coat = new THREE.MeshStandardMaterial({color: 0x0d0d0e, roughness: 1, emissive: 0x08060c});
+  const pale = new THREE.MeshStandardMaterial({color: 0xcfc8bd, roughness: 0.9, emissive: 0x241f18});
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.44, 1.15, 0.3), coat);
+  torso.position.y = 1.95; g.add(torso);
+  const hips = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.5, 0.26), black);
+  hips.position.y = 1.2; g.add(hips);
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.1), black);
+  neck.position.y = 2.62; g.add(neck);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.4, 0.24), pale);
+  head.position.set(0, 2.94, 0.02); head.userData.head = true; g.add(head);
+  const arms = [];
+  [-0.3, 0.3].forEach(x => {
+    const p = new THREE.Group(); p.position.set(x, 2.4, 0);
+    const a = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.5, 0.1), black); a.position.y = -0.75; p.add(a);
+    const hand = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.19, 0.08), pale); hand.position.y = -1.58; p.add(hand);
+    p.rotation.x = -0.15; g.add(p); arms.push(p);
+  });
+  const legs = [];
+  [-0.13, 0.13].forEach(x => {
+    const p = new THREE.Group(); p.position.set(x, 1.0, 0);
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.13, 1.0, 0.14), black); l.position.y = -0.5; p.add(l);
+    g.add(p); legs.push(p);
+  });
+  g.userData.legs = legs; g.userData.arms = arms;
+  g.userData.flash = coat; g.userData.baseEm = 0x08060c;
+  return g;
+}
+
+// ============================================================================
+//  THE GLOW ECHO — world two, hanging in the air, and it closes the gap fast
+// ============================================================================
+function buildEchoGlow() {
+  const g = new THREE.Group();
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 10),
+    new THREE.MeshBasicMaterial({color: 0xc46cff}));
+  core.position.y = 1.35; g.add(core);
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 10),
+    new THREE.MeshBasicMaterial({color: 0x7a2ec8, transparent: true, opacity: 0.34, blending: THREE.AdditiveBlending, depthWrite: false}));
+  shell.position.y = 1.35; g.add(shell);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.03, 6, 20),
+    new THREE.MeshBasicMaterial({color: 0xd88cff, transparent: true, opacity: 0.8}));
+  ring.position.y = 1.35; ring.rotation.x = 1.1; g.add(ring);
+  const flesh = new THREE.MeshStandardMaterial({color: 0x5a3a72, roughness: 1, emissive: 0x2a1240});
+  for (let i = 0; i < 4; i++) {
+    const a = i / 4 * Math.PI * 2;
+    const t = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.7), flesh);
+    t.position.set(Math.sin(a) * 0.22, 1.05, Math.cos(a) * 0.22);
+    t.rotation.y = a; g.add(t);
+  }
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.22), flesh);
+  head.position.y = 1.78; head.userData.head = true; g.add(head);
+  g.userData.ring = ring; g.userData.shell = shell;
+  g.userData.flash = flesh; g.userData.baseEm = 0x2a1240;
+  return g;
+}
+
+// ============================================================================
+//  THE CINDER HOUND — world three, still burning, still running
+// ============================================================================
+function buildCinderHound() {
+  const g = new THREE.Group();
+  const char = new THREE.MeshStandardMaterial({color: 0x1a1412, roughness: 1, emissive: 0x1c0700});
+  const ash = new THREE.MeshStandardMaterial({color: 0x6a6058, roughness: 1, emissive: 0x0a0806});
+  const ember = new THREE.MeshStandardMaterial({color: 0xff6a20, emissive: 0xff4a10, emissiveIntensity: 1.7, roughness: 0.8});
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.42, 1.1), char);
+  body.position.y = 0.66; g.add(body);
+  // the cracks that never went out
+  for (let i = 0; i < 5; i++) {
+    const c = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.035, 0.06), ember);
+    c.position.set(0, 0.5 + i * 0.075, -0.28 + i * 0.13); g.add(c);
+  }
+  const mane = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.2, 0.34), ember);
+  mane.position.set(0, 0.84, 0.5); g.add(mane);
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.26, 0.3), char);
+  neck.position.set(0, 0.68, 0.66); g.add(neck);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.27, 0.44), char);
+  head.position.set(0, 0.62, 0.94); head.userData.head = true; g.add(head);
+  const snout = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.16, 0.3), ash);
+  snout.position.set(0, 0.55, 1.16); g.add(snout);
+  [-0.075, 0.075].forEach(x => {
+    const e = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.03), ember);
+    e.position.set(x, 0.66, 1.16); g.add(e);
+  });
+  const tail = new THREE.Group(); tail.position.set(0, 0.74, -0.58);
+  const t = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.42), char); t.position.z = -0.2; tail.add(t);
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.44, 6),
+    new THREE.MeshBasicMaterial({color: 0xff8a30, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false}));
+  flame.position.z = -0.44; flame.rotation.x = -1.5708; tail.add(flame);
+  g.add(tail);
+  const legs = [];
+  [[-0.22, 0.36], [0.22, 0.36], [-0.22, -0.38], [0.22, -0.38]].forEach(([x, z]) => {
+    const p = new THREE.Group(); p.position.set(x, 0.46, z);
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.46, 0.13), char); l.position.y = -0.23; p.add(l);
+    g.add(p); legs.push(p);
+  });
+  g.userData.legs = legs; g.userData.tail = tail; g.userData.flame = flame;
+  g.userData.flash = char; g.userData.baseEm = 0x1c0700;
+  return g;
+}
+
+// ============================================================================
+//  THE KING'S ECHO — world four, in plate, and it does not care about body shots
+// ============================================================================
+function buildEchoKing() {
+  const g = new THREE.Group();
+  const plate = new THREE.MeshStandardMaterial({color: 0x3a3550, metalness: 0.55, roughness: 0.5, emissive: 0x0a0816});
+  const cloth = new THREE.MeshStandardMaterial({color: 0x1a1428, roughness: 1, emissive: 0x080512});
+  const gold = new THREE.MeshStandardMaterial({color: 0xb89a48, metalness: 0.7, roughness: 0.45, emissive: 0x2a2008});
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.9, 0.46), plate);
+  torso.position.y = 1.45; g.add(torso);
+  [-0.22, 0.22].forEach(x => {
+    const pl = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.34, 0.14), gold);
+    pl.position.set(x, 1.5, 0.26); g.add(pl);
+  });
+  const skirt = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.5, 0.4), cloth);
+  skirt.position.y = 0.84; g.add(skirt);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.36, 0.32), plate);
+  head.position.y = 2.12; head.userData.head = true; g.add(head);
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 8), gold);
+  crown.position.y = 2.36; g.add(crown);
+  for (let i = 0; i < 5; i++) {
+    const a = i / 5 * Math.PI * 2;
+    const sp = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.16, 4), gold);
+    sp.position.set(Math.sin(a) * 0.18, 2.47, Math.cos(a) * 0.18); g.add(sp);
+  }
+  const arms = [], legs = [];
+  [-0.46, 0.46].forEach(x => {
+    const p = new THREE.Group(); p.position.set(x, 1.78, 0);
+    const a = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.86, 0.18), plate); a.position.y = -0.43; p.add(a);
+    const f = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 0.22), gold); f.position.y = -0.9; p.add(f);
+    p.rotation.x = -0.25; g.add(p); arms.push(p);
+  });
+  [-0.2, 0.2].forEach(x => {
+    const p = new THREE.Group(); p.position.set(x, 0.72, 0);
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.72, 0.24), plate); l.position.y = -0.36; p.add(l);
+    g.add(p); legs.push(p);
+  });
+  g.userData.legs = legs; g.userData.arms = arms;
+  g.userData.flash = plate; g.userData.baseEm = 0x0a0816;
+  return g;
+}
+
+// ============================================================================
+//  THE ANGEL — heaven, and the last thing to turn up out here
+// ============================================================================
+function buildAngel() {
+  const g = new THREE.Group();
+  const robe = new THREE.MeshStandardMaterial({color: 0xd8d2c0, roughness: 0.9, emissive: 0x2a2620});
+  const skin = new THREE.MeshStandardMaterial({color: 0xe8d8c4, roughness: 0.9, emissive: 0x2a241c});
+  const gold = new THREE.MeshStandardMaterial({color: 0xffd36b, metalness: 0.6, roughness: 0.4, emissive: 0x8a6a10});
+  const wingMat = new THREE.MeshStandardMaterial({color: 0xf4eedc, roughness: 1, emissive: 0x3a3428, side: THREE.DoubleSide});
+  const body = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.3, 10), robe);
+  body.position.y = 0.95; g.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), skin);
+  head.position.y = 1.78; head.userData.head = true; g.add(head);
+  const halo = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.018, 6, 18), gold);
+  halo.position.y = 2.05; halo.rotation.x = Math.PI / 2; g.add(halo);
+  const wings = [];
+  [-1, 1].forEach(sx => {
+    const w = new THREE.Group(); w.position.set(sx * 0.14, 1.4, -0.12); w.rotation.y = sx * 0.6;
+    const f = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.9, 0.04), wingMat);
+    f.position.set(sx * 0.34, 0.1, 0); f.rotation.z = sx * 0.35; w.add(f);
+    const f2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.04), wingMat);
+    f2.position.set(sx * 0.5, -0.42, 0); f2.rotation.z = sx * 0.55; w.add(f2);
+    g.add(w); wings.push(w);
+  });
+  const eyes = new THREE.MeshBasicMaterial({color: 0xffe9a8});
+  [-0.06, 0.06].forEach(x => {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 5), eyes);
+    e.position.set(x, 1.8, 0.15); g.add(e);
+  });
+  g.userData.halo = halo; g.userData.wings = wings;
+  g.userData.flash = robe; g.userData.baseEm = 0x2a2620;
+  return g;
+}
+
+// ============================================================================
 //  the table the rest of the game reads
 // ============================================================================
 const DIM_BUILD = {
   crawler: buildCrawler, brute: buildBrute, screamer: buildScreamer,
-  bloat: buildBloat, hound: buildHound, rattle: buildRattle
+  bloat: buildBloat, hound: buildHound, rattle: buildRattle,
+  tall_echo: buildEchoTall, glow_echo: buildEchoGlow, king_echo: buildEchoKing,
+  cinder_hound: buildCinderHound, angel: buildAngel
 };
 Object.assign(MOB_DEF, {
   crawler: {hp: 3, spd: 2.45, dmg: 7, r: 0.42, shards: 2, style: 'melee', name: 'CRAWLER', eyeY: 0.36, eyeZ: 0.55},
@@ -3974,7 +4167,13 @@ Object.assign(MOB_DEF, {
   rattle:  {hp: 2, spd: 1.85, dmg: 8, r: 0.38, shards: 2, style: 'melee', name: 'RATTLE', eyeY: 1.82, eyeZ: 0.2},
   screamer:{hp: 6, spd: 1.05, dmg: 4, r: 0.45, shards: 4, style: 'melee', name: 'SCREAMER', eyeY: 2.16, eyeZ: 0.14},
   bloat:   {hp: 10, spd: 0.78, dmg: 6, r: 0.62, shards: 4, style: 'melee', name: 'BLOAT', eyeY: 1.62, eyeZ: 0.36},
-  brute:   {hp: 18, spd: 0.66, dmg: 24, r: 0.78, shards: 9, style: 'melee', name: 'BRUTE', eyeY: 2.06, eyeZ: 0.24}
+  brute:   {hp: 18, spd: 0.66, dmg: 24, r: 0.78, shards: 9, style: 'melee', name: 'BRUTE', eyeY: 2.06, eyeZ: 0.24},
+  // the guests: everything the other places have, arriving late and in order
+  cinder_hound:{hp: 7, spd: 2.3, dmg: 13, r: 0.45, shards: 6, style: 'melee', name: 'CINDER HOUND', eyeY: 0.66, eyeZ: 1.16},
+  tall_echo:{hp: 14, spd: 0.5, dmg: 24, r: 0.6, shards: 10, style: 'melee', name: 'TALL ECHO', eyeY: 2.96, eyeZ: 0.16},
+  glow_echo:{hp: 9, spd: 1.05, dmg: 12, r: 0.5, shards: 8, style: 'melee', name: 'GLOW ECHO', eyeY: 1.78, eyeZ: 0.2},
+  king_echo:{hp: 24, spd: 0.55, dmg: 22, r: 0.75, shards: 12, style: 'melee', name: "KING'S ECHO", eyeY: 2.12, eyeZ: 0.22},
+  angel:   {hp: 11, spd: 1.5, dmg: 11, r: 0.45, shards: 12, style: 'range', name: 'ANGEL', eyeY: 1.8, eyeZ: 0.18}
 });
 
 // their own animation, so nothing in 60-enemies needs to know they exist
@@ -4020,6 +4219,46 @@ function dimAnimate(mob, moving, dt) {
     g.rotation.z = Math.sin(mob.ph * 0.9) * 0.03;
     return;
   }
+  if (mob.kind === 'tall_echo') {
+    mob.ph += dt * (moving ? 1.5 : 0.6);
+    const sw = Math.sin(mob.ph) * (moving ? 0.2 : 0.02);
+    u.legs[0].rotation.x = sw; u.legs[1].rotation.x = -sw;
+    u.arms[0].rotation.x = -0.15 + Math.sin(mob.ph * 0.7) * 0.06;
+    u.arms[1].rotation.x = -0.15 - Math.sin(mob.ph * 0.7) * 0.06;
+    g.rotation.z = Math.sin(mob.ph * 0.4) * 0.03;
+    return;
+  }
+  if (mob.kind === 'glow_echo') {
+    mob.ph += dt * 2.2;
+    g.position.y = 0.12 + Math.sin(mob.ph) * 0.14;
+    if (u.ring) { u.ring.rotation.z += dt * 1.6; u.ring.rotation.x = 1.1 + Math.sin(mob.ph * 0.7) * 0.3; }
+    if (u.shell) u.shell.scale.setScalar(1 + Math.sin(mob.ph * 1.7) * 0.08);
+    return;
+  }
+  if (mob.kind === 'king_echo') {
+    mob.ph += dt * (moving ? 2.4 : 0.9);
+    const sw = Math.sin(mob.ph) * (moving ? 0.26 : 0.02);
+    u.legs[0].rotation.x = sw; u.legs[1].rotation.x = -sw;
+    u.arms[0].rotation.x = -0.25 - sw * 0.3; u.arms[1].rotation.x = -0.25 + sw * 0.3;
+    return;
+  }
+  if (mob.kind === 'cinder_hound') {
+    mob.ph += dt * (moving ? 9 : 1.5);
+    const sw = Math.sin(mob.ph) * (moving ? 0.7 : 0.06);
+    u.legs[0].rotation.x = sw; u.legs[2].rotation.x = sw;
+    u.legs[1].rotation.x = -sw; u.legs[3].rotation.x = -sw;
+    if (u.tail) u.tail.rotation.y = Math.sin(mob.ph * 0.5) * 0.5;
+    if (u.flame) { u.flame.scale.setScalar(0.8 + Math.sin(mob.ph * 2.4) * 0.25); u.flame.rotation.z = Math.sin(mob.ph * 3) * 0.3; }
+    g.position.y = Math.abs(Math.sin(mob.ph)) * (moving ? 0.05 : 0.01);
+    return;
+  }
+  if (mob.kind === 'angel') {
+    mob.ph += dt * 1.8;
+    g.position.y = 0.3 + Math.sin(mob.ph) * 0.16;
+    if (u.halo) u.halo.rotation.z += dt * 1.2;
+    if (u.wings) u.wings.forEach((w, i) => { w.rotation.z = Math.sin(mob.ph * 2.2 + i * Math.PI) * 0.18; });
+    return;
+  }
   if (mob.kind === 'rattle') {
     mob.ph += dt * (moving ? 6 : 1.6);
     const sw = Math.sin(mob.ph) * (moving ? 0.6 : 0.06);
@@ -4031,7 +4270,7 @@ function dimAnimate(mob, moving, dt) {
 
 // ---- what each of them does besides walk at you ---------------------------
 function dimKindTick(mob, dt) {
-  if (mob.kind === 'hound') {
+  if (mob.kind === 'hound' || mob.kind === 'glow_echo' || mob.kind === 'cinder_hound') {
     if (mob.dashT == null) { mob.dashT = 1 + Math.random(); mob.baseSpd = mob.spd; }
     mob.dashT -= dt;
     if (mob.dashT <= 0) {
@@ -4039,8 +4278,11 @@ function dimKindTick(mob, dt) {
       mob.dashT = mob.dashing ? 0.5 + Math.random() * 0.25 : 1.3 + Math.random() * 1.2;
       mob.spd = mob.baseSpd * (mob.dashing ? 3.1 : 0.55);
       if (mob.dashing) {
-        const gp = panFor(mob.g.position.x, mob.g.position.z);
-        if (volFor(mob.g.position.x, mob.g.position.z, 6) > 0.25) sweepNoise(900, 2600, 0.22, 0.18);
+        const gv = volFor(mob.g.position.x, mob.g.position.z, 6);
+        if (gv > 0.25) {
+          if (mob.kind === 'glow_echo') wispWhisper(gv, panFor(mob.g.position.x, mob.g.position.z));
+          else sweepNoise(900, 2600, 0.22, 0.18);
+        }
       }
     }
     return;
@@ -4069,6 +4311,50 @@ function dimKindTick(mob, dt) {
     }
     return;
   }
+  if (mob.kind === 'tall_echo' || mob.kind === 'king_echo') {
+    // the old bosses do not shout, they breathe out something enormous
+    const big = mob.kind === 'king_echo';
+    mob.voiceT = (mob.voiceT == null ? 2 + Math.random() * 3 : mob.voiceT) - dt;
+    if (mob.voiceT > 0) return;
+    mob.voiceT = (big ? 6 : 7) + Math.random() * 5;
+    const v = volFor(mob.g.position.x, mob.g.position.z, 6);
+    if (v > 0.12 && !paused && settings.ambience !== false)
+      throat({f0: big ? 52 : 63, formants: [big ? 380 : 430, big ? 820 : 960], dur: big ? 2.1 : 1.6,
+              gain: (big ? 0.5 : 0.42) * v, pan: panFor(mob.g.position.x, mob.g.position.z),
+              rasp: 0.4, wet: 0.55, bend: -0.18});
+    return;
+  }
+  if (mob.kind === 'angel') {
+    // it never stops drifting sideways, so it will not sit behind a wall forever
+    mob.drift = (mob.drift == null ? Math.random() * 6.283 : mob.drift + dt * 0.55);
+    mobMove(mob, Math.cos(mob.drift) * 0.95 * dt, Math.sin(mob.drift) * 0.95 * dt);
+    // one held note, too clean to be a throat down here
+    mob.voiceT = (mob.voiceT == null ? 3 + Math.random() * 4 : mob.voiceT) - dt;
+    if (mob.voiceT > 0) return;
+    mob.voiceT = 7 + Math.random() * 6;
+    const v = volFor(mob.g.position.x, mob.g.position.z, 7);
+    if (v > 0.12 && !paused && settings.ambience !== false)
+      throat({f0: 288, formants: [740, 1900], dur: 1.9, gain: 0.26 * v,
+              pan: panFor(mob.g.position.x, mob.g.position.z), wet: 0.9, rise: 0.1, rasp: 0.12});
+    return;
+  }
+  if (mob.kind === 'cinder_hound') {
+    // sparks drop off it, and now and then it barks through a burnt throat
+    mob.sparkT = (mob.sparkT == null ? 0.4 : mob.sparkT) - dt;
+    if (mob.sparkT <= 0) {
+      mob.sparkT = 0.32 + Math.random() * 0.3;
+      const gx = mob.g.position.x, gz = mob.g.position.z;
+      if (volFor(gx, gz, 14) > 0.05) gorePuff(gx + (Math.random() - 0.5) * 0.4, 0.5, gz + (Math.random() - 0.5) * 0.4, 1, 0xff7a28, 0.5, 1.1);
+    }
+    mob.voiceT = (mob.voiceT == null ? 1.5 + Math.random() * 2 : mob.voiceT) - dt;
+    if (mob.voiceT > 0) return;
+    mob.voiceT = 4 + Math.random() * 4;
+    const v = volFor(mob.g.position.x, mob.g.position.z, 6);
+    if (v > 0.12 && !paused && settings.ambience !== false)
+      throat({f0: 138, formants: [620, 1180], dur: 0.42, gain: 0.4 * v,
+              pan: panFor(mob.g.position.x, mob.g.position.z), rasp: 0.7, wet: 0.5, bend: -0.45});
+    return;
+  }
   if (mob.kind === 'bloat') {
     // it swells as it gets close, so you can hear it coming
     mob.swell = mob.swell || 0;
@@ -4079,8 +4365,34 @@ function dimKindTick(mob, dt) {
 
 // it goes off when it dies, whether you were ready or not
 function dimKindDeath(mob) {
-  if (mob.kind !== 'bloat') return;
   const x = mob.g.position.x, z = mob.g.position.z;
+  if (mob.kind === 'tall_echo' || mob.kind === 'king_echo') {
+    const big = mob.kind === 'king_echo';
+    gorePuff(x, 1.6, z, big ? 18 : 13, big ? 0x2c2a34 : 0x1c1a22, 2.6, 2.6);
+    gorePuff(x, 1.2, z, 6, 0x4a1010, 2.0, 2.0);
+    if (big) gorePuff(x, 2.0, z, 9, 0xd8b45a, 2.2, 2.4);
+    zombieDeath(volFor(x, z, 6), panFor(x, z));
+    return;
+  }
+  if (mob.kind === 'cinder_hound') {
+    gorePuff(x, 0.8, z, 14, 0xff7a28, 2.6, 3.0);
+    gorePuff(x, 0.8, z, 10, 0x2a2420, 2.0, 2.2);
+    return;
+  }
+  if (mob.kind === 'glow_echo') {
+    gorePuff(x, 1.0, z, 16, 0x8a4cf0, 2.8, 3.0);
+    gorePuff(x, 1.0, z, 8, 0xd8c8ff, 1.8, 2.2);
+    return;
+  }
+  if (mob.kind === 'angel') {
+    const v = volFor(x, z, 7);
+    gorePuff(x, 1.7, z, 20, 0xfff0c4, 3.2, 3.4);
+    gorePuff(x, 1.4, z, 10, 0xe8d49a, 2.2, 2.4);
+    if (v > 0.1 && settings.ambience !== false)
+      throat({f0: 330, formants: [700, 1800], dur: 1.1, gain: 0.3 * v, pan: panFor(x, z), wet: 0.9, bend: -0.55});
+    return;
+  }
+  if (mob.kind !== 'bloat') return;
   gorePuff(x, 1.0, z, 22, 0x7a8a30, 3.4, 3.2);
   gorePuff(x, 1.0, z, 10, 0x4a1010, 2.6, 2.4);
   sweepNoise(900, 120, 0.5, 0.7);
@@ -4090,26 +4402,29 @@ function dimKindDeath(mob) {
 }
 
 // ---- the mix: what a given round sends ------------------------------------
+// when each thing starts turning up. everything the other places have, in order of
+// how much trouble it is: the forest's walkers and the glow's lights first, then the
+// old bosses as echoes, and heaven last because heaven is the worst of them.
+const DIM_UNLOCK = {
+  crawler: 2, rattle: 3, husk: 4, hound: 5, spitter: 6, screamer: 7,
+  bloat: 8, brute: 9, wisp: 10,
+  glow_echo: 11, cinder_hound: 13, tall_echo: 15, king_echo: 17, angel: 19
+};
 function dimWaveCrew(round, n) {
   const pool = ['zombie', 'zombie', 'zombie'];
-  const unlock = (k, at) => { if (round >= at) pool.push(k); };
-  unlock('crawler', 2);
-  unlock('rattle', 3);
-  unlock('hound', 4);
-  unlock('spitter', 5);
-  unlock('screamer', 6);
-  unlock('bloat', 7);
-  unlock('brute', 9);
-  unlock('wisp', 11);
-  unlock('brute', 14);
+  for (const k in DIM_UNLOCK) {
+    if (round < DIM_UNLOCK[k]) continue;
+    // the guests stay rare: one slot of weight each, however late it gets
+    const weight = DIM_UNLOCK[k] >= 12 ? 1 : 2;
+    for (let i = 0; i < weight; i++) pool.push(k);
+  }
   const crew = [];
-  // the first of anything new always shows up the round it unlocks
-  for (const k of ['crawler', 'rattle', 'hound', 'screamer', 'bloat', 'brute'])
-    if (round >= ({ crawler: 2, rattle: 3, hound: 4, screamer: 6, bloat: 7, brute: 9 })[k] &&
-        round < ({ crawler: 3, rattle: 4, hound: 5, screamer: 7, bloat: 8, brute: 10 })[k]) crew.push(k);
+  // the first of anything new always shows up the round it unlocks, so you meet a
+  // thing on its own before it becomes part of the crowd
+  for (const k in DIM_UNLOCK) if (round === DIM_UNLOCK[k]) crew.push(k);
   while (crew.length < n) crew.push(pool[Math.floor(Math.random() * pool.length)]);
   // the big ones are a moment, not a wall: cap them and let the crowd fill the rest
-  const cap = {brute: 2, screamer: 2, bloat: 3};
+  const cap = {brute: 2, screamer: 2, bloat: 3, glow_echo: 2, cinder_hound: 2, tall_echo: 1, king_echo: 1, angel: 1};
   const seen = {};
   for (let i = 0; i < crew.length; i++) {
     const k = crew[i];
@@ -4118,6 +4433,8 @@ function dimWaveCrew(round, n) {
   }
   return crew.slice(0, n);
 }
+// is this one of the things that came in from the other places?
+const DIM_GUEST = {husk: true, wisp: true, glow_echo: true, cinder_hound: true, tall_echo: true, king_echo: true, angel: true};
 
 // a walker with an extra way of killing you, all set up and ready
 function dimMakeMob(kind, x, z) {
