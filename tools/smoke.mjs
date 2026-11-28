@@ -493,6 +493,14 @@ run('almanac:detail', `(() => {
     q('rounds') === 'Starts at round 9. Two at most in a wave.', !!d.querySelector('.almHero img').src,
     q('where').length > 10 && q('tip').length > 20];
 })()`);
+run('almanac:heaven', `(() => {
+  const a = ALMANAC.find(e => e.id === 'angel_heaven'), h = ALMANAC.find(e => e.id === 'heaven');
+  const secs = almanacSections().map(s => s.name);
+  openAlmanacEntry('angel_heaven');
+  const d = document.getElementById('almanacDetail');
+  return [!!a, !!h, secs.includes('Heaven'), d.querySelector('.almTitle').textContent === 'THE ANGELS',
+    d.querySelectorAll('.almStat').length >= 3, !!a.model(), people.length];
+})()`);
 run('almanac:back', `(() => {
   document.querySelector('#almanacDetail .almBack').click();
   const r = [document.getElementById('almanacDetail').hidden, !document.getElementById('almanacHome').hidden];
