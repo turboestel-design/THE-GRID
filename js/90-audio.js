@@ -329,3 +329,37 @@ function farMoan() {
   throat({f0: 58 + Math.random() * 30, formants: pickOne([VOWEL.uh, VOWEL.oh]), dur: 3.4 + Math.random() * 1.6,
     gain: 0.16, bend: -0.3, rasp: 0.3, wet: 0.3, gurgles: 1.1, slide: -0.1});
 }
+
+// a screamer: everything wrong with a human voice at once
+function screamSound(vol, pan) {
+  if (!ac) return;
+  const v = vol == null ? 0.7 : vol;
+  if (v <= 0.03) return;
+  throat({f0: 240 + Math.random() * 60, formants: [800, 1800, 2900], dur: 1.0 + Math.random() * 0.5,
+    gain: 0.34 * v, pan: pan || 0, rise: 0.45, bend: -0.1, rasp: 0.55, wet: 0.12, sub: 0.1, gurgles: 0.7, slide: 0.35});
+  breathNoise(0.16 * v, pan || 0, 0.9, 1400, 2600, 0.05);
+  setTimeout(() => throat({f0: 300, formants: [900, 2000, 3000], dur: 0.7, gain: 0.2 * v, pan: pan || 0,
+    rise: 0.3, bend: -0.4, rasp: 0.6, wet: 0.1, sub: 0.05, gurgles: 0.6, slide: 0.2}), 420);
+}
+// bones knocking together: dry clicks, no pitch
+function rattleSound(x, z) {
+  if (!ac || !whiteBuf) return;
+  const v = (typeof volFor === 'function' ? volFor(x, z, 4) : 0.6);
+  if (v <= 0.02) return;
+  const pan = (typeof panFor === 'function' ? panFor(x, z) : 0);
+  const t0 = ac.currentTime;
+  for (let i = 0; i < 7; i++) {
+    const t = t0 + i * (0.045 + Math.random() * 0.05);
+    const s = ac.createBufferSource(); s.buffer = whiteBuf;
+    const f = ac.createBiquadFilter(); f.type = 'bandpass';
+    f.frequency.value = 1800 + Math.random() * 2600; f.Q.value = 6 + Math.random() * 8;
+    const g = ac.createGain();
+    const pk = (0.09 + Math.random() * 0.13) * v;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(pk, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    let dest = g;
+    if (pan && ac.createStereoPanner) { const p = ac.createStereoPanner(); p.pan.value = pan; g.connect(p); dest = p; }
+    s.connect(f); f.connect(g); dest.connect(master);
+    s.start(t, Math.random() * 1.5, 0.09);
+  }
+}

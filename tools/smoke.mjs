@@ -158,6 +158,41 @@ run('dim:realm', 'setRealm(5); [realm, dim.visible, REALM_NAME[5]]');
 run('dim:wave', '(() => { dimActive = true; dimWave = 0; dimWaveT = 0; updateDimension(0.016); return [dimWave, mobs.filter(m => m.realm === 5).length]; })()');
 run('dim:atmos', '(() => { setRealm(5); paused = false; dead = false; for (let i = 0; i < 30; i++) dimAtmos(0.016); '
   + 'return [typeof dimFx, dimFx.braziers.length, dimFx.crows.length, dimFx.cracks.length, dimFx.mist.length, +scene.fog.density.toFixed(3)]; })()');
+run('dim:bestiary', `(() => {
+  setRealm(5); paused = false; dead = false;
+  const kinds = ['crawler', 'hound', 'rattle', 'screamer', 'bloat', 'brute'];
+  const built = kinds.filter(k => { try { const m = dimMakeMob(k, ZX + 30, 40); return m.alive && typeof m.tick === 'function'; } catch (e) { return false; } });
+  return [kinds.length, built.length, Object.keys(MOB_DEF).length];
+})()`);
+run('dim:crew', '(() => { const r = k => dimWaveCrew(k, 12); '
+  + 'const early = r(1).every(k => k === "zombie"); '
+  + 'const late = r(12); '
+  + 'return [early, late.includes("brute"), late.filter(k => k === "brute").length <= 2, late.length]; })()');
+run('dim:brute-headshot', `(() => {
+  clearDimensionMobs();
+  const b = dimMakeMob('brute', ZX + 20, 30);
+  const hp = b.hp; hurtMob(b, 1, true);
+  return [hp, b.hp < hp - 1];
+})()`);
+run('dim:bloat-boom', `(() => {
+  clearDimensionMobs();
+  camera.position.set(ZX, EYE, 14); health = maxHp;
+  const b = dimMakeMob('bloat', ZX + 2, 15); b.hp = 0.2;
+  hurtMob(b, 99);
+  return [b.alive, health < maxHp];
+})()`);
+run('dim:screamer', `(() => {
+  clearDimensionMobs();
+  const s = dimMakeMob('screamer', camera.position.x + 5, camera.position.z + 5);
+  const z = dimMakeMob('zombie', camera.position.x + 9, camera.position.z + 6);
+  s.screamT = 0; s.tick(s, 0.016);
+  const [buffed, anim] = [z.buffT > 0, s.screamAnim > 0];
+  clearDimensionMobs();
+  return [buffed, anim];
+})()`);
+run('dim:skyline', '(() => { const far = dim.children.filter(o => o.isInstancedMesh); '
+  + 'return [far.length >= 3, dim.children.length > 40]; })()');
+run('dim:ambience-setting', '(() => { setRealm(1); return [typeof settings.ambience, settings.ambience !== false]; })()');
 run('dim:chapel', '(() => { setRealm(5); paused = false; dead = false; return [typeof dimChapel, dimChapel.candles.length, '
   + 'dimBoxes.filter(b => b[2] > ZX - 33 && b[0] < ZX - 21 && b[3] > 30 && b[1] < 44).length]; })()');
 run('dim:chapel-aisle', `(() => {

@@ -1279,8 +1279,8 @@ for (let i = 0; i < 40; i++) {
   dcx.stroke();
 }
 const dtex = new THREE.CanvasTexture(dcv);
-dtex.wrapS = dtex.wrapT = THREE.RepeatWrapping; dtex.repeat.set(15, 15); dtex.anisotropy = 4;
-const ground5 = new THREE.Mesh(new THREE.PlaneGeometry(170, 170),
+dtex.wrapS = dtex.wrapT = THREE.RepeatWrapping; dtex.repeat.set(30, 30); dtex.anisotropy = 4;
+const ground5 = new THREE.Mesh(new THREE.PlaneGeometry(340, 340),
   new THREE.MeshStandardMaterial({map: dtex, roughness: 1, emissive: 0x2e0c16, emissiveIntensity: 1.1}));
 ground5.rotation.x = -Math.PI / 2; dim.add(ground5);
 
@@ -1485,7 +1485,7 @@ function tuneDimMob(m, round, runner) {
     const s = runner ? 0.048 : 0.036;
     [-0.13, 0.13].forEach(x => {
       const e = new THREE.Mesh(new THREE.SphereGeometry(s, 6, 5), eyeM);
-      e.position.set(x, 1.78, 0.22); m.g.add(e);
+      e.position.set(x, m.eyeY != null ? m.eyeY : 1.78, m.eyeZ != null ? m.eyeZ : 0.22); m.g.add(e);
     });
   }
   return m;
@@ -1552,21 +1552,26 @@ function dimSpawnPoint(minR, maxR) {
 function spawnDimWave() {
   dimWave++;
   const round = dimWave;
-  const n = Math.min(3 + Math.round(round * 1.5), 18);
-  const runners = round >= 10 ? n : round >= 5 ? Math.min(round - 3, Math.ceil(n * 0.6)) : 0;
-  const spits = round >= 6 ? Math.min(3, round - 5) : 0;
-  for (let i = 0; i < n; i++) {
+  const n = Math.min(3 + Math.round(round * 1.5), 18) + (round >= 6 ? Math.min(3, round - 5) : 0);
+  const crew = dimWaveCrew(round, n);
+  const runners = round >= 10 ? 2 : round >= 5 ? Math.min(round - 3, Math.ceil(crew.length * 0.4)) : 0;
+  const tally = {};
+  let runnerLeft = runners;
+  crew.forEach(kind => {
     const c = dimSpawnPoint(11, 20);
-    tuneDimMob(makeMob('zombie', c[0], c[1], 5), round, i < runners);
-  }
-  for (let i = 0; i < spits; i++) {
-    const c = dimSpawnPoint(15, 21);
-    tuneDimMob(makeMob('spitter', c[0], c[1], 5), round, false);
-  }
+    const m = dimMakeMob(kind, c[0], c[1]);
+    const canRun = kind !== 'brute' && kind !== 'bloat' && kind !== 'screamer';
+    const isRunner = runnerLeft > 0 && canRun;
+    if (isRunner) runnerLeft--;
+    tuneDimMob(m, round, isRunner);
+    tally[kind] = (tally[kind] || 0) + 1;
+  });
+  const roster = Object.keys(tally).sort((a, b) => tally[b] - tally[a]).slice(0, 3)
+    .map(k => tally[k] + ' ' + MOB_DEF[k].name + (tally[k] > 1 ? 'S' : '')).join('  \u00b7  ');
   dimWaveT = Math.max(3, 8 - round * 0.25);
   if (typeof dimRoundFx === 'function') dimRoundFx();
   if (round % 5 === 0) { if (typeof dimLordFx === 'function') dimLordFx(); spawnLord(5); say('ROUND ' + round + '  ·  IT FOUND YOU', 3000); }
-  else say('ROUND ' + round + '  ·  ' + (n + spits) + ' OF THEM' + (runners ? '  ·  THEY RUN' : ''), 2400);
+  else say('ROUND ' + round + '  ·  ' + roster + (runners ? '  ·  THEY RUN' : ''), 2800);
   sweepTone(120, 50, 0.6, 0.4, 'square');
 }
 
@@ -1623,21 +1628,84 @@ const dimFx = (() => {
   const clearOfThings = (x, z, pad) =>
     !(Math.hypot(x - ZX - DIM_HUT_AT.x, z - DIM_HUT_AT.z) < 6 + pad) && !inDimProp(x - ZX, z, pad);
 
-  // ---- a ruined horizon, half eaten by the fog ------------------------------
+  // ---- a ruined city you can never walk to --------------------------------
+  // The playable arena stops at forty-eight metres. Everything below is further
+  // out than that, so it is skyline and nothing else: the dead city this place
+  // used to be, still standing, still lit in a few windows.
   {
-    const mat = new THREE.MeshStandardMaterial({color: 0x241220, roughness: 1, flatShading: true, emissive: 0x150610, emissiveIntensity: 0.8});
+    const mat = new THREE.MeshStandardMaterial({color: 0x2b1626, roughness: 1, flatShading: true, emissive: 0x180818, emissiveIntensity: 0.9});
     const geo = new THREE.BoxGeometry(1, 1, 1);
-    const ruins = new THREE.InstancedMesh(geo, mat, 46);
-    ruins.frustumCulled = false;
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), sc = new THREE.Vector3();
-    for (let i = 0; i < 46; i++) {
-      const a = (i / 46) * Math.PI * 2 + rr(-0.06, 0.06), r = rr(52, 84);
-      const w = rr(3, 9), h = rr(6, 26) * (i % 7 === 0 ? 1.7 : 1), d = rr(3, 9);
-      e.set(0, rr(0, 6.28), rr(-0.03, 0.03), 'XYZ'); q.setFromEuler(e);
-      ruins.setMatrixAt(i, m4.compose(p.set(Math.sin(a) * r, h / 2 - 0.4, 14 + Math.cos(a) * r), q, sc.set(w, h, d)));
+    // the close ring: broken blocks, near enough to read as buildings
+    const blocks = [];
+    const put = (x, z, w, h, d, ry) => blocks.push([x, z, w, h, d, ry || 0]);
+    for (let i = 0; i < 13; i++) {
+      const a = (i / 13) * Math.PI * 2 + rr(-0.14, 0.14), r = rr(56, 78);
+      const x = Math.sin(a) * r, z = 14 + Math.cos(a) * r;
+      const w = rr(9, 17), d = rr(9, 17), h = rr(12, 34);
+      const ry = a + rr(-0.2, 0.2);
+      put(x, z, w, h, d, ry);
+      // the top has come off one corner, so the outline is never a clean box
+      put(x + rr(-w * 0.4, w * 0.4), z + rr(-d * 0.4, d * 0.4), w * rr(0.35, 0.6), h * rr(0.12, 0.3), d * rr(0.35, 0.6), ry);
+      // a stub of a lower wing, and a broken stair tower
+      if (rnd() < 0.7) put(x + w * 0.7, z + rr(-3, 3), w * 0.55, h * rr(0.3, 0.55), d * 0.7, ry);
+      if (rnd() < 0.5) put(x - w * 0.55, z + d * 0.4, w * 0.3, h * rr(0.5, 0.9), d * 0.3, ry);
     }
+    // two chimneys and a spire, so the skyline has landmarks
+    put(38, 92, 4.5, 46, 4.5, 0);
+    put(-46, 78, 4, 39, 4, 0.3);
+    put(-6, 104, 5.5, 52, 5.5, 0.1);
+    put(-6, 104, 2.2, 14, 2.2, 0.1);
+    const ruins = new THREE.InstancedMesh(geo, mat, blocks.length);
+    ruins.frustumCulled = false;
+    blocks.forEach(([x, z, w, h, d, ry], i) => {
+      e.set(0, ry, 0, 'XYZ'); q.setFromEuler(e);
+      ruins.setMatrixAt(i, m4.compose(p.set(x, h / 2 - 0.3, z), q, sc.set(w, h, d)));
+    });
     ruins.instanceMatrix.needsUpdate = true;
     dim.add(ruins);
+
+    // windows: a grid of them on the inward face of each block, a few still lit
+    const winGeo = new THREE.BoxGeometry(0.34, 0.5, 0.08);
+    const litMat = new THREE.MeshBasicMaterial({color: 0xffb45c});
+    const darkMat = new THREE.MeshBasicMaterial({color: 0x0a0409});
+    const lit = new THREE.InstancedMesh(winGeo, litMat, 60);
+    const dark = new THREE.InstancedMesh(winGeo, darkMat, 320);
+    lit.frustumCulled = dark.frustumCulled = false;
+    let ln = 0, dn = 0;
+    for (const [x, z, w, h, d, ry] of blocks) {
+      if (h < 8) continue;
+      const dl = Math.hypot(x, 14 - z) || 1;
+      const dirX = -x / dl, dirZ = (14 - z) / dl;           // straight at the arena
+      const ux = -dirZ, uz = dirX;                          // along the face
+      const toC = Math.atan2(dirX, dirZ);
+      const cols = Math.max(2, Math.floor(w / 2.6)), rows = Math.max(2, Math.floor(h / 3.6));
+      for (let cx = 0; cx < cols; cx++) for (let cyy = 0; cyy < rows; cyy++) {
+        const off = (cx - (cols - 1) / 2) * (w / cols);
+        const ex = x + dirX * (d / 2 + 0.1) + ux * off;
+        const ez = z + dirZ * (d / 2 + 0.1) + uz * off;
+        e.set(0, toC, 0, 'XYZ'); q.setFromEuler(e);
+        const m = m4.compose(p.set(ex, 3 + cyy * (h / rows), ez), q, sc.set(1, 1, 1));
+        if (Math.random() < 0.12 && ln < 60) lit.setMatrixAt(ln++, m);
+        else if (dn < 320) dark.setMatrixAt(dn++, m);
+      }
+    }
+    lit.count = ln; dark.count = dn;
+    lit.instanceMatrix.needsUpdate = dark.instanceMatrix.needsUpdate = true;
+    dim.add(dark, lit);
+
+    // the far ring: flat black shapes with no fog on them, so there is depth
+    const farMat = new THREE.MeshBasicMaterial({color: 0x140a13, fog: false});
+    const far = new THREE.InstancedMesh(geo, farMat, 26);
+    far.frustumCulled = false;
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * Math.PI * 2 + rr(-0.09, 0.09), r = rr(118, 152);
+      const w = rr(10, 26), h = rr(14, 44) * (i % 5 === 0 ? 1.6 : 1), d = rr(10, 26);
+      e.set(0, rr(0, 6.28), 0, 'XYZ'); q.setFromEuler(e);
+      far.setMatrixAt(i, m4.compose(p.set(Math.sin(a) * r, h / 2 - 1, 14 + Math.cos(a) * r), q, sc.set(w, h, d)));
+    }
+    far.instanceMatrix.needsUpdate = true;
+    dim.add(far);
   }
 
   // ---- a bell tower, because the dark wants a silhouette ---------------------
@@ -1783,17 +1851,23 @@ const dimFx = (() => {
 
 // the toll when a round begins
 function dimBell() {
-  sweepTone(196, 92, 2.6, 0.34, 'sine');
-  sweepTone(392, 184, 2.2, 0.12, 'sine');
-  setTimeout(() => sweepTone(174, 82, 2.4, 0.22, 'sine'), 620);
-  setTimeout(() => sweepTone(160, 76, 2.2, 0.16, 'sine'), 1180);
+  sweepTone(196, 92, 2.6, 0.24, 'sine');
+  sweepTone(392, 184, 2.2, 0.09, 'sine');
+  setTimeout(() => sweepTone(174, 82, 2.4, 0.15, 'sine'), 620);
+  setTimeout(() => sweepTone(160, 76, 2.2, 0.11, 'sine'), 1180);
 }
 let dimPulse = 0, dimAmbT = 9, dimAmbN = 0;
 // called when a round starts: the fog thickens, the moon flares, the bell rings
 function dimRoundFx() {
   dimPulse = 1;
-  dimBell();
-  rumble(300, 1.4);
+  // the full toll is for the first round and every fifth; the rest get one note,
+  // because a bell on every single round stops being a bell and starts being a timer
+  if (dimWave === 1 || dimWave % 5 === 0) {
+    dimBell();
+    rumble(240, 0.9);
+  } else {
+    sweepTone(180, 96, 1.6, 0.17, 'sine');
+  }
 }
 function dimAtmos(dt) {
   if (realm !== 5) return;
@@ -1840,7 +1914,7 @@ function dimAtmos(dt) {
   // distant sounds so the quiet is never quite silent
   dimAmbT -= dt;
   if (dimAmbT <= 0) {
-    dimAmbT = 9 + Math.random() * 13;
+    dimAmbT = 26 + Math.random() * 22;
     dimAmbN++;
     if (dimAmbN % 3 === 0) sweepNoise(500, 120, 2.2, 0.16);          // a wind through the ruins
     else sweepTone(70 + Math.random() * 50, 42, 2.4, 0.13, 'sawtooth'); // something out there
@@ -2002,7 +2076,7 @@ const dimWx = (() => {
   return {ash, ashGeo, pos, vy, ph, N, clouds, pools};
 })();
 
-let dimFlash = 0, dimBoltT = 24, dimBoltQ = 0, dimMoanT = 0;
+let dimFlash = 0, dimBoltT = 48, dimBoltQ = 0, dimMoanT = 0;
 function dimLordFx() {
   dimPulse = 1.4;
   dimFlash = 0.7;
@@ -2016,7 +2090,7 @@ function dimWeather(dt) {
   // lightning: three flashes in a row, and the thunder comes after it
   dimBoltT -= dt;
   if (dimBoltT <= 0) {
-    dimFlash = 1; dimBoltQ = 0.14; dimBoltT = 24 + Math.random() * 32;
+    dimFlash = 1; dimBoltQ = 0.14; dimBoltT = 55 + Math.random() * 65;
     thunder(0.5 + Math.random() * 2.2);
     for (const c of dimFx.crows) c.y = Math.min(31, c.y + 5);
   }
@@ -2050,8 +2124,8 @@ function dimWeather(dt) {
   // now and then, the whole graveyard moans
   dimMoanT -= dt;
   if (dimMoanT <= 0) {
-    dimMoanT = 26 + Math.random() * 30;
-    if (typeof farMoan === 'function') farMoan();
+    dimMoanT = 55 + Math.random() * 55;
+    if (settings.ambience !== false && typeof farMoan === 'function') farMoan();
   }
 }
 </script>
@@ -2613,7 +2687,8 @@ function buildZombie() {
 }
 function makeMob(kind, x, z, r) {
   const D = MOB_DEF[kind];
-  const g = kind === 'husk' ? buildHusk() : kind === 'spitter' ? buildSpitter() : kind === 'zombie' ? buildZombie() : buildWisp();
+  const g = kind === 'husk' ? buildHusk() : kind === 'spitter' ? buildSpitter() : kind === 'zombie' ? buildZombie()
+    : (typeof DIM_BUILD !== 'undefined' && DIM_BUILD[kind]) ? DIM_BUILD[kind]() : buildWisp();
   g.position.set(x, kind === 'zombie' ? -1.5 : 0, z);
   const scale = 1 + (progress.cycle || 0) * 0.28;
   const mob = {
@@ -2660,12 +2735,14 @@ function mobMove(mob, dx, dz) {
 function hurtMob(mob, d, head) {
   if (!mob.alive) return;
   if (head && mob.kind === 'zombie') d = mob.hp + 1;   // a headshot puts a walker down for good
+  else if (head) d *= 2.5;                              // the big ones notice, at least
   mob.hp -= d; mob.hit = 0.14;
   if (mob.hp > 0) {
     if (mob.kind === 'zombie') gorePuff(mob.g.position.x, 1.3, mob.g.position.z, 3, 0x4a1010, 1.8, 1.6);
     return;
   }
   mob.alive = false; mob.fall = 0; kills++;
+  if (mob.onDeath) mob.onDeath(mob);
   gorePuff(mob.g.position.x, 1.15, mob.g.position.z, mob.kind === 'zombie' ? 15 : 7,
     mob.kind === 'zombie' ? 0x4a1010 : 0x30201a, 3.4, 3.6);
   spawnShards(mob.g.position.x, 1.1, mob.g.position.z, MOB_DEF[mob.kind].shards);
@@ -2711,12 +2788,15 @@ function updateMobs(dt) {
   // they never shut up: a groan from somewhere near you, panned and quieter with distance
   groanT -= dt;
   if (groanT <= 0) {
-    groanT = 1.4 + Math.random() * 3.0;
-    const live = mobs.filter(m => m.alive && m.realm === realm && m.rise <= 0);
-    if (live.length) {
-      const m = live[Math.floor(Math.random() * live.length)];
-      const v = volFor(m.g.position.x, m.g.position.z, 5);
-      if (v > 0.04) zombieGroan(v, panFor(m.g.position.x, m.g.position.z));
+    groanT = 3.8 + Math.random() * 4.5;
+    if (settings.ambience !== false) {
+      const live = mobs.filter(m => m.alive && m.realm === realm && m.rise <= 0
+        && Math.hypot(m.g.position.x - camera.position.x, m.g.position.z - camera.position.z) < 30);
+      if (live.length) {
+        const m = live[Math.floor(Math.random() * live.length)];
+        const v = Math.min(0.7, volFor(m.g.position.x, m.g.position.z, 6));
+        if (v > 0.12) zombieGroan(v, panFor(m.g.position.x, m.g.position.z));
+      }
     }
   }
   const pxReal = camera.position.x, pzReal = camera.position.z;
@@ -2746,12 +2826,14 @@ function updateMobs(dt) {
       continue;
     }
     mob.hit = Math.max(0, mob.hit - dt); mob.atk = Math.max(0, mob.atk - dt);
+    if (mob.buffT > 0) mob.buffT = Math.max(0, mob.buffT - dt);
+    if (mob.tick) mob.tick(mob, dt);
     const dx = pxReal - g.position.x, dz = pzReal - g.position.z, dist = Math.hypot(dx, dz) || 0.001;
     const D = MOB_DEF[mob.kind];
     g.rotation.y = Math.atan2(dx, dz);
     let moving = 0;
     if (D.style === 'melee') {
-      const sp = (mob.kind === 'zombie' && dist < 5) ? mob.spd * 2.3 : mob.spd;
+      const sp = ((mob.kind === 'zombie' && dist < 5) ? mob.spd * 2.3 : mob.spd) * (mob.buffT > 0 ? 1.45 : 1);
       if (dist < 38 && dist > 1.25) { mobMove(mob, dx / dist * sp * dt, dz / dist * sp * dt); moving = 1; }
       if (dist < 1.5 && mob.atk <= 0 && !dead && !wallBetween(g.position.x, g.position.z, pxReal, pzReal)) {
         mob.atk = mob.kind === 'zombie' ? 1.6 : 1.25;
@@ -2794,6 +2876,8 @@ function updateMobs(dt) {
       const sw = Math.sin(mob.ph) * (moving ? 0.55 : 0.05);
       g.userData.legs[0].rotation.x = sw; g.userData.legs[1].rotation.x = -sw;
       g.userData.arms[0].rotation.x = -sw * 0.7 - 0.3; g.userData.arms[1].rotation.x = sw * 0.7 - 0.3;
+    } else if (typeof DIM_BUILD !== 'undefined' && DIM_BUILD[mob.kind]) {
+      dimAnimate(mob, moving, dt);
     } else if (mob.kind === 'spitter') {
       g.position.y = Math.sin(time * 1.8 + mob.ph) * 0.12;
       g.rotation.z = Math.sin(time * 0.9 + mob.ph) * 0.06;
@@ -3463,6 +3547,374 @@ function updateForge(dt) {
 
 </script>
 <script>
+/* THE GRID — what lives in the Zombie Dimension.
+   Six new kinds, each one built in code here, each with its own trick, plus the
+   mix that decides what a given round throws at you. Everything registers into
+   the enemy table the rest of the game already uses, so health, hit flashes,
+   shards, gore and the kill counter all come for free.
+   Classic script: every file shares one global scope, loaded in the order used by
+   index.html. Splitting this file cannot change behaviour. */
+// ============================================================================
+//  THE CRAWLER — low, fast, and impossible to see over a gravestone
+// ============================================================================
+function buildCrawler() {
+  const g = new THREE.Group();
+  const skin = new THREE.MeshStandardMaterial({color: 0x7a6a58, roughness: 1, emissive: 0x0d0a07});
+  const rag = new THREE.MeshStandardMaterial({color: 0x2a211a, roughness: 1});
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.28, 0.76), rag);
+  torso.position.set(0, 0.3, 0); g.add(torso);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.22, 0.26), skin);
+  head.position.set(0, 0.34, 0.44); head.userData.head = true; g.add(head);
+  const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.05, 0.12), new THREE.MeshStandardMaterial({color: 0xd8cdb6, roughness: 1}));
+  jaw.position.set(0, 0.24, 0.54); g.add(jaw);
+  const arms = [];
+  [-0.28, 0.28].forEach(x => {
+    const a = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.5), skin);
+    a.position.set(x, 0.2, 0.24); g.add(a); arms.push(a);
+  });
+  const legs = [];
+  [-0.3, 0.3].forEach(x => {
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.14, 0.34), rag);
+    l.position.set(x, 0.16, -0.3); g.add(l); legs.push(l);
+  });
+  g.userData.legs = legs; g.userData.arms = arms;
+  g.userData.flash = skin; g.userData.baseEm = 0x0d0a07;
+  return g;
+}
+
+// ============================================================================
+//  THE BRUTE — slow, enormous, and it does not notice being shot
+// ============================================================================
+function buildBrute() {
+  const g = new THREE.Group();
+  const skin = new THREE.MeshStandardMaterial({color: 0x5d6a4a, roughness: 1, emissive: 0x0a0f06});
+  const rag = new THREE.MeshStandardMaterial({color: 0x241d16, roughness: 1});
+  const bone = new THREE.MeshStandardMaterial({color: 0xa89c80, roughness: 1});
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.96, 1.0, 0.62), rag);
+  torso.position.y = 1.36; torso.rotation.x = 0.1; g.add(torso);
+  const belly = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.4, 0.5), skin);
+  belly.position.set(0, 1.02, 0.06); g.add(belly);
+  [-0.52, 0.52].forEach(x => {
+    const sh = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.3, 0.34), skin);
+    sh.position.set(x, 1.74, 0); g.add(sh);
+  });
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), skin);
+  head.position.set(0, 2.06, 0.1); head.userData.head = true; g.add(head);
+  const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.16), bone);
+  jaw.position.set(0, 1.92, 0.3); g.add(jaw);
+  const arms = [];
+  [-0.62, 0.62].forEach(x => {
+    const p = new THREE.Group(); p.position.set(x, 1.66, 0.02);
+    const a = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.0, 0.22), skin); a.position.y = -0.5; p.add(a);
+    const fist = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.26), bone); fist.position.y = -1.02; p.add(fist);
+    p.rotation.x = -0.35; g.add(p); arms.push(p);
+  });
+  const legs = [];
+  [-0.28, 0.28].forEach(x => {
+    const p = new THREE.Group(); p.position.set(x, 0.86, 0);
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.86, 0.3), rag); l.position.y = -0.43; p.add(l);
+    g.add(p); legs.push(p);
+  });
+  g.userData.legs = legs; g.userData.arms = arms;
+  g.userData.flash = skin; g.userData.baseEm = 0x0a0f06;
+  return g;
+}
+
+// ============================================================================
+//  THE SCREAMER — it never touches you, it just tells the others where you are
+// ============================================================================
+function buildScreamer() {
+  const g = new THREE.Group();
+  const skin = new THREE.MeshStandardMaterial({color: 0x8a8f9a, roughness: 1, emissive: 0x0e0e12});
+  const rag = new THREE.MeshStandardMaterial({color: 0x2c2a30, roughness: 1});
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.92, 0.22), rag);
+  torso.position.y = 1.34; g.add(torso);
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.3, 0.08), skin);
+  neck.position.y = 1.92; g.add(neck);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.34, 0.24), skin);
+  head.position.y = 2.16; head.userData.head = true; g.add(head);
+  // the mouth is the whole point: a black hole with a light at the back of it
+  const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2, 0.06), new THREE.MeshBasicMaterial({color: 0x120308}));
+  mouth.position.set(0, 2.08, 0.13); g.add(mouth);
+  const throat = new THREE.Mesh(new THREE.SphereGeometry(0.055, 6, 5), new THREE.MeshBasicMaterial({color: 0xff3a4a}));
+  throat.position.set(0, 2.08, 0.11); g.add(throat);
+  const arms = [];
+  [-0.26, 0.26].forEach(x => {
+    const p = new THREE.Group(); p.position.set(x, 1.72, 0);
+    const a = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.86, 0.08), skin); a.position.y = -0.43; p.add(a);
+    p.rotation.x = -2.5; p.rotation.z = x > 0 ? -0.25 : 0.25;   // hands up at its own head
+    g.add(p); arms.push(p);
+  });
+  const legs = [];
+  [-0.12, 0.12].forEach(x => {
+    const p = new THREE.Group(); p.position.set(x, 0.88, 0);
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.88, 0.1), rag); l.position.y = -0.44; p.add(l);
+    g.add(p); legs.push(p);
+  });
+  g.userData.legs = legs; g.userData.arms = arms; g.userData.throat = throat;
+  g.userData.flash = skin; g.userData.baseEm = 0x0e0e12;
+  return g;
+}
+
+// ============================================================================
+//  THE BLOAT — kill it close and it takes the room with it
+// ============================================================================
+function buildBloat() {
+  const g = new THREE.Group();
+  const skin = new THREE.MeshStandardMaterial({color: 0x8a8f4a, roughness: 1, emissive: 0x141406, transparent: true, opacity: 0.92});
+  const dark = new THREE.MeshStandardMaterial({color: 0x4a4a22, roughness: 1, emissive: 0x0c0c04});
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.62, 10, 8), skin);
+  body.position.y = 0.86; body.scale.set(1, 1.1, 0.95); g.add(body);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.28, 0.3), dark);
+  head.position.set(0, 1.62, 0.24); head.userData.head = true; g.add(head);
+  const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.14), new THREE.MeshStandardMaterial({color: 0xc8bc9c, roughness: 1}));
+  jaw.position.set(0, 1.5, 0.34); g.add(jaw);
+  const arms = [], legs = [];
+  [-0.62, 0.62].forEach(x => {
+    const a = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.5, 0.14), dark);
+    a.position.set(x, 1.0, 0.1); a.rotation.z = x > 0 ? 0.5 : -0.5; g.add(a); arms.push(a);
+  });
+  [-0.22, 0.22].forEach(x => {
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.34, 0.18), dark);
+    l.position.set(x, 0.17, 0); g.add(l); legs.push(l);
+  });
+  g.userData.legs = legs; g.userData.arms = arms; g.userData.body = body;
+  g.userData.flash = skin; g.userData.baseEm = 0x141406;
+  return g;
+}
+
+// ============================================================================
+//  THE HOUND — it goes still, then it is on you
+// ============================================================================
+function buildHound() {
+  const g = new THREE.Group();
+  const flesh = new THREE.MeshStandardMaterial({color: 0x6a4a44, roughness: 1, emissive: 0x0e0606});
+  const bone = new THREE.MeshStandardMaterial({color: 0xc0b49a, roughness: 1});
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.4, 1.05), flesh);
+  body.position.y = 0.62; g.add(body);
+  const ribs = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.12, 0.5), bone);
+  ribs.position.set(0, 0.8, -0.05); g.add(ribs);
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.26, 0.3), flesh);
+  neck.position.set(0, 0.66, 0.62); g.add(neck);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.26, 0.42), flesh);
+  head.position.set(0, 0.6, 0.9); head.userData.head = true; g.add(head);
+  const snout = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.28), bone);
+  snout.position.set(0, 0.53, 1.12); g.add(snout);
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.4), bone);
+  tail.position.set(0, 0.72, -0.66); tail.rotation.x = -0.4; g.add(tail);
+  const legs = [];
+  [[-0.2, 0.34], [0.2, 0.34], [-0.2, -0.36], [0.2, -0.36]].forEach(([x, z]) => {
+    const p = new THREE.Group(); p.position.set(x, 0.42, z);
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.44, 0.12), flesh); l.position.y = -0.22; p.add(l);
+    g.add(p); legs.push(p);
+  });
+  g.userData.legs = legs; g.userData.tail = tail;
+  g.userData.flash = flesh; g.userData.baseEm = 0x0e0606;
+  return g;
+}
+
+// ============================================================================
+//  THE RATTLE — bone only, quick, and it comes apart if you look at it
+// ============================================================================
+function buildRattle() {
+  const g = new THREE.Group();
+  const bone = new THREE.MeshStandardMaterial({color: 0xd2c6a8, roughness: 1, emissive: 0x14110c});
+  const spine = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.86, 0.1), bone);
+  spine.position.y = 1.16; g.add(spine);
+  for (let i = 0; i < 5; i++) {
+    const r = new THREE.Mesh(new THREE.BoxGeometry(0.46 - i * 0.02, 0.05, 0.14), bone);
+    r.position.set(0, 1.5 - i * 0.14, 0); g.add(r);
+  }
+  const skull = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.26, 0.26), bone);
+  skull.position.set(0, 1.8, 0.06); skull.userData.head = true; g.add(skull);
+  const arms = [];
+  [-0.28, 0.28].forEach(x => {
+    const p = new THREE.Group(); p.position.set(x, 1.6, 0);
+    const a = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.7, 0.06), bone); a.position.y = -0.35; p.add(a);
+    p.rotation.x = -1.1; g.add(p); arms.push(p);
+  });
+  const legs = [];
+  [-0.14, 0.14].forEach(x => {
+    const p = new THREE.Group(); p.position.set(x, 0.74, 0);
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.74, 0.07), bone); l.position.y = -0.37; p.add(l);
+    g.add(p); legs.push(p);
+  });
+  g.userData.legs = legs; g.userData.arms = arms;
+  g.userData.flash = bone; g.userData.baseEm = 0x14110c;
+  return g;
+}
+
+// ============================================================================
+//  the table the rest of the game reads
+// ============================================================================
+const DIM_BUILD = {
+  crawler: buildCrawler, brute: buildBrute, screamer: buildScreamer,
+  bloat: buildBloat, hound: buildHound, rattle: buildRattle
+};
+Object.assign(MOB_DEF, {
+  crawler: {hp: 3, spd: 2.45, dmg: 7, r: 0.42, shards: 2, style: 'melee', name: 'CRAWLER', eyeY: 0.36, eyeZ: 0.55},
+  hound:   {hp: 4, spd: 1.15, dmg: 11, r: 0.45, shards: 3, style: 'melee', name: 'HOUND', eyeY: 0.63, eyeZ: 1.08},
+  rattle:  {hp: 2, spd: 1.85, dmg: 8, r: 0.38, shards: 2, style: 'melee', name: 'RATTLE', eyeY: 1.82, eyeZ: 0.2},
+  screamer:{hp: 6, spd: 1.05, dmg: 4, r: 0.45, shards: 4, style: 'melee', name: 'SCREAMER', eyeY: 2.16, eyeZ: 0.14},
+  bloat:   {hp: 10, spd: 0.78, dmg: 6, r: 0.62, shards: 4, style: 'melee', name: 'BLOAT', eyeY: 1.62, eyeZ: 0.36},
+  brute:   {hp: 18, spd: 0.66, dmg: 24, r: 0.78, shards: 9, style: 'melee', name: 'BRUTE', eyeY: 2.06, eyeZ: 0.24}
+});
+
+// their own animation, so nothing in 60-enemies needs to know they exist
+function dimAnimate(mob, moving, dt) {
+  const g = mob.g, u = g.userData;
+  if (mob.kind === 'hound') {
+    mob.ph += dt * (moving ? 13 : 2.2);
+    const sw = Math.sin(mob.ph) * (moving ? 0.8 : 0.08);
+    u.legs[0].rotation.x = sw; u.legs[3].rotation.x = sw;
+    u.legs[1].rotation.x = -sw; u.legs[2].rotation.x = -sw;
+    if (u.tail) u.tail.rotation.y = Math.sin(mob.ph * 0.6) * 0.5;
+    g.position.y = Math.abs(Math.sin(mob.ph * 0.5)) * 0.03;
+    g.rotation.x = mob.dashing ? -0.12 : 0;
+    return;
+  }
+  if (mob.kind === 'crawler') {
+    mob.ph += dt * (moving ? 9 : 2);
+    const sw = Math.sin(mob.ph) * (moving ? 0.55 : 0.08);
+    u.arms[0].rotation.x = -0.4 + sw; u.arms[1].rotation.x = -0.4 - sw;
+    g.rotation.z = Math.sin(mob.ph * 0.7) * 0.09;
+    g.position.y = Math.abs(Math.sin(mob.ph * 1.4)) * 0.03;
+    return;
+  }
+  if (mob.kind === 'brute') {
+    mob.ph += dt * (moving ? 2.2 : 0.8);
+    const sw = Math.sin(mob.ph) * (moving ? 0.3 : 0.02);
+    u.legs[0].rotation.x = sw; u.legs[1].rotation.x = -sw;
+    u.arms[0].rotation.x = -0.35 - sw * 0.4; u.arms[1].rotation.x = -0.35 + sw * 0.4;
+    g.rotation.z = Math.sin(mob.ph * 0.5) * 0.05;
+    return;
+  }
+  if (mob.kind === 'bloat') {
+    mob.ph += dt * (moving ? 3 : 1.2);
+    u.body.scale.set(1 + Math.sin(mob.ph) * 0.05, 1.1 + Math.cos(mob.ph) * 0.06, 0.95 + Math.sin(mob.ph) * 0.04);
+    g.rotation.z = Math.sin(mob.ph * 0.6) * 0.12;
+    return;
+  }
+  if (mob.kind === 'screamer') {
+    mob.ph += dt * 1.4;
+    g.position.y = Math.sin(mob.ph) * 0.04;
+    const scream = mob.screamAnim || 0;
+    if (u.throat) u.throat.scale.setScalar(1 + scream * 0.9 + Math.sin(time * 20) * 0.12 * scream);
+    g.rotation.z = Math.sin(mob.ph * 0.9) * 0.03;
+    return;
+  }
+  if (mob.kind === 'rattle') {
+    mob.ph += dt * (moving ? 6 : 1.6);
+    const sw = Math.sin(mob.ph) * (moving ? 0.6 : 0.06);
+    u.legs[0].rotation.x = sw; u.legs[1].rotation.x = -sw;
+    u.arms[0].rotation.x = -1.1 + sw * 0.5; u.arms[1].rotation.x = -1.1 - sw * 0.5;
+    g.rotation.y += Math.sin(mob.ph * 0.8) * 0.004;
+  }
+}
+
+// ---- what each of them does besides walk at you ---------------------------
+function dimKindTick(mob, dt) {
+  if (mob.kind === 'hound') {
+    if (mob.dashT == null) { mob.dashT = 1 + Math.random(); mob.baseSpd = mob.spd; }
+    mob.dashT -= dt;
+    if (mob.dashT <= 0) {
+      mob.dashing = !mob.dashing;
+      mob.dashT = mob.dashing ? 0.5 + Math.random() * 0.25 : 1.3 + Math.random() * 1.2;
+      mob.spd = mob.baseSpd * (mob.dashing ? 3.1 : 0.55);
+      if (mob.dashing) {
+        const gp = panFor(mob.g.position.x, mob.g.position.z);
+        if (volFor(mob.g.position.x, mob.g.position.z, 6) > 0.25) sweepNoise(900, 2600, 0.22, 0.18);
+      }
+    }
+    return;
+  }
+  if (mob.kind === 'screamer') {
+    mob.screamAnim = Math.max(0, (mob.screamAnim || 0) - dt * 1.6);
+    mob.screamT = (mob.screamT == null ? 3 + Math.random() * 3 : mob.screamT) - dt;
+    if (mob.screamT > 0) return;
+    mob.screamT = 9 + Math.random() * 6;
+    const d = Math.hypot(mob.g.position.x - camera.position.x, mob.g.position.z - camera.position.z);
+    if (d > 34 || dead || paused || settings.ambience === false) return;
+    mob.screamAnim = 1;
+    screamSound(volFor(mob.g.position.x, mob.g.position.z, 4), panFor(mob.g.position.x, mob.g.position.z));
+    // everything close enough to hear it comes faster for a few seconds
+    for (const o of mobs) {
+      if (o === mob || !o.alive || o.realm !== 5) continue;
+      if (Math.hypot(o.g.position.x - mob.g.position.x, o.g.position.z - mob.g.position.z) < 17) o.buffT = 4.5;
+    }
+    return;
+  }
+  if (mob.kind === 'rattle') {
+    mob.rattleT = (mob.rattleT == null ? 2 + Math.random() * 3 : mob.rattleT) - dt;
+    if (mob.rattleT <= 0) {
+      mob.rattleT = 4 + Math.random() * 4;
+      if (volFor(mob.g.position.x, mob.g.position.z, 5) > 0.12) rattleSound(mob.g.position.x, mob.g.position.z);
+    }
+    return;
+  }
+  if (mob.kind === 'bloat') {
+    // it swells as it gets close, so you can hear it coming
+    mob.swell = mob.swell || 0;
+    if (mob.hp < mob.max * 0.5) mob.swell = Math.min(1, mob.swell + dt * 0.8);
+    mob.g.scale.setScalar(1 + mob.swell * 0.18);
+  }
+}
+
+// it goes off when it dies, whether you were ready or not
+function dimKindDeath(mob) {
+  if (mob.kind !== 'bloat') return;
+  const x = mob.g.position.x, z = mob.g.position.z;
+  gorePuff(x, 1.0, z, 22, 0x7a8a30, 3.4, 3.2);
+  gorePuff(x, 1.0, z, 10, 0x4a1010, 2.6, 2.4);
+  sweepNoise(900, 120, 0.5, 0.7);
+  sweepTone(160, 40, 0.5, 0.45, 'sawtooth');
+  const d = Math.hypot(x - camera.position.x, z - camera.position.z);
+  if (d < 4.6 && !dead) hurt(14 + 2 * Math.max(0, (mob.round || 1) - 1));
+}
+
+// ---- the mix: what a given round sends ------------------------------------
+function dimWaveCrew(round, n) {
+  const pool = ['zombie', 'zombie', 'zombie'];
+  const unlock = (k, at) => { if (round >= at) pool.push(k); };
+  unlock('crawler', 2);
+  unlock('rattle', 3);
+  unlock('hound', 4);
+  unlock('spitter', 5);
+  unlock('screamer', 6);
+  unlock('bloat', 7);
+  unlock('brute', 9);
+  unlock('wisp', 11);
+  unlock('brute', 14);
+  const crew = [];
+  // the first of anything new always shows up the round it unlocks
+  for (const k of ['crawler', 'rattle', 'hound', 'screamer', 'bloat', 'brute'])
+    if (round >= ({ crawler: 2, rattle: 3, hound: 4, screamer: 6, bloat: 7, brute: 9 })[k] &&
+        round < ({ crawler: 3, rattle: 4, hound: 5, screamer: 7, bloat: 8, brute: 10 })[k]) crew.push(k);
+  while (crew.length < n) crew.push(pool[Math.floor(Math.random() * pool.length)]);
+  // the big ones are a moment, not a wall: cap them and let the crowd fill the rest
+  const cap = {brute: 2, screamer: 2, bloat: 3};
+  const seen = {};
+  for (let i = 0; i < crew.length; i++) {
+    const k = crew[i];
+    seen[k] = (seen[k] || 0) + 1;
+    if (cap[k] && seen[k] > cap[k]) crew[i] = 'zombie';
+  }
+  return crew.slice(0, n);
+}
+
+// a walker with an extra way of killing you, all set up and ready
+function dimMakeMob(kind, x, z) {
+  const m = makeMob(kind, x, z, 5);
+  const D = MOB_DEF[kind];
+  m.eyeY = D.eyeY; m.eyeZ = D.eyeZ;
+  if (kind !== 'hound') m.rise = 0;
+  m.tick = dimKindTick;
+  m.onDeath = dimKindDeath;
+  m.buffT = 0;
+  return m;
+}
+</script>
+<script>
 /* THE GRID — Twelve lore fragments and the card that shows them.
    Classic script: every file shares one global scope, loaded in the order used by
    index.html. Splitting this file cannot change behaviour. */
@@ -3985,7 +4437,8 @@ const SCHEMA = [
     ['stepVol', 'range', 'Footstep volume', [0, 1.5, 0.05], 1],
     ['voice', 'check', 'Player grunts', null, true],
     ['vibration', 'check', 'Controller vibration', null, true],
-    ['uiSound', 'check', 'Menu and hover sounds', null, true]]],
+    ['uiSound', 'check', 'Menu and hover sounds', null, true],
+    ['ambience', 'check', 'Zombie ambience (groans, screams, moans)', null, true]]],
   ['Controls and touch', [
     ['gamepad', 'check', 'Gamepad support', null, true],
     ['gpSens', 'range', 'Gamepad look speed', [0.5, 3, 0.1], 1.5],
@@ -4515,6 +4968,40 @@ function farMoan() {
   if (!ac) return;
   throat({f0: 58 + Math.random() * 30, formants: pickOne([VOWEL.uh, VOWEL.oh]), dur: 3.4 + Math.random() * 1.6,
     gain: 0.16, bend: -0.3, rasp: 0.3, wet: 0.3, gurgles: 1.1, slide: -0.1});
+}
+
+// a screamer: everything wrong with a human voice at once
+function screamSound(vol, pan) {
+  if (!ac) return;
+  const v = vol == null ? 0.7 : vol;
+  if (v <= 0.03) return;
+  throat({f0: 240 + Math.random() * 60, formants: [800, 1800, 2900], dur: 1.0 + Math.random() * 0.5,
+    gain: 0.34 * v, pan: pan || 0, rise: 0.45, bend: -0.1, rasp: 0.55, wet: 0.12, sub: 0.1, gurgles: 0.7, slide: 0.35});
+  breathNoise(0.16 * v, pan || 0, 0.9, 1400, 2600, 0.05);
+  setTimeout(() => throat({f0: 300, formants: [900, 2000, 3000], dur: 0.7, gain: 0.2 * v, pan: pan || 0,
+    rise: 0.3, bend: -0.4, rasp: 0.6, wet: 0.1, sub: 0.05, gurgles: 0.6, slide: 0.2}), 420);
+}
+// bones knocking together: dry clicks, no pitch
+function rattleSound(x, z) {
+  if (!ac || !whiteBuf) return;
+  const v = (typeof volFor === 'function' ? volFor(x, z, 4) : 0.6);
+  if (v <= 0.02) return;
+  const pan = (typeof panFor === 'function' ? panFor(x, z) : 0);
+  const t0 = ac.currentTime;
+  for (let i = 0; i < 7; i++) {
+    const t = t0 + i * (0.045 + Math.random() * 0.05);
+    const s = ac.createBufferSource(); s.buffer = whiteBuf;
+    const f = ac.createBiquadFilter(); f.type = 'bandpass';
+    f.frequency.value = 1800 + Math.random() * 2600; f.Q.value = 6 + Math.random() * 8;
+    const g = ac.createGain();
+    const pk = (0.09 + Math.random() * 0.13) * v;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(pk, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    let dest = g;
+    if (pan && ac.createStereoPanner) { const p = ac.createStereoPanner(); p.pan.value = pan; g.connect(p); dest = p; }
+    s.connect(f); f.connect(g); dest.connect(master);
+    s.start(t, Math.random() * 1.5, 0.09);
+  }
 }
 </script>
 <script>

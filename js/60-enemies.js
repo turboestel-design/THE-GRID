@@ -261,7 +261,8 @@ function buildZombie() {
 }
 function makeMob(kind, x, z, r) {
   const D = MOB_DEF[kind];
-  const g = kind === 'husk' ? buildHusk() : kind === 'spitter' ? buildSpitter() : kind === 'zombie' ? buildZombie() : buildWisp();
+  const g = kind === 'husk' ? buildHusk() : kind === 'spitter' ? buildSpitter() : kind === 'zombie' ? buildZombie()
+    : (typeof DIM_BUILD !== 'undefined' && DIM_BUILD[kind]) ? DIM_BUILD[kind]() : buildWisp();
   g.position.set(x, kind === 'zombie' ? -1.5 : 0, z);
   const scale = 1 + (progress.cycle || 0) * 0.28;
   const mob = {
@@ -308,12 +309,14 @@ function mobMove(mob, dx, dz) {
 function hurtMob(mob, d, head) {
   if (!mob.alive) return;
   if (head && mob.kind === 'zombie') d = mob.hp + 1;   // a headshot puts a walker down for good
+  else if (head) d *= 2.5;                              // the big ones notice, at least
   mob.hp -= d; mob.hit = 0.14;
   if (mob.hp > 0) {
     if (mob.kind === 'zombie') gorePuff(mob.g.position.x, 1.3, mob.g.position.z, 3, 0x4a1010, 1.8, 1.6);
     return;
   }
   mob.alive = false; mob.fall = 0; kills++;
+  if (mob.onDeath) mob.onDeath(mob);
   gorePuff(mob.g.position.x, 1.15, mob.g.position.z, mob.kind === 'zombie' ? 15 : 7,
     mob.kind === 'zombie' ? 0x4a1010 : 0x30201a, 3.4, 3.6);
   spawnShards(mob.g.position.x, 1.1, mob.g.position.z, MOB_DEF[mob.kind].shards);
@@ -359,12 +362,15 @@ function updateMobs(dt) {
   // they never shut up: a groan from somewhere near you, panned and quieter with distance
   groanT -= dt;
   if (groanT <= 0) {
-    groanT = 1.4 + Math.random() * 3.0;
-    const live = mobs.filter(m => m.alive && m.realm === realm && m.rise <= 0);
-    if (live.length) {
-      const m = live[Math.floor(Math.random() * live.length)];
-      const v = volFor(m.g.position.x, m.g.position.z, 5);
-      if (v > 0.04) zombieGroan(v, panFor(m.g.position.x, m.g.position.z));
+    groanT = 3.8 + Math.random() * 4.5;
+    if (settings.ambience !== false) {
+      const live = mobs.filter(m => m.alive && m.realm === realm && m.rise <= 0
+        && Math.hypot(m.g.position.x - camera.position.x, m.g.position.z - camera.position.z) < 30);
+      if (live.length) {
+        const m = live[Math.floor(Math.random() * live.length)];
+        const v = Math.min(0.7, volFor(m.g.position.x, m.g.position.z, 6));
+        if (v > 0.12) zombieGroan(v, panFor(m.g.position.x, m.g.position.z));
+      }
     }
   }
   const pxReal = camera.position.x, pzReal = camera.position.z;
@@ -394,12 +400,14 @@ function updateMobs(dt) {
       continue;
     }
     mob.hit = Math.max(0, mob.hit - dt); mob.atk = Math.max(0, mob.atk - dt);
+    if (mob.buffT > 0) mob.buffT = Math.max(0, mob.buffT - dt);
+    if (mob.tick) mob.tick(mob, dt);
     const dx = pxReal - g.position.x, dz = pzReal - g.position.z, dist = Math.hypot(dx, dz) || 0.001;
     const D = MOB_DEF[mob.kind];
     g.rotation.y = Math.atan2(dx, dz);
     let moving = 0;
     if (D.style === 'melee') {
-      const sp = (mob.kind === 'zombie' && dist < 5) ? mob.spd * 2.3 : mob.spd;
+      const sp = ((mob.kind === 'zombie' && dist < 5) ? mob.spd * 2.3 : mob.spd) * (mob.buffT > 0 ? 1.45 : 1);
       if (dist < 38 && dist > 1.25) { mobMove(mob, dx / dist * sp * dt, dz / dist * sp * dt); moving = 1; }
       if (dist < 1.5 && mob.atk <= 0 && !dead && !wallBetween(g.position.x, g.position.z, pxReal, pzReal)) {
         mob.atk = mob.kind === 'zombie' ? 1.6 : 1.25;
@@ -442,6 +450,8 @@ function updateMobs(dt) {
       const sw = Math.sin(mob.ph) * (moving ? 0.55 : 0.05);
       g.userData.legs[0].rotation.x = sw; g.userData.legs[1].rotation.x = -sw;
       g.userData.arms[0].rotation.x = -sw * 0.7 - 0.3; g.userData.arms[1].rotation.x = sw * 0.7 - 0.3;
+    } else if (typeof DIM_BUILD !== 'undefined' && DIM_BUILD[mob.kind]) {
+      dimAnimate(mob, moving, dt);
     } else if (mob.kind === 'spitter') {
       g.position.y = Math.sin(time * 1.8 + mob.ph) * 0.12;
       g.rotation.z = Math.sin(time * 0.9 + mob.ph) * 0.06;

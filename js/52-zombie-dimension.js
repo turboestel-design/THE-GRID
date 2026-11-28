@@ -28,8 +28,8 @@ for (let i = 0; i < 40; i++) {
   dcx.stroke();
 }
 const dtex = new THREE.CanvasTexture(dcv);
-dtex.wrapS = dtex.wrapT = THREE.RepeatWrapping; dtex.repeat.set(15, 15); dtex.anisotropy = 4;
-const ground5 = new THREE.Mesh(new THREE.PlaneGeometry(170, 170),
+dtex.wrapS = dtex.wrapT = THREE.RepeatWrapping; dtex.repeat.set(30, 30); dtex.anisotropy = 4;
+const ground5 = new THREE.Mesh(new THREE.PlaneGeometry(340, 340),
   new THREE.MeshStandardMaterial({map: dtex, roughness: 1, emissive: 0x2e0c16, emissiveIntensity: 1.1}));
 ground5.rotation.x = -Math.PI / 2; dim.add(ground5);
 
@@ -234,7 +234,7 @@ function tuneDimMob(m, round, runner) {
     const s = runner ? 0.048 : 0.036;
     [-0.13, 0.13].forEach(x => {
       const e = new THREE.Mesh(new THREE.SphereGeometry(s, 6, 5), eyeM);
-      e.position.set(x, 1.78, 0.22); m.g.add(e);
+      e.position.set(x, m.eyeY != null ? m.eyeY : 1.78, m.eyeZ != null ? m.eyeZ : 0.22); m.g.add(e);
     });
   }
   return m;
@@ -301,21 +301,26 @@ function dimSpawnPoint(minR, maxR) {
 function spawnDimWave() {
   dimWave++;
   const round = dimWave;
-  const n = Math.min(3 + Math.round(round * 1.5), 18);
-  const runners = round >= 10 ? n : round >= 5 ? Math.min(round - 3, Math.ceil(n * 0.6)) : 0;
-  const spits = round >= 6 ? Math.min(3, round - 5) : 0;
-  for (let i = 0; i < n; i++) {
+  const n = Math.min(3 + Math.round(round * 1.5), 18) + (round >= 6 ? Math.min(3, round - 5) : 0);
+  const crew = dimWaveCrew(round, n);
+  const runners = round >= 10 ? 2 : round >= 5 ? Math.min(round - 3, Math.ceil(crew.length * 0.4)) : 0;
+  const tally = {};
+  let runnerLeft = runners;
+  crew.forEach(kind => {
     const c = dimSpawnPoint(11, 20);
-    tuneDimMob(makeMob('zombie', c[0], c[1], 5), round, i < runners);
-  }
-  for (let i = 0; i < spits; i++) {
-    const c = dimSpawnPoint(15, 21);
-    tuneDimMob(makeMob('spitter', c[0], c[1], 5), round, false);
-  }
+    const m = dimMakeMob(kind, c[0], c[1]);
+    const canRun = kind !== 'brute' && kind !== 'bloat' && kind !== 'screamer';
+    const isRunner = runnerLeft > 0 && canRun;
+    if (isRunner) runnerLeft--;
+    tuneDimMob(m, round, isRunner);
+    tally[kind] = (tally[kind] || 0) + 1;
+  });
+  const roster = Object.keys(tally).sort((a, b) => tally[b] - tally[a]).slice(0, 3)
+    .map(k => tally[k] + ' ' + MOB_DEF[k].name + (tally[k] > 1 ? 'S' : '')).join('  \u00b7  ');
   dimWaveT = Math.max(3, 8 - round * 0.25);
   if (typeof dimRoundFx === 'function') dimRoundFx();
   if (round % 5 === 0) { if (typeof dimLordFx === 'function') dimLordFx(); spawnLord(5); say('ROUND ' + round + '  ·  IT FOUND YOU', 3000); }
-  else say('ROUND ' + round + '  ·  ' + (n + spits) + ' OF THEM' + (runners ? '  ·  THEY RUN' : ''), 2400);
+  else say('ROUND ' + round + '  ·  ' + roster + (runners ? '  ·  THEY RUN' : ''), 2800);
   sweepTone(120, 50, 0.6, 0.4, 'square');
 }
 

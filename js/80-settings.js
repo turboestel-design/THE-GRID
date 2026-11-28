@@ -47,7 +47,8 @@ const SCHEMA = [
     ['stepVol', 'range', 'Footstep volume', [0, 1.5, 0.05], 1],
     ['voice', 'check', 'Player grunts', null, true],
     ['vibration', 'check', 'Controller vibration', null, true],
-    ['uiSound', 'check', 'Menu and hover sounds', null, true]]],
+    ['uiSound', 'check', 'Menu and hover sounds', null, true],
+    ['ambience', 'check', 'Zombie ambience (groans, screams, moans)', null, true]]],
   ['Controls and touch', [
     ['gamepad', 'check', 'Gamepad support', null, true],
     ['gpSens', 'range', 'Gamepad look speed', [0.5, 3, 0.1], 1.5],

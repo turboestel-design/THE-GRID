@@ -13,21 +13,84 @@ const dimFx = (() => {
   const clearOfThings = (x, z, pad) =>
     !(Math.hypot(x - ZX - DIM_HUT_AT.x, z - DIM_HUT_AT.z) < 6 + pad) && !inDimProp(x - ZX, z, pad);
 
-  // ---- a ruined horizon, half eaten by the fog ------------------------------
+  // ---- a ruined city you can never walk to --------------------------------
+  // The playable arena stops at forty-eight metres. Everything below is further
+  // out than that, so it is skyline and nothing else: the dead city this place
+  // used to be, still standing, still lit in a few windows.
   {
-    const mat = new THREE.MeshStandardMaterial({color: 0x241220, roughness: 1, flatShading: true, emissive: 0x150610, emissiveIntensity: 0.8});
+    const mat = new THREE.MeshStandardMaterial({color: 0x2b1626, roughness: 1, flatShading: true, emissive: 0x180818, emissiveIntensity: 0.9});
     const geo = new THREE.BoxGeometry(1, 1, 1);
-    const ruins = new THREE.InstancedMesh(geo, mat, 46);
-    ruins.frustumCulled = false;
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), sc = new THREE.Vector3();
-    for (let i = 0; i < 46; i++) {
-      const a = (i / 46) * Math.PI * 2 + rr(-0.06, 0.06), r = rr(52, 84);
-      const w = rr(3, 9), h = rr(6, 26) * (i % 7 === 0 ? 1.7 : 1), d = rr(3, 9);
-      e.set(0, rr(0, 6.28), rr(-0.03, 0.03), 'XYZ'); q.setFromEuler(e);
-      ruins.setMatrixAt(i, m4.compose(p.set(Math.sin(a) * r, h / 2 - 0.4, 14 + Math.cos(a) * r), q, sc.set(w, h, d)));
+    // the close ring: broken blocks, near enough to read as buildings
+    const blocks = [];
+    const put = (x, z, w, h, d, ry) => blocks.push([x, z, w, h, d, ry || 0]);
+    for (let i = 0; i < 13; i++) {
+      const a = (i / 13) * Math.PI * 2 + rr(-0.14, 0.14), r = rr(56, 78);
+      const x = Math.sin(a) * r, z = 14 + Math.cos(a) * r;
+      const w = rr(9, 17), d = rr(9, 17), h = rr(12, 34);
+      const ry = a + rr(-0.2, 0.2);
+      put(x, z, w, h, d, ry);
+      // the top has come off one corner, so the outline is never a clean box
+      put(x + rr(-w * 0.4, w * 0.4), z + rr(-d * 0.4, d * 0.4), w * rr(0.35, 0.6), h * rr(0.12, 0.3), d * rr(0.35, 0.6), ry);
+      // a stub of a lower wing, and a broken stair tower
+      if (rnd() < 0.7) put(x + w * 0.7, z + rr(-3, 3), w * 0.55, h * rr(0.3, 0.55), d * 0.7, ry);
+      if (rnd() < 0.5) put(x - w * 0.55, z + d * 0.4, w * 0.3, h * rr(0.5, 0.9), d * 0.3, ry);
     }
+    // two chimneys and a spire, so the skyline has landmarks
+    put(38, 92, 4.5, 46, 4.5, 0);
+    put(-46, 78, 4, 39, 4, 0.3);
+    put(-6, 104, 5.5, 52, 5.5, 0.1);
+    put(-6, 104, 2.2, 14, 2.2, 0.1);
+    const ruins = new THREE.InstancedMesh(geo, mat, blocks.length);
+    ruins.frustumCulled = false;
+    blocks.forEach(([x, z, w, h, d, ry], i) => {
+      e.set(0, ry, 0, 'XYZ'); q.setFromEuler(e);
+      ruins.setMatrixAt(i, m4.compose(p.set(x, h / 2 - 0.3, z), q, sc.set(w, h, d)));
+    });
     ruins.instanceMatrix.needsUpdate = true;
     dim.add(ruins);
+
+    // windows: a grid of them on the inward face of each block, a few still lit
+    const winGeo = new THREE.BoxGeometry(0.34, 0.5, 0.08);
+    const litMat = new THREE.MeshBasicMaterial({color: 0xffb45c});
+    const darkMat = new THREE.MeshBasicMaterial({color: 0x0a0409});
+    const lit = new THREE.InstancedMesh(winGeo, litMat, 60);
+    const dark = new THREE.InstancedMesh(winGeo, darkMat, 320);
+    lit.frustumCulled = dark.frustumCulled = false;
+    let ln = 0, dn = 0;
+    for (const [x, z, w, h, d, ry] of blocks) {
+      if (h < 8) continue;
+      const dl = Math.hypot(x, 14 - z) || 1;
+      const dirX = -x / dl, dirZ = (14 - z) / dl;           // straight at the arena
+      const ux = -dirZ, uz = dirX;                          // along the face
+      const toC = Math.atan2(dirX, dirZ);
+      const cols = Math.max(2, Math.floor(w / 2.6)), rows = Math.max(2, Math.floor(h / 3.6));
+      for (let cx = 0; cx < cols; cx++) for (let cyy = 0; cyy < rows; cyy++) {
+        const off = (cx - (cols - 1) / 2) * (w / cols);
+        const ex = x + dirX * (d / 2 + 0.1) + ux * off;
+        const ez = z + dirZ * (d / 2 + 0.1) + uz * off;
+        e.set(0, toC, 0, 'XYZ'); q.setFromEuler(e);
+        const m = m4.compose(p.set(ex, 3 + cyy * (h / rows), ez), q, sc.set(1, 1, 1));
+        if (Math.random() < 0.12 && ln < 60) lit.setMatrixAt(ln++, m);
+        else if (dn < 320) dark.setMatrixAt(dn++, m);
+      }
+    }
+    lit.count = ln; dark.count = dn;
+    lit.instanceMatrix.needsUpdate = dark.instanceMatrix.needsUpdate = true;
+    dim.add(dark, lit);
+
+    // the far ring: flat black shapes with no fog on them, so there is depth
+    const farMat = new THREE.MeshBasicMaterial({color: 0x140a13, fog: false});
+    const far = new THREE.InstancedMesh(geo, farMat, 26);
+    far.frustumCulled = false;
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * Math.PI * 2 + rr(-0.09, 0.09), r = rr(118, 152);
+      const w = rr(10, 26), h = rr(14, 44) * (i % 5 === 0 ? 1.6 : 1), d = rr(10, 26);
+      e.set(0, rr(0, 6.28), 0, 'XYZ'); q.setFromEuler(e);
+      far.setMatrixAt(i, m4.compose(p.set(Math.sin(a) * r, h / 2 - 1, 14 + Math.cos(a) * r), q, sc.set(w, h, d)));
+    }
+    far.instanceMatrix.needsUpdate = true;
+    dim.add(far);
   }
 
   // ---- a bell tower, because the dark wants a silhouette ---------------------
@@ -173,17 +236,23 @@ const dimFx = (() => {
 
 // the toll when a round begins
 function dimBell() {
-  sweepTone(196, 92, 2.6, 0.34, 'sine');
-  sweepTone(392, 184, 2.2, 0.12, 'sine');
-  setTimeout(() => sweepTone(174, 82, 2.4, 0.22, 'sine'), 620);
-  setTimeout(() => sweepTone(160, 76, 2.2, 0.16, 'sine'), 1180);
+  sweepTone(196, 92, 2.6, 0.24, 'sine');
+  sweepTone(392, 184, 2.2, 0.09, 'sine');
+  setTimeout(() => sweepTone(174, 82, 2.4, 0.15, 'sine'), 620);
+  setTimeout(() => sweepTone(160, 76, 2.2, 0.11, 'sine'), 1180);
 }
 let dimPulse = 0, dimAmbT = 9, dimAmbN = 0;
 // called when a round starts: the fog thickens, the moon flares, the bell rings
 function dimRoundFx() {
   dimPulse = 1;
-  dimBell();
-  rumble(300, 1.4);
+  // the full toll is for the first round and every fifth; the rest get one note,
+  // because a bell on every single round stops being a bell and starts being a timer
+  if (dimWave === 1 || dimWave % 5 === 0) {
+    dimBell();
+    rumble(240, 0.9);
+  } else {
+    sweepTone(180, 96, 1.6, 0.17, 'sine');
+  }
 }
 function dimAtmos(dt) {
   if (realm !== 5) return;
@@ -230,7 +299,7 @@ function dimAtmos(dt) {
   // distant sounds so the quiet is never quite silent
   dimAmbT -= dt;
   if (dimAmbT <= 0) {
-    dimAmbT = 9 + Math.random() * 13;
+    dimAmbT = 26 + Math.random() * 22;
     dimAmbN++;
     if (dimAmbN % 3 === 0) sweepNoise(500, 120, 2.2, 0.16);          // a wind through the ruins
     else sweepTone(70 + Math.random() * 50, 42, 2.4, 0.13, 'sawtooth'); // something out there
@@ -392,7 +461,7 @@ const dimWx = (() => {
   return {ash, ashGeo, pos, vy, ph, N, clouds, pools};
 })();
 
-let dimFlash = 0, dimBoltT = 24, dimBoltQ = 0, dimMoanT = 0;
+let dimFlash = 0, dimBoltT = 48, dimBoltQ = 0, dimMoanT = 0;
 function dimLordFx() {
   dimPulse = 1.4;
   dimFlash = 0.7;
@@ -406,7 +475,7 @@ function dimWeather(dt) {
   // lightning: three flashes in a row, and the thunder comes after it
   dimBoltT -= dt;
   if (dimBoltT <= 0) {
-    dimFlash = 1; dimBoltQ = 0.14; dimBoltT = 24 + Math.random() * 32;
+    dimFlash = 1; dimBoltQ = 0.14; dimBoltT = 55 + Math.random() * 65;
     thunder(0.5 + Math.random() * 2.2);
     for (const c of dimFx.crows) c.y = Math.min(31, c.y + 5);
   }
@@ -440,7 +509,7 @@ function dimWeather(dt) {
   // now and then, the whole graveyard moans
   dimMoanT -= dt;
   if (dimMoanT <= 0) {
-    dimMoanT = 26 + Math.random() * 30;
-    if (typeof farMoan === 'function') farMoan();
+    dimMoanT = 55 + Math.random() * 55;
+    if (settings.ambience !== false && typeof farMoan === 'function') farMoan();
   }
 }
