@@ -47,7 +47,11 @@ function bossInfo(){
     return {name: 'CINDER HOUNDS', alive: live.length > 0, hp, max: hounds.length * 3 * cyc(), pos: (live[0] || hounds[0]).g.position};
   }
   if (realm === 4) return {name: 'THE HOLLOW KING', alive: kingAlive, hp: Math.max(0, kingHp), max: 45 * cyc(), pos: king.position};
-  if (realm === 5) return {name: 'THE ZOMBIE DIMENSION', alive: false, hp: 0, max: 1, pos: camera.position};
+  if (realm === 5) {
+    const k = typeof dimKingMob === 'function' ? dimKingMob() : null;
+    if (k) return {name: 'THE HOLLOW KING', alive: k.alive, hp: Math.max(0, k.hp), max: k.max, pos: k.g.position};
+    return {name: 'THE ZOMBIE DIMENSION', alive: false, hp: 0, max: 1, pos: camera.position};
+  }
   return {name: 'THE TALL MAN', alive: manAlive, hp: Math.max(0, manHp), max: 8 * cyc(), pos: man.position};
 }
 function updateBars(dt){

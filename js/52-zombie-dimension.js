@@ -231,7 +231,7 @@ function tuneDimMob(m, round, runner) {
   {
     // eyes in the fog: the only thing you see of them at forty metres
     // (the angel brings its own, and they are gold)
-    if (m.kind === 'angel') return m;
+    if (m.kind === 'angel' || m.kind === 'tall_man' || m.kind === 'hollow_king' || m.kind === 'cinder_hound') return m;
     const eyeM = new THREE.MeshBasicMaterial({color: runner ? 0xff3418 : 0xd8200e});
     const s = runner ? 0.048 : 0.036;
     [-0.13, 0.13].forEach(x => {
@@ -243,6 +243,7 @@ function tuneDimMob(m, round, runner) {
 }
 
 function clearDimensionMobs() {
+  if (typeof dimVisitorClear === 'function') dimVisitorClear();
   for (let i = mobs.length - 1; i >= 0; i--) if (mobs[i].realm === 5) { mobLayer.remove(mobs[i].g); mobs.splice(i, 1); }
   if (typeof lord !== 'undefined' && lord && lord.realm === 5) { lordLayer.remove(lord.g); lord = null; }
 }
@@ -325,7 +326,16 @@ function spawnDimWave() {
   // the round something new turns up, it gets its own line before it starts trying to kill you
   const fresh = [...new Set(crew.filter(k => DIM_UNLOCK[k] === round).map(k => MOB_DEF[k].name))];
   const freshLine = fresh.length ? '  ·  ' + fresh.join(' & ') + (fresh.length > 1 ? ' HAVE ARRIVED' : ' HAS ARRIVED') : '';
-  if (round % 5 === 0) { if (typeof dimLordFx === 'function') dimLordFx(); spawnLord(5); say('ROUND ' + round + '  ·  IT FOUND YOU' + freshLine, 3400); }
+  if (round % 5 === 0) {
+    if (typeof dimKingRound === 'function' && dimKingRound(round)) {
+      dimSpawnKing(round);
+      say('ROUND ' + round + '  ·  THE HOLLOW KING HAS COME OUT HERE' + freshLine, 4000);
+    } else {
+      if (typeof dimLordFx === 'function') dimLordFx();
+      spawnLord(5);
+      say('ROUND ' + round + '  ·  IT FOUND YOU' + freshLine, 3400);
+    }
+  }
   else if (fresh.length) say('ROUND ' + round + freshLine, 3200);
   else say('ROUND ' + round + '  ·  ' + roster + (runners ? '  ·  THEY RUN' : ''), 2800);
   sweepTone(120, 50, 0.6, 0.4, 'square');
@@ -348,6 +358,8 @@ function updateDimension(dt) {
   rift.userData.veil.material.opacity = 0.22 + Math.sin(time * 2.1) * 0.08;
   const alive = dimAlive();
   if (typeof dimAtmos === 'function' && !paused && !dead) { dimAtmos(dt); if (typeof dimWeather === 'function') dimWeather(dt); }
+  // the king's orbs and his ground wave keep moving whether he does or not
+  if (typeof dimVisitorUpdate === 'function' && !paused) dimVisitorUpdate(dt);
   if (dimRoundEl) {
     dimRoundEl.style.display = dimActive ? 'block' : 'none';
     dimRoundNum.textContent = 'ROUND ' + Math.max(1, dimWave);

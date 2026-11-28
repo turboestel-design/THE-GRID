@@ -258,50 +258,6 @@ function buildEchoGlow() {
 }
 
 // ============================================================================
-//  THE CINDER HOUND — world three, still burning, still running
-// ============================================================================
-function buildCinderHound() {
-  const g = new THREE.Group();
-  const char = new THREE.MeshStandardMaterial({color: 0x1a1412, roughness: 1, emissive: 0x1c0700});
-  const ash = new THREE.MeshStandardMaterial({color: 0x6a6058, roughness: 1, emissive: 0x0a0806});
-  const ember = new THREE.MeshStandardMaterial({color: 0xff6a20, emissive: 0xff4a10, emissiveIntensity: 1.7, roughness: 0.8});
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.42, 1.1), char);
-  body.position.y = 0.66; g.add(body);
-  // the cracks that never went out
-  for (let i = 0; i < 5; i++) {
-    const c = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.035, 0.06), ember);
-    c.position.set(0, 0.5 + i * 0.075, -0.28 + i * 0.13); g.add(c);
-  }
-  const mane = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.2, 0.34), ember);
-  mane.position.set(0, 0.84, 0.5); g.add(mane);
-  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.26, 0.3), char);
-  neck.position.set(0, 0.68, 0.66); g.add(neck);
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.27, 0.44), char);
-  head.position.set(0, 0.62, 0.94); head.userData.head = true; g.add(head);
-  const snout = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.16, 0.3), ash);
-  snout.position.set(0, 0.55, 1.16); g.add(snout);
-  [-0.075, 0.075].forEach(x => {
-    const e = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.03), ember);
-    e.position.set(x, 0.66, 1.16); g.add(e);
-  });
-  const tail = new THREE.Group(); tail.position.set(0, 0.74, -0.58);
-  const t = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.42), char); t.position.z = -0.2; tail.add(t);
-  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.44, 6),
-    new THREE.MeshBasicMaterial({color: 0xff8a30, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false}));
-  flame.position.z = -0.44; flame.rotation.x = -1.5708; tail.add(flame);
-  g.add(tail);
-  const legs = [];
-  [[-0.22, 0.36], [0.22, 0.36], [-0.22, -0.38], [0.22, -0.38]].forEach(([x, z]) => {
-    const p = new THREE.Group(); p.position.set(x, 0.46, z);
-    const l = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.46, 0.13), char); l.position.y = -0.23; p.add(l);
-    g.add(p); legs.push(p);
-  });
-  g.userData.legs = legs; g.userData.tail = tail; g.userData.flame = flame;
-  g.userData.flash = char; g.userData.baseEm = 0x1c0700;
-  return g;
-}
-
-// ============================================================================
 //  THE KING'S ECHO — world four, in plate, and it does not care about body shots
 // ============================================================================
 function buildEchoKing() {
@@ -383,8 +339,7 @@ function buildAngel() {
 const DIM_BUILD = {
   crawler: buildCrawler, brute: buildBrute, screamer: buildScreamer,
   bloat: buildBloat, hound: buildHound, rattle: buildRattle,
-  tall_echo: buildEchoTall, glow_echo: buildEchoGlow, king_echo: buildEchoKing,
-  cinder_hound: buildCinderHound, angel: buildAngel
+  tall_echo: buildEchoTall, glow_echo: buildEchoGlow, king_echo: buildEchoKing, angel: buildAngel
 };
 Object.assign(MOB_DEF, {
   crawler: {hp: 3, spd: 2.45, dmg: 7, r: 0.42, shards: 2, style: 'melee', name: 'CRAWLER', eyeY: 0.36, eyeZ: 0.55},
@@ -404,6 +359,7 @@ Object.assign(MOB_DEF, {
 // their own animation, so nothing in 60-enemies needs to know they exist
 function dimAnimate(mob, moving, dt) {
   const g = mob.g, u = g.userData;
+  if (window.DIM_VIS && window.DIM_VIS.animate && window.DIM_VIS.animate(mob, moving, dt)) return;
   if (mob.kind === 'hound') {
     mob.ph += dt * (moving ? 13 : 2.2);
     const sw = Math.sin(mob.ph) * (moving ? 0.8 : 0.08);
@@ -591,6 +547,7 @@ function dimKindTick(mob, dt) {
 // it goes off when it dies, whether you were ready or not
 function dimKindDeath(mob) {
   const x = mob.g.position.x, z = mob.g.position.z;
+  if (window.DIM_VIS && window.DIM_VIS.death && window.DIM_VIS.death(mob)) return;
   if (mob.kind === 'tall_echo' || mob.kind === 'king_echo') {
     const big = mob.kind === 'king_echo';
     gorePuff(x, 1.6, z, big ? 18 : 13, big ? 0x2c2a34 : 0x1c1a22, 2.6, 2.6);
@@ -633,7 +590,8 @@ function dimKindDeath(mob) {
 const DIM_UNLOCK = {
   crawler: 2, rattle: 3, husk: 4, hound: 5, spitter: 6, screamer: 7,
   bloat: 8, brute: 9, wisp: 10,
-  glow_echo: 11, cinder_hound: 13, tall_echo: 15, king_echo: 17, angel: 19
+  glow_echo: 11, cinder_hound: 13, tall_echo: 15, king_echo: 17, angel: 19,
+  tall_man: 21
 };
 function dimWaveCrew(round, n) {
   const pool = ['zombie', 'zombie', 'zombie'];
@@ -649,7 +607,8 @@ function dimWaveCrew(round, n) {
   for (const k in DIM_UNLOCK) if (round === DIM_UNLOCK[k]) crew.push(k);
   while (crew.length < n) crew.push(pool[Math.floor(Math.random() * pool.length)]);
   // the big ones are a moment, not a wall: cap them and let the crowd fill the rest
-  const cap = {brute: 2, screamer: 2, bloat: 3, glow_echo: 2, cinder_hound: 2, tall_echo: 1, king_echo: 1, angel: 1};
+  const cap = {brute: 2, screamer: 2, bloat: 3, glow_echo: 2, cinder_hound: 2,
+    tall_echo: 1, king_echo: 1, angel: 1, tall_man: 1};
   const seen = {};
   for (let i = 0; i < crew.length; i++) {
     const k = crew[i];
@@ -659,7 +618,8 @@ function dimWaveCrew(round, n) {
   return crew.slice(0, n);
 }
 // is this one of the things that came in from the other places?
-const DIM_GUEST = {husk: true, wisp: true, glow_echo: true, cinder_hound: true, tall_echo: true, king_echo: true, angel: true};
+const DIM_GUEST = {husk: true, wisp: true, glow_echo: true, cinder_hound: true, tall_echo: true,
+  king_echo: true, angel: true, tall_man: true};
 
 // a walker with an extra way of killing you, all set up and ready
 function dimMakeMob(kind, x, z) {
@@ -667,7 +627,7 @@ function dimMakeMob(kind, x, z) {
   const D = MOB_DEF[kind];
   m.eyeY = D.eyeY; m.eyeZ = D.eyeZ;
   if (kind !== 'hound') m.rise = 0;
-  m.tick = dimKindTick;
+  m.tick = (window.DIM_VIS && window.DIM_VIS.tickFor && window.DIM_VIS.tickFor(kind)) || dimKindTick;
   m.onDeath = dimKindDeath;
   m.buffT = 0;
   return m;

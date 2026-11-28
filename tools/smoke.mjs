@@ -203,6 +203,66 @@ run('dim:angel-shot', `(() => {
   const d = Math.hypot(a.g.position.x - camera.position.x, a.g.position.z - camera.position.z);
   return [seen > 0, d > 5 && d < 11, MOB_DEF.angel.style];
 })()`);
+run('dim:visitors', `(() => {
+  clearDimensionMobs(); setRealm(5); paused = false; dead = false;
+  const kinds = ['cinder_hound', 'tall_man', 'hollow_king'];
+  const made = {}; let ok = 0, leaked = 0;
+  for (const k of kinds) {
+    try {
+      const m = dimMakeMob(k, ZX + 30, 40); made[k] = m;
+      for (let i = 0; i < 4; i++) { dimAnimate(m, true, 0.016); m.tick(m, 0.016); }
+      if (m.alive) ok++;
+      m.g.traverse(o => { if (o.userData.man || o.userData.hound || o.userData.boss) leaked++; });
+    } catch (e) { made[k] = null; }
+  }
+  const r = [kinds.length, ok, made.tall_man.g.visible, made.cinder_hound.g.userData.legs.length,
+    made.hollow_king.g.userData.arms.length, leaked];
+  clearDimensionMobs();
+  return r;
+})()`);
+run('dim:visitor-hits', `(() => {
+  clearDimensionMobs(); setRealm(5); paused = false; dead = false; health = 9999;
+  hasGun = true; owned.pistol = true; cur = 'pistol'; ammo = 999;
+  const world = [manHp, kingHp, hounds.map(h => h.hp).join()];
+  const out = [];
+  for (const [k, z, pit] of [['tall_man', 11, 0], ['cinder_hound', 12.2, -0.55], ['hollow_king', 11, 0.4]]) {
+    camera.position.set(ZX, 1.65, 14); yaw = 0; pitch = pit; camera.rotation.set(pitch, yaw, 0); camera.updateMatrixWorld(true);
+    const m = dimMakeMob(k, ZX, z); m.hp = m.max = 500; scene.updateMatrixWorld(true);
+    const hp0 = m.hp;
+    for (let i = 0; i < 4; i++) { shootCd = 0; shoot(); scene.updateMatrixWorld(true); }
+    out.push(hp0 - m.hp > 0);
+  }
+  const untouched = [manHp === world[0], kingHp === world[1], hounds.map(h => h.hp).join() === world[2]];
+  clearDimensionMobs();
+  return out.concat(untouched);
+})()`);
+run('dim:king-round', `(() => {
+  clearDimensionMobs(); dimActive = true; dimWave = 19; dimWaveT = 0; spawnDimWave();
+  const k = dimKingMob();
+  const a = [!!k, k ? Math.round(k.max) : 0, bossInfo().name];
+  clearDimensionMobs(); if (lord) { lordLayer.remove(lord.g); lord = null; }
+  dimWave = 24; dimWaveT = 0; spawnDimWave();
+  const b = [!!lord, !!dimKingMob(), bossInfo().name];
+  clearDimensionMobs(); if (lord) { lordLayer.remove(lord.g); lord = null; }
+  return a.concat(b);
+})()`);
+run('dim:king-orbs', `(() => {
+  clearDimensionMobs(); setRealm(5); paused = false; dead = false; health = 9999;
+  camera.position.set(ZX, 1.65, 14);
+  const k = dimSpawnKing(20);
+  const hp0 = health; let orbs = 0, wave = false;
+  for (let i = 0; i < 600; i++) {
+    updateMobs(1 / 60); dimVisitorUpdate(1 / 60);
+    orbs = Math.max(orbs, dimKingOrbs.filter(o => o.life > 0).length);
+    wave = wave || dimKingRing.visible;
+  }
+  const d = Math.hypot(k.g.position.x - camera.position.x, k.g.position.z - camera.position.z);
+  const out = [orbs > 0, wave, hp0 - health > 0, d < 40, Math.round(k.hp) > 0];
+  hurtMob(k, 9999);
+  out.push(!k.alive, !dimKingRing.visible);
+  clearDimensionMobs(); health = maxHp;
+  return out;
+})()`);
 run('dim:brute-headshot', `(() => {
   clearDimensionMobs();
   const b = dimMakeMob('brute', ZX + 20, 30);
