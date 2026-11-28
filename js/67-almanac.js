@@ -1,0 +1,741 @@
+/* THE GRID — THE ALMANAC.
+   Classic script: every file shares one global scope, loaded in the order used by
+   index.html. Splitting this file cannot change behaviour.
+
+   Everything that walks, floats or waits out there, with its own portrait. The
+   portraits are not drawings: each one is the real model, rendered once into a
+   small offscreen canvas the first time you open the book, then kept. If the
+   browser will not give us a second WebGL context the card falls back to a plate
+   with the creature's initial on it, so the page still works. */
+
+// ---- pictures --------------------------------------------------------------
+// one hidden renderer, one tiny scene, reused for every portrait
+let almGL = null, almGLDead = false;
+
+function almanacRenderer() {
+  if (almGL || almGLDead) return almGL;
+  try {
+    almGL = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    almGL.setPixelRatio(1);
+    almGL.setSize(240, 240, false);
+    if (!almGL.getContext || !almGL.getContext()) { almGL = null; almGLDead = true; }
+  } catch (e) { almGL = null; almGLDead = true; }
+  return almGL;
+}
+
+function almanacClone(src) {
+  const g = src.clone(true);
+  g.traverse(o => { o.visible = true; });
+  g.visible = true;
+  g.position.set(0, 0, 0);
+  g.rotation.set(0, 0, 0);
+  return g;
+}
+
+function almanacPlate(entry) {
+  // no picture available: a plate with the first letter, so nothing looks broken
+  const ch = (entry.name || '?').replace(/[^A-Z]/g, '').slice(0, 1) || '?';
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240">'
+    + '<rect width="240" height="240" fill="#0a0706"/>'
+    + '<rect x="8" y="8" width="224" height="224" fill="none" stroke="#241811"/>'
+    + '<text x="120" y="150" font-family="Courier New,monospace" font-size="92" fill="#39241c" text-anchor="middle">'
+    + ch + '</text></svg>');
+}
+
+function almanacLockPlate() {
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240">'
+    + '<rect width="240" height="240" fill="#070505"/>'
+    + '<text x="120" y="156" font-family="Courier New,monospace" font-size="96" fill="#2c1a16" text-anchor="middle">?</text>'
+    + '<rect x="10" y="10" width="220" height="220" fill="none" stroke="#1b100d"/></svg>');
+}
+
+function almanacPortrait(entry) {
+  if (entry._pic) return entry._pic;
+  const r = almanacRenderer();
+  let g = null;
+  if (r) { try { g = entry.model(); } catch (e) { g = null; } }
+  if (!r || !g) { entry._pic = almanacPlate(entry); return entry._pic; }
+  let url = null;
+  try {
+    const sc = new THREE.Scene();
+    sc.add(new THREE.HemisphereLight(0xffffff, 0x22242e, 1.7));
+    const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(3, 5, 4); sc.add(key);
+    const rim = new THREE.DirectionalLight(0x8a2a1c, 1.1); rim.position.set(-4, 2.5, -3); sc.add(rim);
+    sc.add(g);
+    g.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(g);
+    const size = box.getSize(new THREE.Vector3()), mid = box.getCenter(new THREE.Vector3());
+    g.position.sub(mid);
+    const span = Math.max(size.x, size.y, size.z) || 1;
+    const cam = new THREE.PerspectiveCamera(30, 1, span * 0.02, span * 40);
+    cam.position.set(span * 0.7, span * 0.22, span * 1.85);
+    cam.lookAt(0, 0, 0);
+    r.setClearColor(0x000000, 0);
+    r.render(sc, cam);
+    url = r.domElement.toDataURL('image/png');
+    if (!url || url.length < 64) url = null;
+  } catch (e) { url = null; }
+  entry._pic = url || almanacPlate(entry);
+  return entry._pic;
+}
+
+// ---- the models, exactly as they are built in the world --------------------
+function almanacAmmoBox() {
+  return box(0.4, 0.3, 0.55, bBasic(0x7dffb0), 0, 0, 0);
+}
+function almanacHealthBox() {
+  return box(0.45, 0.45, 0.45, bBasic(0xff4a4a), 0, 0, 0);
+}
+function almanacHound() {
+  const h = makeHound();
+  scene.remove(h.g);
+  h.g.visible = true;
+  h.g.position.set(0, 0, 0);
+  return h.g;
+}
+// the shelter has no single group — it is walls and a roof laid straight into the
+// forest — so the portrait rebuilds it out of the same materials and the same shape
+function almanacHouse() {
+  const g = new THREE.Group();
+  woodBox(g, 7.2, 3, 0.2, wallMat, 0, 1.5, -3);
+  woodBox(g, 0.2, 3, 6.2, wallMat, -3.5, 1.5, 0);
+  woodBox(g, 0.2, 3, 6.2, wallMat, 3.5, 1.5, 0);
+  woodBox(g, 2.95, 3, 0.2, wallMat, -2.125, 1.5, 3);
+  woodBox(g, 2.95, 3, 0.2, wallMat, 2.125, 1.5, 3);
+  woodBox(g, 1.3, 2.1, 0.08, new THREE.MeshStandardMaterial({ map: woodTex, color: 0xb0a090, roughness: 1 }), 0, 1.05, 3);
+  [-1, 1].forEach(s => {
+    const r = woodBox(g, 4.44, 0.12, 6.9, roofMat, s * 1.95, 4.07, 0);
+    r.rotation.z = -s * 0.5;
+  });
+  const gs = new THREE.Shape();
+  gs.moveTo(-3.6, 0); gs.lineTo(3.6, 0); gs.lineTo(0, 2.1); gs.closePath();
+  const gGeo = new THREE.ExtrudeGeometry(gs, { depth: 0.2, bevelEnabled: false });
+  [3, -3].forEach(z => { const m = new THREE.Mesh(gGeo, wallMat); m.position.set(0, 3, z - 0.1); g.add(m); });
+  return g;
+}
+
+// one of the figures standing in the cloud, halo and all
+function almanacHeavenAngel() {
+  return almanacClone(people[0]);
+}
+
+// the gate at the top of the cloud stairs: steps, two gold posts, the light between them
+function almanacHeavenGate() {
+  const g = new THREE.Group();
+  for (let i = 1; i <= 6; i++) {
+    const s = new THREE.Mesh(new THREE.BoxGeometry(6.4, i * 0.35, 1.1), cloudMat);
+    s.position.set(0, i * 0.175, (i - 0.5) * 1.1);
+    g.add(s);
+    [-3.4, 3.4].forEach(x => {
+      const p = new THREE.Mesh(new THREE.SphereGeometry(0.7, 10, 8), cloudMat);
+      p.position.set(x, i * 0.35 - 0.1, (i - 0.5) * 1.1);
+      p.scale.y = 0.7; g.add(p);
+    });
+  }
+  g.position.y = 2.1;
+  [-2.3, 2.3].forEach(x => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.35, 6, 0.35), gold);
+    m.position.set(x, 3, 4.6); g.add(m);
+  });
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(5, 0.4, 0.4), gold);
+  beam.position.set(0, 6.1, 4.6); g.add(beam);
+  const door = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 6),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, side: THREE.DoubleSide, fog: false }));
+  door.position.set(0, 3, 4.55); g.add(door);
+  const p1 = new THREE.Mesh(new THREE.SphereGeometry(0.9, 10, 8), cloudMat);
+  p1.position.set(-2.9, 0.1, 4.6); p1.scale.y = 0.7; g.add(p1);
+  const p2 = new THREE.Mesh(new THREE.SphereGeometry(0.9, 10, 8), cloudMat);
+  p2.position.set(2.9, 0.1, 4.6); p2.scale.y = 0.7; g.add(p2);
+  return g;
+}
+
+function almanacPortal() {
+  const p = makePortal(275, 170);
+  scene.remove(p);
+  p.visible = true;
+  p.position.set(0, -1.9, 0);
+  p.scale.setScalar(1);
+  return p;
+}
+
+const ALM_MODEL = {
+  zombie: () => buildZombie(),
+  husk: () => buildHusk(),
+  spitter: () => buildSpitter(),
+  wisp: () => buildWisp(),
+  crawler: () => buildCrawler(),
+  hound: () => buildHound(),
+  rattle: () => buildRattle(),
+  screamer: () => buildScreamer(),
+  bloat: () => buildBloat(),
+  brute: () => buildBrute(),
+  glow_echo: () => buildEchoGlow(),
+  tall_echo: () => buildEchoTall(),
+  king_echo: () => buildEchoKing(),
+  angel: () => buildAngel(),
+  cinder_hound: almanacHound,
+  tall_man: () => buildDimVisitorMan(),
+  hollow_king: () => buildDimVisitorKing(),
+  lord: () => buildLord(),
+  man: () => almanacClone(man),
+  bloom: () => almanacClone(beast),
+  king: () => almanacClone(king),
+  hounds3: almanacHound,
+  angel_heaven: almanacHeavenAngel,
+  heaven: almanacHeavenGate,
+  portal: almanacPortal,
+  shard: () => { const m = new THREE.Mesh(shardGeo, shardMat); m.scale.setScalar(2.6); return m; },
+  ammo: almanacAmmoBox,
+  health: almanacHealthBox,
+  rift: () => almanacClone(rift),
+  house: almanacHouse
+};
+
+// ---- what the book knows ---------------------------------------------------
+// live numbers come from the game tables, so the book can never drift from them
+const ALM_SPEED = s => s >= 2.6 ? 'fast' : s >= 1.7 ? 'quick' : s >= 1.0 ? 'steady' : 'slow';
+const ALM_STYLE = s => s === 'range' ? 'keeps its distance and shoots'
+  : s === 'dash' ? 'dashes in and out' : 'walks at you and bites';
+
+function mobStats(kind) {
+  const D = MOB_DEF[kind];
+  if (!D) return null;
+  return [
+    ['HEALTH', D.hp],
+    ['DAMAGE', 'up to ' + D.dmg + ' a hit'],
+    ['SPEED', D.spd.toFixed(2) + ' — ' + ALM_SPEED(D.spd)],
+    ['SHARDS', D.shards + ' on death'],
+    ['BEHAVIOUR', ALM_STYLE(D.style)]
+  ];
+}
+
+// the round a dimension creature starts on is read from the spawn table, not written down
+const DIM_ROUND = k => 'Starts at round ' + DIM_UNLOCK[k] + '.';
+
+const ALMANAC = [
+  // ---------------- the horde: what the four worlds send -------------------
+  {
+    id: 'zombie', name: 'WALKER', tag: 'THE HORDE', section: 'The dead',
+    model: ALM_MODEL.zombie, stats: () => mobStats('zombie'),
+    where: 'Every world, in the set waves, and in every horde that rises behind you.',
+    rounds: 'In the zombie dimension: from round 1, and called up by the Congregation forever.',
+    text: 'The one you already know. A body that has stopped being a person and kept walking. '
+      + 'It is slow until it is close, then it is not slow, and it does not stop for walls or for you.',
+    tip: 'It is faster than it looks within five metres. Two shots to the head, or one to the body with anything bigger than the pistol.'
+  },
+  {
+    id: 'husk', name: 'HUSK', tag: 'THE HORDE', section: 'The dead',
+    model: ALM_MODEL.husk, stats: () => mobStats('husk'),
+    where: 'World 1, 2 and 3 set waves. Nowhere in world 4.',
+    rounds: 'In the zombie dimension: from round ' + DIM_UNLOCK.husk + '.',
+    text: 'Dry, light and quick. The husk is what is left when there is nothing left to rot — '
+      + 'a frame in a rag, moving at the speed of something that still wants to be alive.',
+    tip: 'It closes faster than a walker. Do not treat it like one.'
+  },
+  {
+    id: 'spitter', name: 'SPITTER', tag: 'THE HORDE', section: 'The dead',
+    model: ALM_MODEL.spitter, stats: () => mobStats('spitter'),
+    where: 'World 2 and world 3 set waves.',
+    rounds: 'In the zombie dimension: from round ' + DIM_UNLOCK.spitter + '.',
+    text: 'It will not come to you. It stands off at twenty metres and throws whatever is left inside it, '
+      + 'and it only has two hit points, which is the only mercy in the whole thing.',
+    tip: 'Break line of sight. Its shots stop on walls, and it will keep wasting them.'
+  },
+  {
+    id: 'wisp', name: 'WISP', tag: 'THE HORDE', section: 'The dead',
+    model: ALM_MODEL.wisp, stats: () => mobStats('wisp'),
+    where: 'World 4, around the arena, and wherever a horde gets strange.',
+    rounds: 'In the zombie dimension: from round ' + DIM_UNLOCK.wisp + '.',
+    text: 'A light with a temper. It circles, then crosses the distance in one dash and hits you for it. '
+      + 'Barely anything to kill, but you have to hit something that is never still.',
+    tip: 'Wait for the dash to end. It hangs for a moment before it goes again.'
+  },
+
+  // ---------------- the zombie dimension's own dead ------------------------
+  {
+    id: 'crawler', name: 'CRAWLER', tag: 'THE DIMENSION', section: 'The dimension',
+    model: ALM_MODEL.crawler, stats: () => mobStats('crawler'),
+    where: 'The zombie dimension only.',
+    rounds: DIM_ROUND('crawler'), roundNote: 'One arrives alone that round, so you meet it before it joins the crowd.',
+    text: 'Low to the ground and quick about it. It comes in under your aim and stays there.',
+    tip: 'Look down before you shoot. It is the reason the first rounds feel easy right up until they do not.'
+  },
+  {
+    id: 'rattle', name: 'RATTLE', tag: 'THE DIMENSION', section: 'The dimension',
+    model: ALM_MODEL.rattle, stats: () => mobStats('rattle'),
+    where: 'The zombie dimension only.',
+    rounds: DIM_ROUND('rattle'),
+    text: 'Bone with nothing holding it together but momentum. It clatters when it walks and comes apart when it does not.',
+    tip: 'It has two hit points. Almost anything puts it down; the problem is how many of them there are.'
+  },
+  {
+    id: 'hound', name: 'HOUND', tag: 'THE DIMENSION', section: 'The dimension',
+    model: ALM_MODEL.hound, stats: () => mobStats('hound'),
+    where: 'The zombie dimension only.',
+    rounds: DIM_ROUND('hound'),
+    text: 'Four legs and a ribcage, and it runs at you in bursts — a slow stalk, then a sprint, then a slow stalk.',
+    tip: 'The sprint is short. Let it come, take the shot, and step out of the last metre.'
+  },
+  {
+    id: 'screamer', name: 'SCREAMER', tag: 'THE DIMENSION', section: 'The dimension',
+    model: ALM_MODEL.screamer, stats: () => mobStats('screamer'),
+    where: 'The zombie dimension only.',
+    rounds: DIM_ROUND('screamer'),
+    text: 'It barely hurts you itself. What it does is scream, and everything within seventeen metres of it '
+      + 'starts moving faster for a few seconds. Kill it or fight a faster crowd.',
+    tip: 'It is the most dangerous thing in a wave it does not touch you in.'
+  },
+  {
+    id: 'bloat', name: 'BLOAT', tag: 'THE DIMENSION', section: 'The dimension',
+    model: ALM_MODEL.bloat, stats: () => mobStats('bloat'),
+    where: 'The zombie dimension only.',
+    rounds: DIM_ROUND('bloat'),
+    text: 'Slow, swollen, and it gets bigger as it gets closer. When it dies it goes off, and everything within '
+      + 'four and a half metres of it takes the blast.',
+    tip: 'Kill it early and from range, or use the blast on the crowd around it and take the hit yourself.'
+  },
+  {
+    id: 'brute', name: 'BRUTE', tag: 'THE DIMENSION', section: 'The dimension',
+    model: ALM_MODEL.brute, stats: () => mobStats('brute'),
+    where: 'The zombie dimension only.',
+    rounds: DIM_ROUND('brute'), roundNote: 'Two at most in a wave.',
+    text: 'Eighteen hit points of muscle wearing a butcher, and it hits for twenty-four a swing. '
+      + 'It is slow, and it does not need to be quick.',
+    tip: 'Never in the open with it. Put something between you and it and shoot around the corner.'
+  },
+  {
+    id: 'glow_echo', name: 'GLOW ECHO', tag: 'THE DIMENSION', section: 'The dimension',
+    model: ALM_MODEL.glow_echo, stats: () => mobStats('glow_echo'),
+    where: 'The zombie dimension only. It is what the hollow glow left behind.',
+    rounds: DIM_ROUND('glow_echo'),
+    text: 'A purple core with a ring turning around it, a hand above the ground, with the tentacles of that '
+      + 'fungal thing hanging underneath. It drifts at you, then rushes the last gap.',
+    tip: 'It is fragile. The danger is the rush, which is fast enough to catch you reloading.'
+  },
+  {
+    id: 'cinder_hound', name: 'CINDER HOUND', tag: 'THE DIMENSION', section: 'The dimension',
+    model: ALM_MODEL.cinder_hound, stats: () => mobStats('cinder_hound'),
+    where: 'The zombie dimension, and it is world three\'s hound — the same one, not a copy.',
+    rounds: DIM_ROUND('cinder_hound'),
+    text: 'Still burning. Charred black with the ember spine glowing through, and it drops sparks the whole way '
+      + 'it runs. In the ashen waste they come in packs; out here one turns up at a time.',
+    tip: 'You will hear it before you see it. Fastest thing in the fog, so shoot the legs — aim low.'
+  },
+  {
+    id: 'tall_echo', name: 'TALL ECHO', tag: 'THE DIMENSION', section: 'The dimension',
+    model: ALM_MODEL.tall_echo, stats: () => mobStats('tall_echo'),
+    where: 'The zombie dimension only. A memory of the tall man, nine feet of it.',
+    rounds: DIM_ROUND('tall_echo'), roundNote: 'One at most.',
+    text: 'A suit with too much body inside it. Pale head, pale hands hanging past its knees, and it walks at '
+      + 'the speed of something that has never once had to hurry.',
+    tip: 'It hurts more than a brute when it reaches you. Shoot it the whole way in, and do not let it corner you.'
+  },
+  {
+    id: 'king_echo', name: "KING'S ECHO", tag: 'THE DIMENSION', section: 'The dimension',
+    model: ALM_MODEL.king_echo, stats: () => mobStats('king_echo'),
+    where: 'The zombie dimension only. The Hollow King, in effigy.',
+    rounds: DIM_ROUND('king_echo'), roundNote: 'One at most.',
+    text: 'Plate, cloth and gold, with a crown of spikes that were never meant to be cheerful. '
+      + 'Twenty-four hit points, and body shots barely matter to it.',
+    tip: 'Head only. It is slow enough to line up; it is not slow enough to do it twice.'
+  },
+  {
+    id: 'angel', name: 'ANGEL', tag: 'THE DIMENSION', section: 'The dimension',
+    model: ALM_MODEL.angel, stats: () => mobStats('angel'),
+    where: 'The zombie dimension only, and the last thing to arrive.',
+    rounds: DIM_ROUND('angel'), roundNote: 'One at most.',
+    text: 'Out of heaven, and it did not come to help. Robe, halo, wings that beat, gold eyes. It hangs about ten '
+      + 'metres out, drifts sideways so it never sits still, and throws its light at you. It is not one of the quiet '
+      + 'ones standing on the cloud stairs — this one came down armed.',
+    tip: 'It will not let you close the distance on its own terms. Shoot it at range, and keep moving sideways.'
+  },
+  {
+    id: 'tall_man', name: 'THE TALL MAN', tag: 'THE DIMENSION', section: 'The dimension',
+    model: ALM_MODEL.tall_man, stats: () => mobStats('tall_man'),
+    where: 'World 1 — and in the zombie dimension it is the real one, suit and all.',
+    rounds: DIM_ROUND('tall_man'), roundNote: 'One at most.',
+    text: 'The boss of the forest, walking out of the fog like the last few worlds never happened. '
+      + 'Black suit, long arms, a pale head that turns to you a little more slowly than it should.',
+    tip: 'Every hit staggers him for a moment. Keep firing in rhythm and he never closes the last few metres.'
+  },
+
+  // ---------------- the bosses ---------------------------------------------
+  {
+    id: 'boss_man', name: 'THE TALL MAN (BOSS)', tag: 'WORLD 1', section: 'The bosses',
+    model: ALM_MODEL.man,
+    stats: () => [['HEALTH', Math.round(8 * cyc())], ['DAMAGE', '34 a hit'], ['SPEED', '1.5 — 2.0 while you carry a gun'],
+      ['BEHAVIOUR', 'follows you into the house, and out of it']],
+    where: 'World 1, the forest. He is already out there when you arrive.',
+    rounds: 'Not in the dimension as a boss — his real self turns up there from round ' + DIM_UNLOCK.tall_man + '.',
+    text: 'Seven feet of suit and patience. He walks, he does not run, and he opens doors. '
+      + 'He is the one who put the whole thing in motion and he is still here.',
+    tip: 'He staggers on every hit, so the pistol rhythm works. The house is not a hiding place — it is a corridor with one exit.'
+  },
+  {
+    id: 'boss_bloom', name: 'THE BLOOM', tag: 'WORLD 2', section: 'The bosses',
+    model: ALM_MODEL.bloom,
+    stats: () => [['HEALTH', Math.round(10 * cyc())], ['DAMAGE', '30 on a dash'], ['SPEED', '3.0 when it commits'],
+      ['BEHAVIOUR', 'circles the ring, then dashes through you']],
+    where: 'World 2, the hollow glow. In the middle of the ring of mushrooms.',
+    rounds: 'Not in the dimension.',
+    text: 'A many-legged fungal beast with one enormous eye, grown in a ring of glowing caps. '
+      + 'It circles, it watches, and then it comes through you in a straight line.',
+    tip: 'The dash is the only attack. Move perpendicular to it — never backwards, you will not outrun it.'
+  },
+  {
+    id: 'boss_hounds', name: 'THE CINDER PACK', tag: 'WORLD 3', section: 'The bosses',
+    model: ALM_MODEL.hounds3,
+    stats: () => [['HEALTH', '3 each, five of them'], ['DAMAGE', '15 a lunge'], ['SPEED', '8.5 on the rush'],
+      ['BEHAVIOUR', 'circle you, two rush at a time']],
+    where: 'World 3, the ashen waste. The pack that opens the way out.',
+    rounds: 'The dimension takes one of them and sends it at you from round ' + DIM_UNLOCK.cinder_hound + '.',
+    text: 'Five of them, burning, circling at eight metres and never all attacking at once. '
+      + 'Only two commit at a time, which is the only reason a person survives them.',
+    tip: 'Watch the two that break formation. The other three will keep circling until one of those dies.'
+  },
+  {
+    id: 'boss_king', name: 'THE HOLLOW KING', tag: 'WORLD 4', section: 'The bosses',
+    model: ALM_MODEL.king,
+    stats: () => [['HEALTH', Math.round(45 * cyc())], ['DAMAGE', '20 an orb, 25 the ground wave'],
+      ['SPEED', 'circles at nine metres'], ['BEHAVIOUR', 'orbs in a fan, and a slam you jump']],
+    where: 'World 4, the eclipse arena — and out in the dimension on his own rounds.',
+    rounds: 'The real one comes out in the dimension on rounds 20, 30, 40, with a health bar.',
+    text: 'The last thing in the last world: a robe seven metres tall, a pale mask, a crown of spikes and arms '
+      + 'that lift over his head before the floor goes out from under you. Under half health he gets angry and '
+      + 'starts blinking across the arena.',
+    tip: 'Shoot the mask. When the arms go up, jump — the wave runs along the ground and cannot reach you in the air.'
+  },
+  {
+    id: 'boss_lord', name: 'THE CONGREGATION', tag: 'EVERYWHERE', section: 'The bosses',
+    model: ALM_MODEL.lord,
+    stats: () => [['HEALTH', LORD_HP], ['DAMAGE', LORD_DMG + ' a hit'], ['SPEED', 'slow, and it does not stop'],
+      ['BEHAVIOUR', 'calls up two walkers every ten seconds']],
+    where: 'Every third horde in worlds 1 to 4, and the boss rounds of the dimension.',
+    rounds: 'In the zombie dimension: every fifth round, except 20, 30 and 40 — those belong to the Hollow King.',
+    text: 'Three heads, all looking at you, on a body made of the people it has already collected. '
+      + 'It never stops calling more of them up while you are trying to put it down.',
+    tip: 'Kill the summoned walkers first or you will run out of ammo before you run out of Congregation.'
+  },
+
+  // ---------------- heaven, where you wait when you die --------------------
+  {
+    id: 'angel_heaven', name: 'THE ANGELS', tag: 'HEAVEN', section: 'Heaven',
+    model: ALM_MODEL.angel_heaven,
+    stats: () => [['HEALTH', 'none — they cannot be hurt'], ['DAMAGE', 'none, ever'], ['SPEED', 'they hover where they stand'],
+      ['BEHAVIOUR', 'they turn to watch you, and nothing else']],
+    where: 'The Cloud Stairs — the place every death takes you, unless quick respawn is switched on.',
+    rounds: 'Not in the zombie dimension. Nothing that kills you follows you here, and nothing here follows you out.',
+    text: 'Robed figures with gold halos, standing a few centimetres off the cloud. There are thirteen of them: '
+      + 'six on the cloud itself, five up the stairs, two at the top by the gate. Every one of them turns to face you '
+      + 'as you walk past, slowly, and none of them ever comes any closer.',
+    tip: 'They cannot hurt you and you cannot hurt them — the gun does not even come out here. '
+      + 'Walk past them, climb the stairs and use the gate.'
+  },
+  {
+    id: 'heaven', name: 'THE CLOUD STAIRS', tag: 'HEAVEN', section: 'Heaven',
+    model: ALM_MODEL.heaven,
+    stats: () => [['USED FOR', 'coming back from the dead'], ['GIVES', 'all of your health back'], ['COST', 'nothing'],
+      ['LEAVING', 'stand at the gate and press E']],
+    where: 'Behind every death in the game. The dead wake up at the bottom of it with full health.',
+    rounds: 'Dying in the zombie dimension sends you here as well — and the gate puts you back out in world four.',
+    text: 'A white cloud floor, fourteen steps of cloud, and a gold gate with white light standing in it. '
+      + 'You arrive at the bottom with your health back and no gun, and the whole place is silent except for the wind.',
+    tip: 'Climb to the top, stand at the light and press E. What you were carrying is still yours, and the world you '
+      + 'fell in still remembers you.'
+  },
+
+  // ---------------- things, not creatures ----------------------------------
+  {
+    id: 'portal', name: 'PORTAL', tag: 'THE WAY ON', section: 'Things out there',
+    model: ALM_MODEL.portal,
+    stats: () => [['USED FOR', 'leaving a world behind'], ['STAYS OPEN', 'until you step through']],
+    where: 'One opens when a world is finished — kill the boss, and it appears.',
+    rounds: 'Not in the dimension. The way in and out there is the rift.',
+    text: 'A ring of light with something turning inside it that is not quite a place. Walk into it and you are '
+      + 'somewhere else, and the somewhere else is worse.',
+    tip: 'There is no way back through. Spend your ammo and your shards first.'
+  },
+  {
+    id: 'shard', name: 'SHARD', tag: 'THE WAY ON', section: 'Things out there',
+    model: ALM_MODEL.shard,
+    stats: () => [['WORTH', 'ammo, upgrades, the house, the forge'], ['COMES FROM', 'everything that dies']],
+    where: 'Dropped by every kill, and left lying in the worlds.',
+    rounds: 'Every kill in the dimension drops them. Brutes and kings drop a lot.',
+    text: 'A pale green splinter of something that was never alive. The only currency anything out here respects.',
+    tip: 'They pull toward you when you get close. Walk over a fight after it is over rather than during it.'
+  },
+  {
+    id: 'ammo', name: 'AMMO CRATE', tag: 'THE WAY ON', section: 'Things out there',
+    model: ALM_MODEL.ammo,
+    stats: () => [['GIVES', 'a full top-up of what you carry'], ['COMES BACK', 'after a while']],
+    where: 'Every world, including six of them spread across the dimension.',
+    rounds: 'In the dimension they are the reason you can afford long rounds.',
+    text: 'A green box with a light on it. It refills what you are holding; it does not give you a weapon you do not have.',
+    tip: 'Learn where they are before you need them. Round fourteen is not the time to go looking.'
+  },
+  {
+    id: 'health', name: 'RED BOX', tag: 'THE WAY ON', section: 'Things out there',
+    model: ALM_MODEL.health,
+    stats: () => [['GIVES', 'health back'], ['COMES BACK', 'after a while']],
+    where: 'Every world, five of them in the dimension.',
+    rounds: 'In the dimension, clearing a round also gives +6 health.',
+    text: 'A red cube with a light on it. The only thing out here that is on your side.',
+    tip: 'Leave one standing when you can. Coming back to a known red box beats hoping for one.'
+  },
+  {
+    id: 'rift', name: 'THE RIFT', tag: 'THE WAY ON', section: 'Things out there',
+    model: ALM_MODEL.rift,
+    stats: () => [['LEADS TO', 'the zombie dimension'], ['LOCKED UNTIL', 'all four worlds are cleared']],
+    where: 'Inside the zombie dimension — you arrive standing in front of it, and it is the door back out.',
+    rounds: 'Standing in it stops the rounds and puts you back in the world you came from.',
+    text: 'Two pillars and an arch of bone with a veil of red hanging in it. Something on the other side has been '
+      + 'waiting for the door to be worth opening.',
+    tip: 'It only exists in the dimension, and you are already standing in it when the rounds start. Do not mistake it for a way deeper in.'
+  },
+  {
+    id: 'house', name: 'THE SHELTER', tag: 'YOURS', section: 'Things out there',
+    model: ALM_MODEL.house,
+    stats: () => [['UPGRADES', 'ten levels'], ['GIVES', 'a roof, a bed, and more health']],
+    where: 'World 1, at the edge of the forest. You start in front of it.',
+    rounds: 'Not in the dimension. Nothing you build follows you out there.',
+    text: 'A leaking shack that you can make into something. Each level adds light, walls and health to you, '
+      + 'and the walls stop the dead for a while — the door does not, if you leave it open.',
+    tip: 'Upgrade it before you spend on weapons. The health it gives you is health you keep in every world.'
+  }
+];
+
+// ---- what you have actually met --------------------------------------------
+// nothing is written in the book until you have seen it: a thing is written down
+// the first time it is close enough to be in front of you, or the first time you
+// stand in a place that belongs to it.
+function almSeen(id) {
+  return !!(progress && progress.alm && progress.alm[id]);
+}
+function almKnown() {
+  return ALMANAC.filter(e => almSeen(e.id)).length;
+}
+function almMark(id, quiet) {
+  if (!ALMANAC.some(e => e.id === id)) return false;
+  if (!progress.alm) progress.alm = {};
+  if (progress.alm[id]) return false;
+  progress.alm[id] = 1;
+  const e = ALMANAC.find(x => x.id === id);
+  // if the book is open in front of you, redraw it so the page fills itself in
+  const panel = document.getElementById('panelAlmanac');
+  if (almanacBuilt && panel && panel.classList.contains('open')) almanacRender();
+  if (!quiet && e && typeof say === 'function') {
+    say('ALMANAC  \u00b7  ' + e.name + ' WRITTEN DOWN', 1900);
+    if (typeof sweepTone === 'function') sweepTone(760, 980, 0.1, 0.14, 'sine');
+  }
+  if (typeof saveAll === 'function') saveAll();
+  return true;
+}
+
+// what a mob is called in the book, when the two names do not match
+const ALM_FROM_KIND = { hollow_king: 'boss_king' };
+
+// one sweep a frame: whatever is in front of you gets written down
+function almanacScan() {
+  if (typeof paused !== 'undefined' && paused) return;
+  if (typeof dead !== 'undefined' && dead) return;
+  const px = camera.position.x, pz = camera.position.z;
+  const near = (x, z, r) => Math.hypot(x - px, z - pz) < r;
+
+  if (typeof heaven !== 'undefined' && heaven) { almMark('angel_heaven'); almMark('heaven'); }
+  if (typeof mobs !== 'undefined') {
+    for (const m of mobs) {
+      if (!m.alive || m.realm !== realm) continue;
+      if (!near(m.g.position.x, m.g.position.z, 46)) continue;
+      almMark(ALM_FROM_KIND[m.kind] || m.kind);
+    }
+  }
+  // the bosses, each in their own world
+  if (realm === 1 && typeof manAlive !== 'undefined' && manAlive && near(man.position.x, man.position.z, 55)) almMark('boss_man');
+  if (realm === 2 && typeof beastAlive !== 'undefined' && beastAlive && near(beast.position.x, beast.position.z, 55)) almMark('boss_bloom');
+  if (realm === 3 && typeof hounds !== 'undefined') {
+    for (const h of hounds) if (h.alive && near(h.g.position.x, h.g.position.z, 55)) { almMark('boss_hounds'); break; }
+  }
+  if (realm === 4 && typeof kingAlive !== 'undefined' && kingAlive && near(king.position.x, king.position.z, 55)) almMark('boss_king');
+  if (typeof lord !== 'undefined' && lord && lord.alive && near(lord.g.position.x, lord.g.position.z, 55)) almMark('boss_lord');
+
+  // the place you go when you die
+  if (typeof heavenGroup !== 'undefined' && heavenGroup.visible) { almMark('angel_heaven'); almMark('heaven'); }
+
+  // things lying about
+  if (typeof items !== 'undefined') {
+    for (const it of items) {
+      if (!it.g.visible) continue;
+      if (it.group && !it.group.visible) continue;
+      if (!near(it.wx, it.wz, 9)) continue;
+      almMark(it.kind === 'ammo' ? 'ammo' : it.kind === 'health' ? 'health' : 'ammo');
+    }
+  }
+  if (typeof shards !== 'undefined' && (shards > 0 || kills > 0)) almMark('shard');
+  if (typeof portalA !== 'undefined') {
+    for (const p of [portalA, portalB, portalC]) {
+      if (p && p.visible && near(p.position.x, p.position.z, 26)) { almMark('portal'); break; }
+    }
+  }
+  if (realm === 5 && typeof ZX !== 'undefined' && near(ZX, 14, 22)) almMark('rift');
+  if (realm === 1 && !heaven && near(0, -12, 26)) almMark('house');
+}
+
+// ---- the book itself -------------------------------------------------------
+let almanacBuilt = false;
+
+function almanacSections() {
+  const order = ['The dead', 'The dimension', 'The bosses', 'Heaven', 'Things out there'];
+  return order.map(s => ({
+    name: s,
+    entries: ALMANAC.filter(e => e.section === s)
+  })).filter(s => s.entries.length);
+}
+
+function almanacStatsRows(entry) {
+  try {
+    const rows = entry.stats ? entry.stats() : null;
+    return (rows || []).filter(Boolean);
+  } catch (e) { return []; }
+}
+
+// portraits are drawn a few at a time between frames, so opening the book does not
+// freeze the game while twenty-eight shapes are rendered
+const almanacQueue = [];
+let almanacPumping = false;
+
+function almanacQueuePic(entry, img, done) {
+  if (entry._pic) { if (img) img.src = entry._pic; if (done) done(entry._pic); return; }
+  almanacQueue.push({ entry, img, done });
+  if (almanacPumping) return;
+  almanacPumping = true;
+  const step = () => {
+    const t0 = Date.now();
+    while (almanacQueue.length && Date.now() - t0 < 12) {
+      const job = almanacQueue.shift();
+      const pic = almanacPortrait(job.entry);
+      if (job.img) job.img.src = pic;
+      if (job.done) job.done(pic);
+    }
+    if (almanacQueue.length) requestAnimationFrame(step);
+    else almanacPumping = false;
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(step);
+  else while (almanacQueue.length) { const job = almanacQueue.shift(); const pic = almanacPortrait(job.entry); if (job.img) job.img.src = pic; }
+}
+
+function almanacCard(entry) {
+  const seen = almSeen(entry.id);
+  const b = document.createElement('button');
+  b.className = 'almCard' + (seen ? '' : ' locked');
+  b.dataset.alm = entry.id;
+  if (!seen) {
+    b.innerHTML = '<span class="almPic"><img alt="" src="' + almanacLockPlate() + '"></span>'
+      + '<span class="almName">? ? ?</span>'
+      + '<span class="almTag">Not yet seen</span>';
+  } else {
+    b.innerHTML = '<span class="almPic"><img alt="" src="' + almanacPlate(entry) + '"></span>'
+      + '<span class="almName">' + entry.name + '</span>'
+      + '<span class="almTag">' + entry.tag + '</span>';
+    almanacQueuePic(entry, b.querySelector('img'));
+  }
+  b.addEventListener('click', () => openAlmanacEntry(entry.id));
+  return b;
+}
+
+// where a thing is rumoured to be, written before you have ever seen it
+const ALM_HINT = {
+  'The dead': 'One of the dead that walks the four worlds. Go out and meet it.',
+  'The dimension': 'Something in the zombie dimension. It has a round of its own.',
+  'The bosses': 'Something with a health bar. Somewhere out there.',
+  'Heaven': 'Past the end of everything, on the other side of dying.',
+  'Things out there': 'An object you have not handled yet.'
+};
+
+function almanacRender() {
+  const list = document.getElementById('almanacList');
+  if (!list) return;
+  list.textContent = '';
+  for (const sec of almanacSections()) {
+    const known = sec.entries.filter(e => almSeen(e.id)).length;
+    const h = document.createElement('h3');
+    h.className = 'almHead';
+    h.textContent = sec.name + '  \u00b7  ' + known + ' / ' + sec.entries.length;
+    list.appendChild(h);
+    const grid = document.createElement('div');
+    grid.className = 'almGrid';
+    for (const e of sec.entries) grid.appendChild(almanacCard(e));
+    list.appendChild(grid);
+  }
+  const note = document.getElementById('almNote');
+  if (note) {
+    const k = almKnown(), n = ALMANAC.length;
+    note.textContent = 'Seen ' + k + ' of ' + n + '.  '
+      + (k >= n ? 'The book is complete.' : 'Anything you have not met is still a blank page.');
+  }
+}
+
+function buildAlmanac() {
+  const list = document.getElementById('almanacList');
+  const detail = document.getElementById('almanacDetail');
+  if (!list || !detail) return;
+  if (!almanacBuilt) { almanacBuilt = true; }
+  almanacRender();
+  almanacShowList();
+}
+
+function almanacShowList() {
+  const home = document.getElementById('almanacHome');
+  const detail = document.getElementById('almanacDetail');
+  if (!home || !detail) return;
+  detail.hidden = true;
+  home.hidden = false;
+}
+
+function openAlmanacEntry(id) {
+  const entry = ALMANAC.find(e => e.id === id);
+  const list = document.getElementById('almanacList');
+  const detail = document.getElementById('almanacDetail');
+  if (!entry || !list || !detail) return;
+  const home = document.getElementById('almanacHome');
+  if (home) home.hidden = true;
+  detail.hidden = false;
+
+  if (!almSeen(entry.id)) {
+    // a blank page: what it is, and where to go and find out
+    detail.innerHTML =
+      '<button class="almBack" type="button">&larr; all of them</button>'
+      + '<div class="almHero"><img alt="" src="' + almanacLockPlate() + '"></div>'
+      + '<h3 class="almTitle">? ? ?</h3>'
+      + '<p class="almWhere">' + entry.section.toUpperCase() + '  \u00b7  NOT YET SEEN</p>'
+      + '<h4>Rumoured to be</h4><p data-alm="where">' + (ALM_HINT[entry.section] || 'Somewhere out there.') + '</p>'
+      + '<h4>What it is</h4><p data-alm="text">Nothing yet. Get close enough to see it and the page fills itself in.</p>';
+    const b0 = detail.querySelector('.almBack');
+    if (b0) b0.addEventListener('click', almanacShowList);
+    detail.scrollTop = 0;
+    return;
+  }
+  const rows = almanacStatsRows(entry).map(r =>
+    '<div class="almStat"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>').join('');
+  detail.innerHTML =
+    '<button class="almBack" type="button">&larr; all of them</button>'
+    + '<div class="almHero"><img alt="" src="' + (entry._pic || almanacPlate(entry)) + '"></div>'
+    + '<h3 class="almTitle">' + entry.name + '</h3>'
+    + '<p class="almWhere">' + entry.tag + '</p>'
+    + '<div class="almStats">' + rows + '</div>'
+    + '<h4>Where it spawns</h4><p data-alm="where">' + entry.where + '</p>'
+    + '<h4>In the zombie dimension</h4><p data-alm="rounds">' + entry.rounds
+      + (entry.roundNote ? ' ' + entry.roundNote : '') + '</p>'
+    + '<h4>What it is</h4><p data-alm="text">' + entry.text + '</p>'
+    + '<h4>What to do about it</h4><p data-alm="tip">' + entry.tip + '</p>';
+
+  const back = detail.querySelector('.almBack');
+  if (back) back.addEventListener('click', almanacShowList);
+  const hero = detail.querySelector('.almHero img');
+  if (hero) almanacQueuePic(entry, null, pic => { hero.src = pic; });
+  detail.scrollTop = 0;
+}
+
+// the dimension's own little summary, used by the panel footer
+function almanacCount() { return ALMANAC.length; }

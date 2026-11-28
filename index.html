@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>THE GRID</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="vig"></div><div id="grain"></div>
+<div id="hint">WASD MOVE · SHIFT RUN · SPACE JUMP · E USE · CLICK SHOOT · Q / 1-3 WEAPON · ESC PAUSE</div>
+<div id="joy"><div id="knob"></div></div>
+<button id="pauseBtn" aria-label="Pause">II</button>
+<button id="jumpBtn" aria-label="Jump">JUMP</button>
+<div id="hurt"></div><div id="fade"></div><div id="stats"></div><div id="msg"></div><div id="cross"></div>
+<div id="cap"></div><div id="fps"></div>
+<div id="obj"><span id="objArrow">▲</span><span id="objText"></span></div>
+<div id="hordeTag">THE DEAD <b id="hordeNum">0</b></div>
+<div id="dmgDir"></div>
+<div id="ammoBox"><div id="ammoLabel">ROUNDS</div><div id="ammoNum">0</div><div id="ammoRow"></div></div>
+<div id="bossBar"><div id="bossName">THE TALL MAN</div><div id="bossTrack"><div id="bossGhost"></div><div id="bossFill"></div><div id="bossSeg"></div></div></div>
+<div id="dimRound"><b id="dimRoundNum">ROUND 1</b><span id="dimLeft"></span><span id="dimGear"></span></div>
+<button id="fireBtn" aria-label="Fire">FIRE</button>
+<button id="swapBtn" aria-label="Switch weapon">SWAP</button>
+<button id="prompt"></button>
+
+<div id="loreCard"><h3></h3><p></p></div>
+<div id="dimShop"><h2>THE DEAD FORGE</h2><div class="sh"></div><div id="dimShopRows"></div><button class="close" id="dimShopClose">CLOSE</button></div>
+<div id="nuke"></div>
+<div id="forge"><h2>THE FORGE</h2><div class="sh"></div><div id="forgeRows"></div><button class="close" id="forgeClose">CLOSE</button></div>
+<div id="endWrap"><div class="card">
+  <h1>YOU ESCAPED</h1>
+  <div class="sub" id="endSub">THE GRID LETS GO. IT DOES NOT LET GO FOR LONG.</div>
+  <div id="endStats"></div>
+  <button id="endNext">BEGIN A NEW CYCLE</button>
+  <button id="endStay">KEEP WANDERING</button>
+</div></div>
+<div id="menu">
+  <div class="menuShell">
+    <div class="menuCol brandCol">
+      <div class="brand">
+        <h1 id="menuTitle" data-text="THE GRID" class="logo">THE GRID</h1>
+        <p id="menuSub" class="tagline">DO NOT STOP WALKING</p>
+        <span class="dlcBadge">Zombie DLC</span>
+      </div>
+      <nav class="nav" id="nav">
+        <button id="resume" class="navBtn primary">ENTER THE GRID</button>
+        <button id="navHow" class="navBtn">How to play</button>
+        <button id="navStatus" class="navBtn">Status</button>
+        <button id="navDim" class="navBtn">Zombie dimension</button>
+        <button id="navAlmanac" class="navBtn">Almanac</button>
+        <button id="navWorlds" class="navBtn">Worlds</button>
+        <button id="navSettings" class="navBtn">Settings</button>
+        <button id="navCredits" class="navBtn">Credits</button>
+      </nav>
+      <p class="keys">WASD move &middot; Shift run &middot; Space jump &middot; E use &middot; Click shoot &middot; Q swap &middot; P pause</p>
+    </div>
+    <aside class="menuCol cardCol">
+      <div class="saveCard">
+        <h2>Walker file</h2>
+        <dl class="saveGrid">
+          <dt>World</dt><dd id="statWorld">&mdash;</dd>
+          <dt>Shards</dt><dd id="statShards">0</dd>
+          <dt>Lore</dt><dd id="statLore">0/12</dd>
+          <dt>Kills</dt><dd id="statKills">0</dd>
+          <dt>Cycle</dt><dd id="statCycle">1</dd>
+        </dl>
+        <div class="cardFoot"><span id="saveMeta">NO SAVE</span><span class="ver">V0.4</span></div>
+        <button id="wipe" class="wipeBtn">Start over — erase save</button>
+      </div>
+    </aside>
+  </div>
+
+  <section class="panel wide" id="panelAlmanac">
+    <header><h2>Almanac</h2><button class="panelClose" aria-label="Close">&#10005;</button></header>
+    <div class="panelBody">
+      <div id="almanacHome">
+        <div id="almanacList"></div>
+        <p class="note" id="almNote">Everything out there, and what it does to you. Click one.</p>
+      </div>
+      <div id="almanacDetail" hidden></div>
+    </div>
+  </section>
+
+  <section class="panel" id="panelWorlds">
+    <header><h2>Worlds</h2><button class="panelClose" aria-label="Close">✕</button></header>
+    <div class="panelBody">
+      <div id="warp"></div>
+      <p class="note">Each world unlocks when you reach it.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="panelSettings">
+    <header><h2>Settings</h2><button class="panelClose" aria-label="Close">✕</button></header>
+    <div class="panelBody">
+      <label for="sens">Look speed</label><input type="range" id="sens" min="0.4" max="2.5" step="0.1" value="1">
+      <label for="fov">Field of view</label><input type="range" id="fov" min="60" max="100" step="1" value="72">
+      <label for="vol">Volume</label><input type="range" id="vol" min="0" max="1" step="0.05" value="1">
+      <label class="chk"><input type="checkbox" id="invY"> Invert look</label>
+      <label class="chk"><input type="checkbox" id="bobT" checked> Head bob</label>
+      <label class="chk"><input type="checkbox" id="grainT" checked> Film grain</label>
+      <div id="settingsBox"></div>
+      <button id="fs">Fullscreen</button>
+      <button id="wipe2" class="wipeBtn">Start over — erase save</button>
+    </div>
+  </section>
+
+  <section class="panel" id="panelHow">
+    <header><h2>How to play</h2><button class="panelClose" aria-label="Close">&#10005;</button></header>
+    <div class="panelBody">
+      <dl class="credits">
+        <dt>Move</dt><dd>W A S D</dd>
+        <dt>Run</dt><dd>Shift</dd>
+        <dt>Jump</dt><dd>Space</dd>
+        <dt>Interact / forge</dt><dd>E</dd>
+        <dt>Shoot</dt><dd>Left click</dd>
+        <dt>Weapons</dt><dd>1 / 2 / 3, Q to cycle</dd>
+        <dt>Knife</dt><dd>V — one second, arm's length, no ammo</dd>
+        <dt>Pause</dt><dd>P</dd>
+        <dt>Mute</dt><dd>M</dd>
+      </dl>
+      <p class="note">Death is not the end. You keep every shard, every lore fragment and every upgrade — go back to the forge and spend them.</p>
+      <p class="note">Each world ends with something that wants you dead. The tether nodes are the only way forward.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="panelStatus">
+    <header><h2>Status</h2><button class="panelClose" aria-label="Close">&#10005;</button></header>
+    <div class="panelBody" id="statusBody"></div>
+  </section>
+
+  <section class="panel" id="panelCredits">
+    <header><h2>Credits</h2><button class="panelClose" aria-label="Close">✕</button></header>
+    <div class="panelBody">
+      <p class="note">A first-person horror walk in four worlds. Everything you see and hear is generated at runtime — there is not a single image or sound file in the game.</p>
+      <dl class="credits">
+        <dt>Original game</dt><dd>turboestel-design</dd>
+        <dt>Built with</dt><dd>Claude</dd>
+        <dt>Extended in</dt><dd>Arena Agent Mode</dd>
+        <dt>Engine</dt><dd>Three.js r128</dd>
+        <dt>Audio</dt><dd>Procedural WebAudio</dd>
+      </dl>
+    </div>
+  </section>
+</div>
+<script src="vendor/three.min.js"></script>
+<script src="js/00-core.js"></script>
+<script src="js/10-forest.js"></script>
+<script src="js/15-hud.js"></script>
+<script src="js/20-heaven.js"></script>
+<script src="js/25-tall-man.js"></script>
+<script src="js/30-world-2-glow.js"></script>
+<script src="js/35-gun.js"></script>
+<script src="js/36-knife.js"></script>
+<script src="js/40-weapons.js"></script>
+<script src="js/45-world-3-ash.js"></script>
+<script src="js/50-world-4-eclipse.js"></script>
+<script src="js/52-zombie-dimension.js"></script>
+<script src="js/53-dim-atmos.js"></script>
+<script src="js/55-pickups.js"></script>
+<script src="js/57-dim-shop.js"></script>
+<script src="js/60-enemies.js"></script>
+<script src="js/61-shards.js"></script>
+<script src="js/62-forge.js"></script>
+<script src="js/64-dim-mobs.js"></script>
+<script src="js/65-dim-visitors.js"></script>
+<script src="js/63-lore.js"></script>
+<script src="js/64-interact.js"></script>
+<script src="js/66-gore.js"></script>
+<script src="js/67-almanac.js"></script>
+<script src="js/70-combat-realms.js"></script>
+<script src="js/75-qol.js"></script>
+<script src="js/80-settings.js"></script>
+<script src="js/85-input.js"></script>
+<script src="js/90-audio.js"></script>
+<script src="js/95-pause.js"></script>
+<script src="js/99-loop.js"></script>
+</body>
+</html>
