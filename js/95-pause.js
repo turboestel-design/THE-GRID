@@ -3,7 +3,7 @@
    index.html. Splitting this file cannot change behaviour. */
 // ---- Menu ----
 const menu = document.getElementById('menu');
-const PANELS = ['panelWorlds', 'panelSettings', 'panelCredits', 'panelHow', 'panelStatus'];
+const PANELS = ['panelWorlds', 'panelSettings', 'panelCredits', 'panelHow', 'panelStatus', 'panelAlmanac'];
 let started = false;                       // true once the player has entered the game
 
 function closePanels() {
@@ -15,6 +15,7 @@ function anyPanelOpen() {
 function openPanel(id) {
   closePanels();
   if (id === 'panelStatus') buildStatus();
+  if (id === 'panelAlmanac' && typeof buildAlmanac === 'function') buildAlmanac();
   document.getElementById(id).classList.add('open');
 }
 
@@ -64,7 +65,7 @@ function menuMeta() {
 }
 
 // ---- keyboard selection over the main menu ----
-const NAV_IDS = ['resume', 'navHow', 'navStatus', 'navDim', 'navWorlds', 'navSettings', 'navCredits'];
+const NAV_IDS = ['resume', 'navHow', 'navStatus', 'navDim', 'navAlmanac', 'navWorlds', 'navSettings', 'navCredits'];
 let navSel = 0;
 function navBtns() {
   return NAV_IDS.map(id => document.getElementById(id)).filter(b => b && !b.hidden);
@@ -131,6 +132,7 @@ document.getElementById('navDim').addEventListener('click', () => {
   if (!hasGun) pickGun();
   setTimeout(enterDimension, 80);
 });
+document.getElementById('navAlmanac').addEventListener('click', () => openPanel('panelAlmanac'));
 document.getElementById('navWorlds').addEventListener('click', () => openPanel('panelWorlds'));
 document.getElementById('navSettings').addEventListener('click', () => openPanel('panelSettings'));
 document.getElementById('navCredits').addEventListener('click', () => openPanel('panelCredits'));

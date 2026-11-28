@@ -460,6 +460,46 @@ run('knife:range', `(() => {
   for (let i = 0; i < 40; i++) updateKnife(0.016);
   return [far.hp === 10, back.hp === 10];
 })()`);
+run('almanac:open', `(() => {
+  setPaused(true); openPanel('panelAlmanac');
+  const list = document.getElementById('almanacList');
+  return [document.getElementById('panelAlmanac').classList.contains('open'), almanacBuilt,
+    list.querySelectorAll('.almCard').length, list.querySelectorAll('.almHead').length, list.querySelectorAll('img').length];
+})()`);
+run('almanac:entries', `(() => {
+  const bad = [];
+  for (const e of ALMANAC) {
+    if (!almanacStatsRows(e).length) bad.push(e.id + ':stats');
+    if (typeof e.rounds !== 'string' || !e.rounds) bad.push(e.id + ':rounds');
+    if (!e.where || !e.text || !e.tip) bad.push(e.id + ':text');
+    if (!almanacPortrait(e)) bad.push(e.id + ':pic');
+  }
+  return [ALMANAC.length, bad.length, almanacSections().length];
+})()`);
+run('almanac:rounds-live', `(() => {
+  const out = [];
+  for (const e of ALMANAC) {
+    const m = /round (\d+)/.exec(e.rounds);
+    if (m && DIM_UNLOCK[e.id] != null) out.push(Number(m[1]) === DIM_UNLOCK[e.id]);
+  }
+  return [out.length, out.every(Boolean), dimKingRound(20), dimKingRound(30), !dimKingRound(15)];
+})()`);
+run('almanac:detail', `(() => {
+  openAlmanacEntry('brute');
+  const d = document.getElementById('almanacDetail');
+  const q = k => (d.querySelector('[data-alm="' + k + '"]') || {}).textContent;
+  return [d.hidden === false, document.getElementById('almanacHome').hidden,
+    d.querySelector('.almTitle').textContent, d.querySelectorAll('.almStat').length,
+    q('rounds') === 'Starts at round 9. Two at most in a wave.', !!d.querySelector('.almHero img').src,
+    q('where').length > 10 && q('tip').length > 20];
+})()`);
+run('almanac:back', `(() => {
+  document.querySelector('#almanacDetail .almBack').click();
+  const r = [document.getElementById('almanacDetail').hidden, !document.getElementById('almanacHome').hidden];
+  closePanels();
+  return r;
+})()`);
+run('almanac:nav', `(() => { setPaused(true); selectNav(4); const id = navBtns()[navSel].id; closePanels(); return id; })()`);
 run('knife:dimension', `(() => {
   setRealm(5); paused = false; dead = false;
   camera.position.set(ZX, EYE, 14); yaw = 0;
