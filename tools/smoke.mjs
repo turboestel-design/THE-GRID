@@ -375,3 +375,13 @@ run('knife:dimension', `(() => {
   clearDimensionMobs(); setRealm(1);
   return [m.hp < 30, m.hp > 20];
 })()`);
+run('knife:hides-gun', '(() => { setRealm(1); paused = false; dead = false; heaven = false; hasGun = true; gunView.visible = true; '
+  + 'for (let i = 0; i < 90; i++) updateKnife(0.016); knifeCd = 0; knifeStab(); '
+  + 'for (let i = 0; i < 20; i++) updateKnife(0.016); return [gunView.visible, knifeView.visible]; })()');
+run('knife:restores-gun', '(() => { for (let i = 0; i < 60; i++) updateKnife(0.016); '
+  + 'return [gunView.visible, knifeView.visible]; })()');
+run('knife:arm', '(() => { const cy = knifeArm.children.filter(c => c.geometry && c.geometry.type === "CylinderGeometry"); '
+  + 'return [cy.length, cy.some(c => c.geometry.parameters.height > 0.5), knifeArm.children.length >= 5]; })()');
+run('knife:no-gun-restore', '(() => { hasGun = false; gunView.visible = false; for (let i = 0; i < 90; i++) updateKnife(0.016); '
+  + 'knifeCd = 0; knifeStab(); for (let i = 0; i < 80; i++) updateKnife(0.016); const r = gunView.visible; '
+  + 'hasGun = true; gunView.visible = true; return r === false; })()');
