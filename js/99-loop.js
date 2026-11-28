@@ -89,6 +89,7 @@ function loop(){
   updateHorde(dt); updateHordeLord(dt); updateGore(dt); updateDimension(dt); updateHouse(dt);
   if (firing && WEAPONS[cur].auto) shoot();
   updateQoL(dt);
+  if (typeof updateKnife === 'function') updateKnife(dt);
   if (typeof updateDimGearFx === 'function') updateDimGearFx(dt);
   const rc = settings.recoil ? 1 : 0; gunView.position.z = -0.45 + recoil*0.1*rc; gunView.rotation.x = recoil*0.25*rc;
   muzzle.intensity = flashT > 0 ? 6*(settings.reduceFlash ? 0.3 : 1) : 0; flashT -= dt;

@@ -45,6 +45,7 @@ js/
   25-tall-man.js        boss: THE TALL MAN
   30-world-2-glow.js    world 2 scenery + boss: THE BLOOM
   35-gun.js             pistol view model + the shared raycaster
+  36-knife.js           the V knife: blade, one-second swing, one hit at arm's length
   40-weapons.js         weapon table, switching, ammo, gunshot audio
   45-world-3-ash.js     world 3 scenery + Cinder Hounds
   50-world-4-eclipse.js world 4 arena + boss: THE HOLLOW KING

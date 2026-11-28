@@ -340,3 +340,38 @@ if (errors.length) {
 } else {
   console.log('PASS — 4 realms, 3 weapons, 4 enemy types, horde, gore, the Congregation, the Zombie Dimension, house upgrades, interior, sitting and lying, house hitboxes, walls stop the dead, forge, lore, shards, checkpoint death, NG+ all OK');
 }
+run('knife:press', '(() => { setRealm(1); paused = false; dead = false; heaven = false; '
+  + 'for (let i = 0; i < 90; i++) updateKnife(0.016); const before = knifeView.visible; '
+  + 'document.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyV" })); '
+  + 'return [before, knifeView.visible, knifeT > 0]; })()');
+run('knife:one-second', '(() => { for (let i = 0; i < 50; i++) updateKnife(0.016); const mid = knifeT > 0; '
+  + 'for (let i = 0; i < 30; i++) updateKnife(0.016); return [mid, knifeT <= 0, knifeView.visible]; })()');
+run('knife:hits', `(() => {
+  setRealm(1); paused = false; dead = false;
+  camera.position.set(0, EYE, 0); yaw = 0; pitch = 0;
+  const m = makeMob('zombie', 0, -1.6, 1); m.rise = 0; m.hp = m.max = 10;
+  for (let i = 0; i < 90; i++) updateKnife(0.016);
+  knifeCd = 0; knifeStab();
+  for (let i = 0; i < 40; i++) updateKnife(0.016);
+  return [m.hp < 10, m.hp > 6];
+})()`);
+run('knife:range', `(() => {
+  for (let i = 0; i < 90; i++) updateKnife(0.016);
+  const far = makeMob('zombie', 0, -6, 1); far.rise = 0; far.hp = far.max = 10;
+  knifeCd = 0; knifeStab();
+  for (let i = 0; i < 40; i++) updateKnife(0.016);
+  const back = makeMob('zombie', 0, 1.4, 1); back.rise = 0; back.hp = back.max = 10;
+  knifeCd = 0; knifeStab();
+  for (let i = 0; i < 40; i++) updateKnife(0.016);
+  return [far.hp === 10, back.hp === 10];
+})()`);
+run('knife:dimension', `(() => {
+  setRealm(5); paused = false; dead = false;
+  camera.position.set(ZX, EYE, 14); yaw = 0;
+  const m = dimMakeMob('crawler', ZX, 12.6); m.hp = m.max = 30;
+  for (let i = 0; i < 90; i++) updateKnife(0.016);
+  knifeCd = 0; knifeStab();
+  for (let i = 0; i < 40; i++) updateKnife(0.016);
+  clearDimensionMobs(); setRealm(1);
+  return [m.hp < 30, m.hp > 20];
+})()`);

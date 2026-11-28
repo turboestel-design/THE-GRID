@@ -363,3 +363,52 @@ function rattleSound(x, z) {
     s.start(t, Math.random() * 1.5, 0.09);
   }
 }
+
+// ---- the knife -------------------------------------------------------------
+function knifeSound() {
+  if (!ac || !whiteBuf) return;
+  const t = ac.currentTime;
+  const s = ac.createBufferSource(); s.buffer = whiteBuf; s.loop = true;
+  const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.6;
+  f.frequency.setValueAtTime(700, t); f.frequency.exponentialRampToValueAtTime(3400, t + 0.13);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.2, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+  s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + 0.2);
+  const o = ac.createOscillator(); o.type = 'triangle';
+  o.frequency.setValueAtTime(3300, t); o.frequency.exponentialRampToValueAtTime(2200, t + 0.07);
+  const og = ac.createGain();
+  og.gain.setValueAtTime(0.0001, t); og.gain.linearRampToValueAtTime(0.05, t + 0.008);
+  og.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+  o.connect(og); og.connect(master); o.start(t); o.stop(t + 0.12);
+}
+function knifeHitSound(vol) {
+  if (!ac || !whiteBuf) return;
+  const v = vol == null ? 0.8 : vol, t = ac.currentTime;
+  // the punch through
+  const s = ac.createBufferSource(); s.buffer = whiteBuf;
+  const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 480;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.75 * v, t + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+  s.connect(f); f.connect(g); g.connect(master); s.start(t, Math.random() * 0.5, 0.2);
+  // and the wet part
+  const s2 = ac.createBufferSource(); s2.buffer = whiteBuf; s2.loop = true;
+  const f2 = ac.createBiquadFilter(); f2.type = 'bandpass'; f2.Q.value = 3.5;
+  f2.frequency.setValueAtTime(1500, t + 0.02); f2.frequency.exponentialRampToValueAtTime(500, t + 0.22);
+  const g2 = ac.createGain();
+  g2.gain.setValueAtTime(0.0001, t + 0.02); g2.gain.linearRampToValueAtTime(0.22 * v, t + 0.05);
+  g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.26);
+  s2.connect(f2); f2.connect(g2); g2.connect(master); s2.start(t + 0.02); s2.stop(t + 0.3);
+}
+function knifeMissSound() {
+  if (!ac || !whiteBuf) return;
+  const t = ac.currentTime;
+  const s = ac.createBufferSource(); s.buffer = whiteBuf; s.loop = true;
+  const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 2.2;
+  f.frequency.setValueAtTime(2400, t); f.frequency.exponentialRampToValueAtTime(900, t + 0.18);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.09, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+  s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + 0.24);
+}
