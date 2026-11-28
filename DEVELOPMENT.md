@@ -6,7 +6,7 @@ A first-person horror shooter that runs from a single HTML file. No image or aud
 step — every texture, sound and enemy is generated at runtime, and Three.js is vendored so it works
 completely offline.
 
-**Play:** open `index.html`, or `npm start` and open <http://localhost:8000>.
+**Play:** open `index.html`, or `npm start` and open <http://localhost:3000>.
 
 ```
 WASD      move            CLICK   shoot          E    interact
@@ -87,7 +87,7 @@ if you reorder, run `npm test`.
 npm install
 npm test                # headless regression suite (all realms, weapons, bosses, forge, lore, NG+)
 npm run build           # bundles everything into dist/the-grid.html (single file)
-npm start               # static server on :8000
+npm start               # static server on :3000
 ```
 
 `tools/smoke.mjs` boots the real game in jsdom with Three.js and stubbed WebGL, then drives every

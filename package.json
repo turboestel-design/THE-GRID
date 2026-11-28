@@ -4,7 +4,7 @@
   "description": "THE GRID \u2014 a single-file browser FPS. Four worlds, a forge, and a tall man.",
   "private": true,
   "scripts": {
-    "start": "python3 -m http.server 8000",
+    "start": "python3 -m http.server 3000 --bind 0.0.0.0",
     "test": "node tools/smoke.mjs",
     "build": "node tools/build.mjs"
   },
