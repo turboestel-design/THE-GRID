@@ -9,7 +9,7 @@ let hasGun = false, ammo = 0, health = 100, dead = false, won = false, heaven = 
 let maxHp = 100, shards = 0, kills = 0, deathRealm = 1, runT = 0, loreFound = 0;
 const up = {damage: 0, vitality: 0, swift: 0};
 // Declared early because the Tall Man is spawned before the campaign block loads.
-let progress = {max: 1, owned: {pistol: false, shotgun: false, rifle: false}, cycle: 0, lore: {}};
+let progress = {max: 1, owned: {pistol: false, shotgun: false, rifle: false}, cycle: 0, lore: {}, alm: {}};
 let shootCd = 0, recoil = 0, flashT = 0, hurtFlash = 0, camGround = 0, droneGain = null, padGain = null;
 function say(t, ms){ msgEl.textContent = t; msgEl.style.opacity = 1; clearTimeout(say.t); say.t = setTimeout(() => { msgEl.style.opacity = 0; }, ms || 2500); }
 const ammoBox = document.getElementById('ammoBox'), ammoNum = document.getElementById('ammoNum'), ammoRow = document.getElementById('ammoRow');

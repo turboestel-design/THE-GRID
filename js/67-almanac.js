@@ -43,6 +43,14 @@ function almanacPlate(entry) {
     + ch + '</text></svg>');
 }
 
+function almanacLockPlate() {
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240">'
+    + '<rect width="240" height="240" fill="#070505"/>'
+    + '<text x="120" y="156" font-family="Courier New,monospace" font-size="96" fill="#2c1a16" text-anchor="middle">?</text>'
+    + '<rect x="10" y="10" width="220" height="220" fill="none" stroke="#1b100d"/></svg>');
+}
+
 function almanacPortrait(entry) {
   if (entry._pic) return entry._pic;
   const r = almanacRenderer();
@@ -480,11 +488,11 @@ const ALMANAC = [
     id: 'rift', name: 'THE RIFT', tag: 'THE WAY ON', section: 'Things out there',
     model: ALM_MODEL.rift,
     stats: () => [['LEADS TO', 'the zombie dimension'], ['LOCKED UNTIL', 'all four worlds are cleared']],
-    where: 'World 1, in the forest, a little way from where you start.',
-    rounds: 'Standing in it starts the rounds. Round 1 begins the moment you walk through.',
+    where: 'Inside the zombie dimension — you arrive standing in front of it, and it is the door back out.',
+    rounds: 'Standing in it stops the rounds and puts you back in the world you came from.',
     text: 'Two pillars and an arch of bone with a veil of red hanging in it. Something on the other side has been '
       + 'waiting for the door to be worth opening.',
-    tip: 'It is inside the forest from the beginning. It will not let you in until you have finished all four worlds.'
+    tip: 'It only exists in the dimension, and you are already standing in it when the rounds start. Do not mistake it for a way deeper in.'
   },
   {
     id: 'house', name: 'THE SHELTER', tag: 'YOURS', section: 'Things out there',
@@ -497,6 +505,82 @@ const ALMANAC = [
     tip: 'Upgrade it before you spend on weapons. The health it gives you is health you keep in every world.'
   }
 ];
+
+// ---- what you have actually met --------------------------------------------
+// nothing is written in the book until you have seen it: a thing is written down
+// the first time it is close enough to be in front of you, or the first time you
+// stand in a place that belongs to it.
+function almSeen(id) {
+  return !!(progress && progress.alm && progress.alm[id]);
+}
+function almKnown() {
+  return ALMANAC.filter(e => almSeen(e.id)).length;
+}
+function almMark(id, quiet) {
+  if (!ALMANAC.some(e => e.id === id)) return false;
+  if (!progress.alm) progress.alm = {};
+  if (progress.alm[id]) return false;
+  progress.alm[id] = 1;
+  const e = ALMANAC.find(x => x.id === id);
+  // if the book is open in front of you, redraw it so the page fills itself in
+  const panel = document.getElementById('panelAlmanac');
+  if (almanacBuilt && panel && panel.classList.contains('open')) almanacRender();
+  if (!quiet && e && typeof say === 'function') {
+    say('ALMANAC  \u00b7  ' + e.name + ' WRITTEN DOWN', 1900);
+    if (typeof sweepTone === 'function') sweepTone(760, 980, 0.1, 0.14, 'sine');
+  }
+  if (typeof saveAll === 'function') saveAll();
+  return true;
+}
+
+// what a mob is called in the book, when the two names do not match
+const ALM_FROM_KIND = { hollow_king: 'boss_king' };
+
+// one sweep a frame: whatever is in front of you gets written down
+function almanacScan() {
+  if (typeof paused !== 'undefined' && paused) return;
+  if (typeof dead !== 'undefined' && dead) return;
+  const px = camera.position.x, pz = camera.position.z;
+  const near = (x, z, r) => Math.hypot(x - px, z - pz) < r;
+
+  if (typeof heaven !== 'undefined' && heaven) { almMark('angel_heaven'); almMark('heaven'); }
+  if (typeof mobs !== 'undefined') {
+    for (const m of mobs) {
+      if (!m.alive || m.realm !== realm) continue;
+      if (!near(m.g.position.x, m.g.position.z, 46)) continue;
+      almMark(ALM_FROM_KIND[m.kind] || m.kind);
+    }
+  }
+  // the bosses, each in their own world
+  if (realm === 1 && typeof manAlive !== 'undefined' && manAlive && near(man.position.x, man.position.z, 55)) almMark('boss_man');
+  if (realm === 2 && typeof beastAlive !== 'undefined' && beastAlive && near(beast.position.x, beast.position.z, 55)) almMark('boss_bloom');
+  if (realm === 3 && typeof hounds !== 'undefined') {
+    for (const h of hounds) if (h.alive && near(h.g.position.x, h.g.position.z, 55)) { almMark('boss_hounds'); break; }
+  }
+  if (realm === 4 && typeof kingAlive !== 'undefined' && kingAlive && near(king.position.x, king.position.z, 55)) almMark('boss_king');
+  if (typeof lord !== 'undefined' && lord && lord.alive && near(lord.g.position.x, lord.g.position.z, 55)) almMark('boss_lord');
+
+  // the place you go when you die
+  if (typeof heavenGroup !== 'undefined' && heavenGroup.visible) { almMark('angel_heaven'); almMark('heaven'); }
+
+  // things lying about
+  if (typeof items !== 'undefined') {
+    for (const it of items) {
+      if (!it.g.visible) continue;
+      if (it.group && !it.group.visible) continue;
+      if (!near(it.wx, it.wz, 9)) continue;
+      almMark(it.kind === 'ammo' ? 'ammo' : it.kind === 'health' ? 'health' : 'ammo');
+    }
+  }
+  if (typeof shards !== 'undefined' && (shards > 0 || kills > 0)) almMark('shard');
+  if (typeof portalA !== 'undefined') {
+    for (const p of [portalA, portalB, portalC]) {
+      if (p && p.visible && near(p.position.x, p.position.z, 26)) { almMark('portal'); break; }
+    }
+  }
+  if (realm === 5 && typeof ZX !== 'undefined' && near(ZX, 14, 22)) almMark('rift');
+  if (realm === 1 && !heaven && near(0, -12, 26)) almMark('house');
+}
 
 // ---- the book itself -------------------------------------------------------
 let almanacBuilt = false;
@@ -542,35 +626,62 @@ function almanacQueuePic(entry, img, done) {
 }
 
 function almanacCard(entry) {
+  const seen = almSeen(entry.id);
   const b = document.createElement('button');
-  b.className = 'almCard';
+  b.className = 'almCard' + (seen ? '' : ' locked');
   b.dataset.alm = entry.id;
-  b.innerHTML = '<span class="almPic"><img alt="" src="' + almanacPlate(entry) + '"></span>'
-    + '<span class="almName">' + entry.name + '</span>'
-    + '<span class="almTag">' + entry.tag + '</span>';
-  const img = b.querySelector('img');
-  almanacQueuePic(entry, img);
+  if (!seen) {
+    b.innerHTML = '<span class="almPic"><img alt="" src="' + almanacLockPlate() + '"></span>'
+      + '<span class="almName">? ? ?</span>'
+      + '<span class="almTag">Not yet seen</span>';
+  } else {
+    b.innerHTML = '<span class="almPic"><img alt="" src="' + almanacPlate(entry) + '"></span>'
+      + '<span class="almName">' + entry.name + '</span>'
+      + '<span class="almTag">' + entry.tag + '</span>';
+    almanacQueuePic(entry, b.querySelector('img'));
+  }
   b.addEventListener('click', () => openAlmanacEntry(entry.id));
   return b;
 }
 
-function buildAlmanac() {
+// where a thing is rumoured to be, written before you have ever seen it
+const ALM_HINT = {
+  'The dead': 'One of the dead that walks the four worlds. Go out and meet it.',
+  'The dimension': 'Something in the zombie dimension. It has a round of its own.',
+  'The bosses': 'Something with a health bar. Somewhere out there.',
+  'Heaven': 'Past the end of everything, on the other side of dying.',
+  'Things out there': 'An object you have not handled yet.'
+};
+
+function almanacRender() {
   const list = document.getElementById('almanacList');
-  const detail = document.getElementById('almanacDetail');
-  if (!list || !detail) return;
-  if (almanacBuilt) { almanacShowList(); return; }
+  if (!list) return;
   list.textContent = '';
   for (const sec of almanacSections()) {
+    const known = sec.entries.filter(e => almSeen(e.id)).length;
     const h = document.createElement('h3');
     h.className = 'almHead';
-    h.textContent = sec.name;
+    h.textContent = sec.name + '  \u00b7  ' + known + ' / ' + sec.entries.length;
     list.appendChild(h);
     const grid = document.createElement('div');
     grid.className = 'almGrid';
     for (const e of sec.entries) grid.appendChild(almanacCard(e));
     list.appendChild(grid);
   }
-  almanacBuilt = true;
+  const note = document.getElementById('almNote');
+  if (note) {
+    const k = almKnown(), n = ALMANAC.length;
+    note.textContent = 'Seen ' + k + ' of ' + n + '.  '
+      + (k >= n ? 'The book is complete.' : 'Anything you have not met is still a blank page.');
+  }
+}
+
+function buildAlmanac() {
+  const list = document.getElementById('almanacList');
+  const detail = document.getElementById('almanacDetail');
+  if (!list || !detail) return;
+  if (!almanacBuilt) { almanacBuilt = true; }
+  almanacRender();
   almanacShowList();
 }
 
@@ -587,6 +698,24 @@ function openAlmanacEntry(id) {
   const list = document.getElementById('almanacList');
   const detail = document.getElementById('almanacDetail');
   if (!entry || !list || !detail) return;
+  const home = document.getElementById('almanacHome');
+  if (home) home.hidden = true;
+  detail.hidden = false;
+
+  if (!almSeen(entry.id)) {
+    // a blank page: what it is, and where to go and find out
+    detail.innerHTML =
+      '<button class="almBack" type="button">&larr; all of them</button>'
+      + '<div class="almHero"><img alt="" src="' + almanacLockPlate() + '"></div>'
+      + '<h3 class="almTitle">? ? ?</h3>'
+      + '<p class="almWhere">' + entry.section.toUpperCase() + '  \u00b7  NOT YET SEEN</p>'
+      + '<h4>Rumoured to be</h4><p data-alm="where">' + (ALM_HINT[entry.section] || 'Somewhere out there.') + '</p>'
+      + '<h4>What it is</h4><p data-alm="text">Nothing yet. Get close enough to see it and the page fills itself in.</p>';
+    const b0 = detail.querySelector('.almBack');
+    if (b0) b0.addEventListener('click', almanacShowList);
+    detail.scrollTop = 0;
+    return;
+  }
   const rows = almanacStatsRows(entry).map(r =>
     '<div class="almStat"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>').join('');
   detail.innerHTML =
@@ -600,9 +729,7 @@ function openAlmanacEntry(id) {
       + (entry.roundNote ? ' ' + entry.roundNote : '') + '</p>'
     + '<h4>What it is</h4><p data-alm="text">' + entry.text + '</p>'
     + '<h4>What to do about it</h4><p data-alm="tip">' + entry.tip + '</p>';
-  detail.hidden = false;
-  const home = document.getElementById('almanacHome');
-  if (home) home.hidden = true;
+
   const back = detail.querySelector('.almBack');
   if (back) back.addEventListener('click', almanacShowList);
   const hero = detail.querySelector('.almHero img');

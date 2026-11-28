@@ -461,10 +461,12 @@ run('knife:range', `(() => {
   return [far.hp === 10, back.hp === 10];
 })()`);
 run('almanac:open', `(() => {
+  progress.alm = {};
   setPaused(true); openPanel('panelAlmanac');
   const list = document.getElementById('almanacList');
   return [document.getElementById('panelAlmanac').classList.contains('open'), almanacBuilt,
-    list.querySelectorAll('.almCard').length, list.querySelectorAll('.almHead').length, list.querySelectorAll('img').length];
+    list.querySelectorAll('.almCard').length, list.querySelectorAll('.almHead').length,
+    list.querySelectorAll('.almCard.locked').length, almKnown()];
 })()`);
 run('almanac:entries', `(() => {
   const bad = [];
@@ -479,35 +481,65 @@ run('almanac:entries', `(() => {
 run('almanac:rounds-live', `(() => {
   const out = [];
   for (const e of ALMANAC) {
-    const m = /round (\d+)/.exec(e.rounds);
-    if (m && DIM_UNLOCK[e.id] != null) out.push(Number(m[1]) === DIM_UNLOCK[e.id]);
+    if (DIM_UNLOCK[e.id] != null) out.push(e.rounds.indexOf('round ' + DIM_UNLOCK[e.id]) >= 0);
   }
   return [out.length, out.every(Boolean), dimKingRound(20), dimKingRound(30), !dimKingRound(15)];
 })()`);
-run('almanac:detail', `(() => {
+run('almanac:locked', `(() => {
+  progress.alm = {};
   openAlmanacEntry('brute');
   const d = document.getElementById('almanacDetail');
-  const q = k => (d.querySelector('[data-alm="' + k + '"]') || {}).textContent;
-  return [d.hidden === false, document.getElementById('almanacHome').hidden,
-    d.querySelector('.almTitle').textContent, d.querySelectorAll('.almStat').length,
-    q('rounds') === 'Starts at round 9. Two at most in a wave.', !!d.querySelector('.almHero img').src,
-    q('where').length > 10 && q('tip').length > 20];
+  const t = d.querySelector('.almTitle').textContent;
+  const hint = d.querySelector('[data-alm="where"]').textContent;
+  const back = d.querySelector('.almBack'); if (back) back.click();
+  return [t === '? ? ?', !/BRUTE/.test(hint), d.hidden, almKnown()];
 })()`);
-run('almanac:heaven', `(() => {
-  const a = ALMANAC.find(e => e.id === 'angel_heaven'), h = ALMANAC.find(e => e.id === 'heaven');
-  const secs = almanacSections().map(s => s.name);
-  openAlmanacEntry('angel_heaven');
+run('almanac:scan', `(() => {
+  progress.alm = {};
+  clearDimensionMobs(); setRealm(5); paused = false; dead = false;
+  camera.position.set(ZX, 1.65, 14);
+  const far = dimMakeMob('angel', ZX + 400, 400);
+  const near = dimMakeMob('brute', ZX + 3, 18);
+  almanacScan();
+  const a = [almSeen('brute'), almSeen('angel')];
+  hurtMob(far, 9999); clearDimensionMobs();
+  return a;
+})()`);
+run('almanac:unlock', `(() => {
+  progress.alm = {};
+  almMark('brute', true);
+  const list = document.getElementById('almanacList');
+  const card = [...list.querySelectorAll('.almCard')].find(c => c.dataset.alm === 'brute');
+  openAlmanacEntry('brute');
   const d = document.getElementById('almanacDetail');
-  return [!!a, !!h, secs.includes('Heaven'), d.querySelector('.almTitle').textContent === 'THE ANGELS',
-    d.querySelectorAll('.almStat').length >= 3, !!a.model(), people.length];
-})()`);
-run('almanac:back', `(() => {
-  document.querySelector('#almanacDetail .almBack').click();
-  const r = [document.getElementById('almanacDetail').hidden, !document.getElementById('almanacHome').hidden];
-  closePanels();
+  const r = [card && !card.classList.contains('locked'), d.querySelector('.almTitle').textContent === 'BRUTE',
+    d.querySelectorAll('.almStat').length > 2, almKnown() >= 1];
+  const back = d.querySelector('.almBack'); if (back) back.click();
   return r;
 })()`);
-run('almanac:nav', `(() => { setPaused(true); selectNav(4); const id = navBtns()[navSel].id; closePanels(); return id; })()`);
+run('almanac:heaven', `(() => {
+  progress.alm = {};
+  heaven = true; heavenGroup.visible = true;
+  almanacScan();
+  const r = [almSeen('angel_heaven'), almSeen('heaven'), almanacSections().some(s => s.name === 'Heaven')];
+  heaven = false; heavenGroup.visible = false;
+  openAlmanacEntry('angel_heaven');
+  const d = document.getElementById('almanacDetail');
+  r.push(d.querySelector('.almTitle').textContent === 'THE ANGELS', d.querySelectorAll('.almStat').length >= 3);
+  const back = d.querySelector('.almBack'); if (back) back.click();
+  progress.alm = {};
+  return r;
+})()`);
+run('almanac:count', `(() => {
+  progress.alm = {};
+  almMark('zombie', true); almMark('husk', true); almMark('shard', true);
+  openPanel('panelAlmanac');
+  const note = document.getElementById('almNote').textContent;
+  const r = [almKnown() === 3, note.indexOf('Seen 3 of 29') >= 0, document.getElementById('almanacList').textContent.indexOf('2 / 4') >= 0];
+  progress.alm = {};
+  return r;
+})()`);
+run('almanac:nav', `(() => { closePanels(); setPaused(true); selectNav(4); const id = navBtns()[navSel].id; closePanels(); return id; })()`);
 run('knife:dimension', `(() => {
   setRealm(5); paused = false; dead = false;
   camera.position.set(ZX, EYE, 14); yaw = 0;

@@ -18,6 +18,7 @@ function loadAll(){
     const d = JSON.parse(localStorage.getItem(SKEY) || 'null');
     if (d) { Object.assign(settings, d.settings || {}); if (d.progress) progress = Object.assign(progress, d.progress); }
   } catch (e) {}
+  if (!progress.alm || typeof progress.alm !== 'object') progress.alm = {};
   if (progress.up) Object.assign(up, progress.up);
   shards = progress.shards || 0; kills = progress.kills || 0;
   maxHp = 100 + up.vitality * 25 + houseBonus();
@@ -54,7 +55,7 @@ function wipeProgress() {
   if (typeof DEF !== 'undefined') Object.assign(settings, DEF);
   if (typeof applySettings === 'function') applySettings();
   if (typeof buildSettingsUI === 'function') buildSettingsUI();
-  progress = {max: 1, owned: {pistol: false, shotgun: false, rifle: false}, cycle: 0, lore: {}};
+  progress = {max: 1, owned: {pistol: false, shotgun: false, rifle: false}, cycle: 0, lore: {}, alm: {}};
   shards = 0; kills = 0; hasGun = false; ammo = 0; loreFound = 0; runTime = 0;
   for (const k in owned) owned[k] = false;
   for (const k in store) store[k] = 0;

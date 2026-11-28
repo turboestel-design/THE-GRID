@@ -206,6 +206,10 @@ body.lefty #swapBtn{right:auto;left:192px}
 #almanacList button.almCard:hover,#almanacList button.almCard:focus-visible{background:#130d0a;border-color:#3a1512;border-left-color:var(--blood);outline:none;transform:translateY(-1px)}
 .almPic{display:block;position:relative;background:radial-gradient(ellipse at 50% 62%,#241811 0%,#0a0706 72%);border-bottom:1px solid #1c1410}
 .almPic img{display:block;width:100%;height:104px;object-fit:contain}
+#almanacList button.almCard.locked{background:#060404;border-color:#1a110e}
+#almanacList button.almCard.locked .almName{color:#4a3a33;letter-spacing:.3em}
+#almanacList button.almCard.locked .almPic{background:#060404}
+#almanacList button.almCard.locked .almTag{color:#3a2a24}
 .almName{display:block;padding:7px 8px 0;font-size:10px;letter-spacing:.12em;color:#dbcdb4;line-height:1.35}
 .almTag{display:block;padding:2px 8px 8px;font-size:8px;letter-spacing:.22em;color:#6f675c;text-transform:uppercase}
 

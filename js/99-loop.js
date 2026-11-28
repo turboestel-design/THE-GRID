@@ -86,6 +86,7 @@ function loop(){
   updateMan(dt); updateHeaven(dt); updateBars(dt); updateBeast(dt); updateRealm2(dt); updatePortals(dt);
   updateHounds(dt); updateKing(dt); updateWorlds(dt); updatePickups(dt);
   updateMobs(dt); updateMobShots(dt); updateShards(dt); updateForge(dt); updateLoreItems(dt); updateWaves();
+  if (typeof almanacScan === 'function' && started) almanacScan();
   updateHorde(dt); updateHordeLord(dt); updateGore(dt); updateDimension(dt); updateHouse(dt);
   if (firing && WEAPONS[cur].auto) shoot();
   updateQoL(dt);
